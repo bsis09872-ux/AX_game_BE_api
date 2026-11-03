@@ -1,4 +1,4 @@
-"""공통 예외 테스트"""
+"""공통 예외 테스트 (by claude)"""
 
 import unittest
 from common_item.exceptions import (
