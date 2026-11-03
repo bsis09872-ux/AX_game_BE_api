@@ -53,7 +53,7 @@ async def 앱_호출(app: FastAPI, path: str = "/"):
 
 
 class 소유자아님(ValueError):
-    """테스트용 도메인 예외. 도메인은 우리 예외를 모르고 ValueError만 던진다."""
+    """테스트용 도메인 계층 예외. 도메인은 우리 예외를 모르고 ValueError만 던진다."""
 
 
 class 이미등록됨(ValueError):

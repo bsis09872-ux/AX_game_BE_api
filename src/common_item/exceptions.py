@@ -54,10 +54,10 @@ class AppError(Exception):
 #     code = 'NOT_FOUND'
 #     message = '...'
 
-# 형식은 맞지만 규약을 어긴 경우 / AppError를 상속받는다. (타입 생략)
+# AppError를 상속받는다. (타입 생략)
 class RuleError(AppError):
     status_code = 400
-    code = 'RULE_VIOLATION'
+    code = 'RULE_VIOLATION' # 형식은 맞지만 팀 규약을 어긴 경우 / 일반 400과 다른 오류
     message = '요청을 처리할 수 없습니다.'
 
 class UnauthorizedError(AppError):
