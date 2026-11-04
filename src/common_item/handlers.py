@@ -13,6 +13,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from common_item.app_logging import get_logger
 
 from common_item.exceptions import (
     AppError,
@@ -24,6 +25,7 @@ from common_item.exceptions import (
     ValidationFailedError,
 )
 
+_logger = get_logger('handlers')
 
 # ===== 상태 코드표 =====
 
@@ -111,6 +113,8 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
 # [NoneAppError] 위 어디에도 걸리지 않는 모든 Exception(코드 버그 등)을 받는다
 # 내부 정보가 섞여 있을 수 있어서 내용은 숨기고 500 일반 문구만 준다
 async def unhandled_error_handler(request: Request, exc: Exception) -> JSONResponse:
+    # 오류 내용은 로그에만 남기고 응답에는 넣지 않는다
+    _logger.error('처리되지 않은 오류: %s %s', request.method, request.url.path, exc_info=exc)
     return _to_response(AppError())
 
 
