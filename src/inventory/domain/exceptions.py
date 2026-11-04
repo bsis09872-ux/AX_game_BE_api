@@ -24,7 +24,7 @@ class DefinitionImmutableFieldError(BusinessRuleError):
 # 400: 경매로 얻은 아이템을 재판매 대기 시간 내 판매하려는 경우
 class ResaleNotAvailableError(BusinessRuleError):
     code: str = 'RESALE_NOT_AVAILABLE'
-    message: str = '경매로 얻은 아이템은 즉시 재판매는 불가합니다..'
+    message: str = '경매로 얻은 아이템은 즉시 재판매는 불가합니다.'
 
 # 409: 아이템 상태가 요청과 맞지 않는 경우 (잠금 상태인데 등록됐다거나 보관 중인데 낙찰 등)
 class InvalidStateError(ConflictError):
