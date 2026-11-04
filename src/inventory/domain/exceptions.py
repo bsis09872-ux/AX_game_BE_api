@@ -11,10 +11,10 @@
 
 from shared.core.exceptions import BusinessRuleError, ConflictError, NotFoundError
 
-# 400: 종류를 만들거나 고칠 때 규칙을 어긴 경우
+# 400: 카탈로그를 만들거나 고칠 때 규칙을 어긴 경우
 class ItemRuleViolationError(BusinessRuleError):
     code: str = 'ITEM_RULE_VIOLATION'
-    message: str = '아이템 종류의 값이 규칙과 맞지 않습니다.'
+    message: str = '아이템 카탈로그의 값이 규칙과 맞지 않습니다.'
 
 # 400: 변경 불가능한 속성을 수정하려고 하는 경우
 class DefinitionImmutableFieldError(BusinessRuleError):
@@ -24,7 +24,7 @@ class DefinitionImmutableFieldError(BusinessRuleError):
 # 400: 경매로 얻은 아이템을 재판매 대기 시간 내 판매하려는 경우
 class ResaleNotAvailableError(BusinessRuleError):
     code: str = 'RESALE_NOT_AVAILABLE'
-    message: str = '경매로 얻은 아이템은 즉시 재판매는 불가합니다.'
+    message: str = '경매로 얻은 아이템의 즉시 재판매는 불가합니다.'
 
 # 409: 아이템 상태가 요청과 맞지 않는 경우 (잠금 상태인데 등록됐다거나 보관 중인데 낙찰 등)
 class InvalidStateError(ConflictError):
@@ -36,7 +36,7 @@ class ItemNotFoundError(NotFoundError):
     code: str = 'ITEM_NOT_FOUND'
     message: str = '아이템을 찾을 수 없습니다.'
 
-# 404: 없는 아이템 종류를 조회한 경우
+# 404: 없는 아이템 카탈로그를 조회한 경우
 class DefinitionNotFoundError(NotFoundError):
     code: str = 'DEFINITION_NOT_FOUND'
     message: str = '아이템 카탈로그를 찾을 수 없습니다.'
