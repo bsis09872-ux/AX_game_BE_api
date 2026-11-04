@@ -8,9 +8,9 @@ from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from common_item.exceptions import ValidationFailedError
-from common_item.handlers import register_exception_handlers
-from common_item.responses import PageParams
+from common_study.exceptions import ValidationFailedError
+from common_study.handlers import register_exception_handlers
+from common_study.responses import PageParams
 
 
 async def 앱_호출(app: FastAPI, path: str = "/", method: str = "GET", query: str = ""):

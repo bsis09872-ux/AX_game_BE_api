@@ -5,7 +5,7 @@ import unittest
 
 from pydantic import BaseModel
 
-from common_item.responses import IdStr, PageParams, PageResponse
+from common_study.responses import IdStr, PageParams, PageResponse
 
 
 class 아이템(BaseModel):

@@ -5,14 +5,14 @@ import unittest
 
 from fastapi import FastAPI, Request
 
-from common_item.exceptions import (
+from common_study.exceptions import (
     AppError,
     ForbiddenError,
     NotFoundError,
     RateLimitedError,
     RuleError,
 )
-from common_item.handlers import (
+from common_study.handlers import (
     app_error_handler,
     register_domain_errors,
     register_exception_handlers,

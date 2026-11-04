@@ -6,9 +6,9 @@ import unittest
 
 from fastapi import FastAPI
 
-from common_item.app_logging import get_logger, register_request_logging, setup_logging
-from common_item.handlers import register_exception_handlers
-from tests.common_item.test_framework_errors import 앱_호출
+from common_study.app_logging import get_logger, register_request_logging, setup_logging
+from common_study.handlers import register_exception_handlers
+from tests.test_framework_errors import 앱_호출
 
 
 class 모아두는_핸들러(logging.Handler):

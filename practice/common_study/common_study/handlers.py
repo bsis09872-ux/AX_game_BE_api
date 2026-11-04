@@ -3,7 +3,7 @@
 - 도메인 예외(AppError와 자식)는 상태 코드와 {"detail": {...}} 본문으로 바꾼다
 - 도메인 계층 예외(순수 파이썬의 ValueError 하위)는 대응표로 도메인 예외에 연결한다
   대응표 모양: {도메인 계층 예외: (도메인 예외 자식 클래스, "에러 코드")}
-- common_item은 도메인을 import하지 않는다. 대응표는 각 도메인의 presentation이 적어서 등록한다
+- common_study은 도메인을 import하지 않는다. 대응표는 각 도메인의 presentation이 적어서 등록한다
 - 요청 값 검증 실패(422)는 우리가 정한 코드와 메시지만 준다
 - 없는 경로(404), 허용되지 않은 메서드(405) 같은 HTTP 오류도 같은 형식으로 바꾼다
 - 예상 못 한 오류(500)는 내부 내용을 숨기고 일반 문구만 보낸다
@@ -13,9 +13,9 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from common_item.app_logging import get_logger
+from common_study.app_logging import get_logger
 
-from common_item.exceptions import (
+from common_study.exceptions import (
     AppError,
     ForbiddenError,
     NotFoundError,
