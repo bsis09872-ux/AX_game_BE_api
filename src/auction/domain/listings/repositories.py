@@ -1,5 +1,5 @@
 # 매물 저장·조회 Repository 인터페이스만 정의한다.
-# 상세 계약: ../README.md → Repository 인터페이스 → ListingRepository
+
 # 완료한 체크 항목은 테스트 확인 후 삭제하고 역할·README 안내는 유지한다.
 
 # [ ] ListingRepository ABC 정의, 메서드별 입력·반환 타입 및 abstractmethod 선언

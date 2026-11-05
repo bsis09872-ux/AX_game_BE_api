@@ -1,5 +1,5 @@
 # 최근 낙찰 시각으로 새 입찰 제한 여부를 판단하는 순수 함수를 둔다.
-# 상세 규칙: ../README.md → 정책
+
 # 완료한 체크 항목은 테스트 확인 후 삭제하고 역할·README 안내는 유지한다.
 
 # [ ] WIN_LIMIT_COUNT=3, WIN_LIMIT_WINDOW=30분, BID_BAN_DURATION=10분 정의
