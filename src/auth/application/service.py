@@ -12,7 +12,5 @@ class AuthService:
 
         user = await self.user_creator.create_user(login_id=login_id, display_name=display_name, password_hash=password_hash)
 
-        # TODO: user.id로 초기 지갑 생성 기능을 호출한다. 실제 함수명은 wallet 구현과 맞춘다.
-        # TODO: 회원과 지갑이 공유하는 트랜잭션을 commit한 뒤 가입 결과를 반환한다.
-        # 현재 반환값은 저장 확정 전 결과다. 위 두 작업 연결 후 HTTP 가입 흐름에 사용한다.
+        # 회원 생성은 flush까지 수행한다. 지갑 생성과 commit은 아직 연결하지 않았다.
         return user

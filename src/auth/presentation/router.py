@@ -7,7 +7,7 @@ from auth.presentation.dependencies import get_auth_service
 from auth.presentation.schemas import RegisterUserRequest, RegisterUserResponse
 
 # 공통 /v1 접두사는 main.py의 앱 등록 시 적용한다.
-# TODO: 가입 서비스의 지갑 생성과 commit, 실패 시 rollback을 검증한 뒤 앱에 등록한다.
+# 가입 트랜잭션 확정이 미연결된 상태이므로 아직 main.py에 등록하지 않는다.
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post(
