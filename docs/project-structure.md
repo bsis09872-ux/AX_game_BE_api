@@ -1,149 +1,102 @@
-﻿# 프로젝트 구조 안내
+# 프로젝트 구조 안내
 
 [README로 돌아가기](../README.md)
 
+> 프로젝트 공통 구조와 사용 원칙을 안내합니다. 도메인 내부 설계와 구현 현황은 각 담당 도메인의 문서에서 관리합니다.
+
 ## 전체 구조
 
-현재 존재하는 파일과 폴더입니다. 내부·생성 파일은 생략했습니다. 각 항목을 누르면 해당 경로로 이동합니다.
+```text
+AX_game_BE_api/
+├── .github/
+├── docs/
+├── src/
+│   ├── auth/
+│   ├── users/
+│   ├── inventory/
+│   ├── auction/
+│   ├── wallet/
+│   ├── shared/
+│   ├── templates/
+│   ├── static/
+│   ├── main.py
+│   └── database.py
+├── .gitignore
+├── .python-version
+├── pyproject.toml
+├── uv.lock
+└── README.md
+```
 
-- [.github/](../.github/)
-  - [ISSUE_TEMPLATE/](../.github/ISSUE_TEMPLATE/)
-    - [bug.md](../.github/ISSUE_TEMPLATE/bug.md)
-    - [task.md](../.github/ISSUE_TEMPLATE/task.md)
-  - [pull_request_template.md](../.github/pull_request_template.md)
-- [docs/](../docs/)
-  - [project-structure.md](../docs/project-structure.md)
-- [src/](../src/)
-  - [auth/](../src/auth/)
-    - [application/](../src/auth/application/)
-      - [__init__.py](../src/auth/application/__init__.py)
-    - [domain/](../src/auth/domain/)
-      - [__init__.py](../src/auth/domain/__init__.py)
-    - [infrastructure/](../src/auth/infrastructure/)
-      - [__init__.py](../src/auth/infrastructure/__init__.py)
-    - [presentation/](../src/auth/presentation/)
-      - [__init__.py](../src/auth/presentation/__init__.py)
-    - [__init__.py](../src/auth/__init__.py)
-  - [inventory/](../src/inventory/)
-    - [application/](../src/inventory/application/)
-      - [__init__.py](../src/inventory/application/__init__.py)
-    - [domain/](../src/inventory/domain/)
-      - [__init__.py](../src/inventory/domain/__init__.py)
-    - [infrastructure/](../src/inventory/infrastructure/)
-      - [__init__.py](../src/inventory/infrastructure/__init__.py)
-    - [presentation/](../src/inventory/presentation/)
-      - [__init__.py](../src/inventory/presentation/__init__.py)
-    - [__init__.py](../src/inventory/__init__.py)
-  - [listing/](../src/listing/)
-    - [application/](../src/listing/application/)
-      - [__init__.py](../src/listing/application/__init__.py)
-    - [domain/](../src/listing/domain/)
-      - [__init__.py](../src/listing/domain/__init__.py)
-    - [infrastructure/](../src/listing/infrastructure/)
-      - [__init__.py](../src/listing/infrastructure/__init__.py)
-    - [presentation/](../src/listing/presentation/)
-      - [__init__.py](../src/listing/presentation/__init__.py)
-    - [__init__.py](../src/listing/__init__.py)
-  - [static/](../src/static/)
-    - [.gitkeep](../src/static/.gitkeep)
-  - [templates/](../src/templates/)
-    - [.gitkeep](../src/templates/.gitkeep)
-  - [trading/](../src/trading/)
-    - [application/](../src/trading/application/)
-      - [__init__.py](../src/trading/application/__init__.py)
-    - [domain/](../src/trading/domain/)
-      - [__init__.py](../src/trading/domain/__init__.py)
-    - [infrastructure/](../src/trading/infrastructure/)
-      - [__init__.py](../src/trading/infrastructure/__init__.py)
-    - [presentation/](../src/trading/presentation/)
-      - [__init__.py](../src/trading/presentation/__init__.py)
-    - [__init__.py](../src/trading/__init__.py)
-  - [users/](../src/users/)
-    - [application/](../src/users/application/)
-      - [__init__.py](../src/users/application/__init__.py)
-    - [domain/](../src/users/domain/)
-      - [__init__.py](../src/users/domain/__init__.py)
-    - [infrastructure/](../src/users/infrastructure/)
-      - [__init__.py](../src/users/infrastructure/__init__.py)
-    - [presentation/](../src/users/presentation/)
-      - [__init__.py](../src/users/presentation/__init__.py)
-    - [__init__.py](../src/users/__init__.py)
-  - [wallet/](../src/wallet/)
-    - [application/](../src/wallet/application/)
-      - [__init__.py](../src/wallet/application/__init__.py)
-    - [domain/](../src/wallet/domain/)
-      - [__init__.py](../src/wallet/domain/__init__.py)
-    - [infrastructure/](../src/wallet/infrastructure/)
-      - [__init__.py](../src/wallet/infrastructure/__init__.py)
-    - [presentation/](../src/wallet/presentation/)
-      - [__init__.py](../src/wallet/presentation/__init__.py)
-    - [__init__.py](../src/wallet/__init__.py)
-  - [database.py](../src/database.py)
-  - [main.py](../src/main.py)
-- [tests/](../tests/)
-  - [.gitkeep](../tests/.gitkeep)
-- [.gitignore](../.gitignore)
-- [.python-version](../.python-version)
-- [pyproject.toml](../pyproject.toml)
-- [README.md](../README.md)
-- [uv.lock](../uv.lock)
+## 도메인 바로가기
 
-## 도메인별 용도
-
-| 폴더 | 역할 |
+| 경로 | 역할 |
 | --- | --- |
-| [users](../src/users/) | 회원 정보와 회원 상태 관리 |
-| [auth](../src/auth/) | 로그인·로그아웃·JWT 발급·검증·폐기 |
-| [inventory](../src/inventory/) | 아이템 정의·보유 아이템·소유권·판매 예약 |
-| [listing](../src/listing/) | 매물 등록·조회·검색·취소·판매 상태 관리 |
-| [wallet](../src/wallet/) | 게임 재화 지갑·잔액 관리 |
-| [trading](../src/trading/) | 구매 흐름 조율·거래 기록·거래 내역 |
+| [auth](../src/auth/) | 로그인·로그아웃·토큰 관리 |
+| [users](../src/users/) | 회원 정보·상태 |
+| [inventory](../src/inventory/) | 아이템·소유권·예약 |
+| [wallet](../src/wallet/) | 지갑·잔액 |
+| [auction](../src/auction/) | 경매장 매물·거래 |
 
-모든 도메인은 현재 폴더 골조만 갖추고 있으며 기능은 **구현 예정**입니다. 각 도메인 루트와 계층의 빈 `__init__.py`는 Python 패키지 표시용이며, 기능 구현을 포함하지 않습니다. 개별 파일 링크는 위 전체 구조에 있습니다.
+## 요청 처리 흐름 — 학습 가이드
 
-## 계층별 용도
+아래는 **구현할 때 따를 흐름**이며, 폴더 의존성 그림이나 현재 연결 완료 상태를 뜻하지 않습니다. 도메인이 저장소를 직접 호출하지 않고, 응용 서비스가 조회·업무 행위·저장을 조율합니다.
 
-아래 링크는 users 도메인을 예시로 하며, 6개 도메인에 같은 구조를 적용합니다.
+```mermaid
+sequenceDiagram
+    participant C as 클라이언트
+    participant P as presentation
+    participant A as application
+    participant D as domain
+    participant R as infrastructure
+    participant DB as DB
+    C->>P: 요청 JSON 또는 쿼리
+    P->>P: 요청 스키마 검증
+    P->>A: 유스케이스 호출
+    A->>R: 필요한 데이터 조회
+    R->>DB: 세션으로 조회
+    DB-->>R: ORM 모델
+    R-->>A: 순수 도메인 객체로 변환
+    A->>D: 업무 행위 호출
+    D->>D: 규칙 검증·상태 변경
+    D-->>A: 처리 결과
+    A->>R: 변경된 객체 저장
+    R->>DB: ORM 반영·flush
+    A->>DB: 작업 전체 commit 또는 rollback
+    A-->>P: 엔티티 또는 결과 데이터
+    P->>P: 응답 스키마로 필요한 필드만 선택
+    P-->>C: 합의한 응답 형식의 JSON
+```
 
-| 폴더 | 역할 |
+- 조회만 하는 요청은 상태 변경·저장 단계를 생략합니다.
+- 신규 생성은 기존 객체 조회 대신 엔티티 생성·검증이 들어갈 수 있습니다.
+- 예외가 요청 처리 경계로 전파되면 등록된 핸들러가 오류 응답으로 변환합니다. 현재 공통 핸들러는 업무 예외와 예상 밖 500 오류를 처리합니다.
+- 요청 검증 오류·HTTP 예외까지 동일 형식으로 맞추는 작업과 공통 성공 응답 연결은 별도 확인이 필요합니다.
+- 응답 스키마는 공개할 필드를 제한하고, 업무 규칙 판단은 도메인 객체가 맡습니다.
+
+## 공통 파일과 설정
+
+| 경로 | 용도·현재 상태 |
 | --- | --- |
-| [presentation](../src/users/presentation/) | API 요청·응답 검증, 라우터, HTTP 예외 변환 |
-| [application](../src/users/application/) | 유스케이스 실행 순서와 트랜잭션 조율 |
-| [domain](../src/users/domain/) | 순수 Python 도메인 객체·값 객체·핵심 검증·상태 전이 |
-| [infrastructure](../src/users/infrastructure/) | ORM 모델·저장소 구현·DB 접근·도메인 객체 변환 |
+| [main.py](../src/main.py) | 앱·/health·lifespan·로깅·예외 처리 연결. 등록된 메타데이터로 테이블 생성, 종료 시 엔진 정리. 도메인 라우터 연결은 아직 없음 |
+| [database.py](../src/database.py) | 비동기 엔진·세션·Base·get_db 및 예외 시 롤백. DATABASE_URL 환경변수 필요 |
+| [exceptions.py](../src/shared/core/exceptions.py) | 공통 업무 예외 |
+| [exception_handlers.py](../src/shared/core/exception_handlers.py) | 업무 오류 400·404·409와 예상 밖 500 응답 변환 |
+| [logging_config.py](../src/shared/core/logging_config.py) | 공통 로깅 설정 |
+| [공통 모듈 메모](../src/shared/core/README.md) | 공통 로깅·예외 처리의 역할과 사용 원칙 |
+| [templates](../src/templates/) / [static](../src/static/) | HTML / CSS·이미지·JS 위치. 현재 .gitkeep만 존재 |
+| [.github](../.github/) | [PR](../.github/pull_request_template.md), [작업](../.github/ISSUE_TEMPLATE/task.md), [버그](../.github/ISSUE_TEMPLATE/bug.md) 템플릿 |
+| [pyproject.toml](../pyproject.toml) / [uv.lock](../uv.lock) | 프로젝트·의존성 설정 / 버전 잠금 |
+| [.python-version](../.python-version) / [.gitignore](../.gitignore) | Python 버전 / Git 추적 제외 규칙 |
 
-각 계층의 기능은 **구현 예정**입니다.
+`__init__.py`는 패키지 표시, `.gitkeep`은 빈 폴더 공유용 파일입니다. ORM 모델은 테이블 생성 전에 Base 메타데이터에 등록되어야 합니다.
 
-## 공통 파일과 폴더
+## 협업·의존성 원칙
 
-| 항목 | 용도 및 현재 상태 |
-| --- | --- |
-| [src/main.py](../src/main.py) | FastAPI 앱 진입점. 현재 앱과 `/health` 엔드포인트가 존재합니다. 라우터·미들웨어·lifespan 조립은 구현 예정입니다. |
-| [src/database.py](../src/database.py) | 비동기 DB 엔진·세션·공통 Base·get_db 설정 위치. 현재 안내 주석만 있으며 구현 예정입니다. |
-| [src/templates/](../src/templates/) | Jinja2 HTML 화면. 현재 `.gitkeep`만 있으며 구현 예정입니다. |
-| [src/static/](../src/static/) | CSS·이미지·JavaScript 등 정적 파일. 현재 `.gitkeep`만 있으며 구현 예정입니다. |
-| [tests/](../tests/) | 테스트 코드. 현재 `.gitkeep`만 있으며 구현 예정입니다. |
-| [docs/](./) | 설계와 협업 문서. 현재 이 구조 안내 문서를 포함합니다. |
-| [pyproject.toml](../pyproject.toml) | 프로젝트 정보·Python 요구 버전·의존성 및 uv 설정. `[tool.uv]`의 `package = false`는 프로젝트 자체를 패키지로 빌드·설치하지 않도록 지정합니다. |
-| [uv.lock](../uv.lock) | 의존성 잠금 파일. 기존 파일을 유지합니다. |
-| [.python-version](../.python-version) | 사용할 Python 버전 지정. 기존 파일을 유지합니다. |
-| [.gitignore](../.gitignore) | Git 추적 제외 규칙. 기존 규칙을 유지합니다. |
-| [README.md](../README.md) | 프로젝트 안내와 구조 문서 진입 링크. |
-| [.github/pull_request_template.md](../.github/pull_request_template.md) | PR 작성 시 변경 이유·내용·확인 방법·관련 이슈를 안내하는 템플릿. |
-| [.github/ISSUE_TEMPLATE/task.md](../.github/ISSUE_TEMPLATE/task.md) | 작업 설명·완료할 내용·참고 사항을 작성하는 작업 이슈 템플릿. |
-| [.github/ISSUE_TEMPLATE/bug.md](../.github/ISSUE_TEMPLATE/bug.md) | 문제 설명·재현 방법·기대 결과와 실제 결과·참고 사항을 작성하는 버그 이슈 템플릿. |
+- domain은 FastAPI·SQLAlchemy 등 외부 프레임워크를 참조하지 않습니다.
+- application이 domain과 저장소를 사용해 작업을 조율하고, infrastructure는 계약을 구현합니다.
+- 저장소는 전체 작업을 임의로 커밋하지 않습니다. 여러 도메인 변경은 동일 트랜잭션으로 조율합니다.
+- 다른 도메인의 내부 데이터를 직접 변경하지 않고 합의한 기능으로 협업합니다.
+- 공통 파일 변경은 담당자와 협의하고 계층 간 순환 참조를 피합니다.
 
-빈 `.gitkeep`은 폴더를 Git으로 공유하기 위한 표시 파일입니다. 실행 코드는 포함하지 않습니다.
-
-개발 서버 실행 방법은 [README의 개발 서버 실행](../README.md#개발-서버-실행)을 참고하세요. `package = false`는 실행 경로를 지정하는 설정이 아니며, 실행 명령에서 `src` 경로를 지정합니다.
-
-## 의존성과 협업 규칙
-
-- presentation은 application과 domain을 사용합니다.
-- application은 domain과 infrastructure를 사용하여 처리 흐름을 조율합니다.
-- domain은 다른 계층이나 FastAPI·SQLAlchemy 등 외부 라이브러리에 의존하지 않습니다.
-- infrastructure는 필요한 계약을 구현하고 ORM 모델과 도메인 객체를 변환합니다.
-- 계층 간 순환 참조를 만들지 않습니다.
-- 각 담당자는 자기 도메인 내부를 관리하고, 공통 파일 변경은 팀과 협의합니다.
-- 다른 도메인의 내부 데이터를 직접 변경하지 않고 합의된 기능으로 협업합니다.
-- 이번 작업은 폴더 골조 생성이며 기능 구현 완료를 의미하지 않습니다.
+실행 방법: [README의 개발 서버 실행](../README.md#개발-서버-실행).

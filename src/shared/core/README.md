@@ -1,35 +1,39 @@
- # 공통 (모든 도메인이 사용)
- ##### 작성 순서 : logger → exceptions → schemas → exception_handlers → database → models
+# 공통 모듈 안내
 
- ## logger.py
-   - 환경 변수로 레벨 결정 (debug / info)
-   - 형식: 시간, 레벨, 로거 이름, 메시지
-   - get_logger(이름) 함수 하나만 외부에 공개
+[프로젝트 구조 안내](../../../docs/project-structure.md) · [앱 진입점](../../main.py)
 
-## exceptions.py
-   - 공통 부모 예외 1개: message, status_code, error_code, errors를 가짐
-   - 자식들: 400 / 401 / 403 / 404 / 409 / 422
-   - 자식은 상태 코드만 고정하고, 기본 메시지만 다르게
+여러 도메인이 함께 사용하는 로깅 설정과 예외 처리 모듈입니다. 구체적인 업무 규칙과 오류는 각 도메인에서 정의합니다.
 
-## schemas.py
-   - 공통 응답 모델: success, code, message, errors, data, (응답 시각)
-   - data 타입을 바꿔 끼울 수 있게 Generic으로
-   - 성공용 / 실패용 생성 함수 2개 (클래스 메서드)
+## 현재 구성
 
-## exception_handlers.py
-   - 등록 함수 하나 안에 핸들러 3개
-##### ① 공통 부모 예외 → 해당 상태 코드 + 실패 응답, warning 로그
-##### ② 요청 검증 실패 → 422, 에러를 "필드명: [메시지들]" 형태로 정리
-##### ③ 그 외 모든 예외 → 500, 내부 내용은 로그에만 남기고 응답에선 숨김
+| 파일 | 역할 |
+| --- | --- |
+| [logging_config.py](logging_config.py) | 로그 형식·레벨·출력 대상 설정. 현재 INFO 이상을 콘솔에 출력 |
+| [exceptions.py](exceptions.py) | 공통 예외 기반 AppError와 업무 규칙·미존재·충돌 분류 |
+| [exception_handlers.py](exception_handlers.py) | 예외를 HTTP 오류 응답으로 변환하고 로그 기록 |
 
-## database.py
-   - 비동기 엔진 (커넥션 풀 옵션)
-   - 세션 팩토리: autoflush 끔, expire_on_commit 끔
-   - get_db: 세션 열기 → yield → 예외 시 rollback
-   - close_db: 엔진 dispose
+DB 엔진·세션·Base는 [src/database.py](../../database.py)에서 관리합니다. 이 폴더에는 별도 database.py, models.py, schemas.py가 없습니다.
 
-## models.py
-   - Base (DeclarativeBase 상속, 내용 없음)
-   - 시간 Mixin: created_at / modified_at / deleted_at
-       ##### → 기본값은 "함수 자체"를 넘길 것 (호출 결과 X)
-   - init_models: 도메인 ORM 모델 파일들을 함수 안에서 import
+## 앱 연결과 사용
+
+- [main.py](../../main.py)의 lifespan에서 `setup_logging()`을 호출하고, 앱 생성 후 `register_exception_handlers(app)`를 등록합니다. 현재 적용되어 있습니다.
+- 각 모듈은 `logging.getLogger(__name__)`으로 로거를 얻습니다. 저장 성공 로그는 commit 성공 후 남깁니다.
+- 각 도메인의 `domain/exceptions.py`에서 공통 예외를 상속하고, 상황에 맞는 `code`와 `message`를 정의해 발생시킵니다.
+
+## 현재 오류 처리
+
+| 예외 분류 | HTTP 상태 | 로그 |
+| --- | --- | --- |
+| BusinessRuleError | 400 | WARNING |
+| NotFoundError | 404 | WARNING |
+| ConflictError | 409 | WARNING |
+| 분류되지 않은 AppError·예상 밖 오류 | 500 | ERROR |
+
+오류 응답은 `detail` 안에 `code`와 `message`를 담습니다. HTTP 상태는 핸들러가 예외 타입에 따라 결정하며, 500 응답은 내부 원인을 노출하지 않습니다. 이 변환은 HTTP 요청 처리에 적용되며 도메인 직접 호출은 Python 예외를 발생시킵니다.
+
+## 변경할 때
+
+- 로그 형식·레벨·출력 대상은 logging_config.py에서 변경합니다.
+- 기존 오류 분류의 자식 예외는 도메인에 추가합니다. 새로운 HTTP 상태를 지원하려면 공통 분류와 핸들러 매핑을 함께 추가합니다.
+- 입력 검증 오류(422)·HTTPException의 응답 통일과 전체 요청/응답 로깅은 추가 구현이 필요합니다.
+- 전역 핸들러가 기록하는 예외를 발생 지점에서 중복 기록하지 않습니다. 비밀번호·해시·JWT·DB 접속 정보·요청 본문 전체는 로그에 남기지 않습니다.
