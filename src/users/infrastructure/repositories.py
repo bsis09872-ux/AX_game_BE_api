@@ -1,4 +1,4 @@
-# 회원 조회와 신규 저장 구현. ORM 객체를 도메인 User로 변환해 반환한다.
+# SQLAlchemy로 회원을 조회하거나 저장하고 결과를 도메인 User로 변환한다.
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 

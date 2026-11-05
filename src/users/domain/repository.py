@@ -1,4 +1,4 @@
-# 회원 조회 계약. DB 구현과 관계없이 도메인 User 또는 None을 반환한다.
+# 회원 ID 또는 로그인 ID로 조회하고 신규 회원을 저장하는 저장소 계약을 정의한다.
 from abc import ABC, abstractmethod
 
 from users.domain.user import User

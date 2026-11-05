@@ -1,4 +1,4 @@
-# 회원 정보와 순수 규칙. HTTP, DB, JWT에 의존하지 않는다.
+# 회원 식별 정보와 계정 상태를 보관하고 로그인 ID, 비밀번호 해시, 역할의 유효성을 검사한다.
 import re
 from datetime import datetime
 

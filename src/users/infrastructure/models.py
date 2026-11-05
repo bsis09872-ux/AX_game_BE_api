@@ -1,4 +1,4 @@
-# 회원 정보를 users 테이블에 매핑한다. 저장과 트랜잭션 처리는 Repository와 서비스가 담당한다.
+# users 테이블의 컬럼, 기본값과 제약 조건을 SQLAlchemy 모델로 정의한다.
 from datetime import datetime
 
 from sqlalchemy import BigInteger, CheckConstraint, DateTime, String, func
