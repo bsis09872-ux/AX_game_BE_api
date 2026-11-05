@@ -6,8 +6,12 @@
 
 현재 존재하는 파일과 폴더입니다. 내부·생성 파일은 생략했습니다. 각 항목을 누르면 해당 경로로 이동합니다.
 
+- [.github/](../.github/)
+  - [ISSUE_TEMPLATE/](../.github/ISSUE_TEMPLATE/)
+    - [bug.md](../.github/ISSUE_TEMPLATE/bug.md)
+    - [task.md](../.github/ISSUE_TEMPLATE/task.md)
+  - [pull_request_template.md](../.github/pull_request_template.md)
 - [docs/](../docs/)
-  - [.gitkeep](../docs/.gitkeep)
   - [project-structure.md](../docs/project-structure.md)
 - [src/](../src/)
   - [auth/](../src/auth/)
@@ -120,13 +124,18 @@
 | [src/static/](../src/static/) | CSS·이미지·JavaScript 등 정적 파일. 현재 `.gitkeep`만 있으며 구현 예정입니다. |
 | [tests/](../tests/) | 테스트 코드. 현재 `.gitkeep`만 있으며 구현 예정입니다. |
 | [docs/](./) | 설계와 협업 문서. 현재 이 구조 안내 문서를 포함합니다. |
-| [pyproject.toml](../pyproject.toml) | 프로젝트 정보·Python 요구 버전·의존성 설정. 기존 설정을 유지합니다. |
+| [pyproject.toml](../pyproject.toml) | 프로젝트 정보·Python 요구 버전·의존성 및 uv 설정. `[tool.uv]`의 `package = false`는 프로젝트 자체를 패키지로 빌드·설치하지 않도록 지정합니다. |
 | [uv.lock](../uv.lock) | 의존성 잠금 파일. 기존 파일을 유지합니다. |
 | [.python-version](../.python-version) | 사용할 Python 버전 지정. 기존 파일을 유지합니다. |
 | [.gitignore](../.gitignore) | Git 추적 제외 규칙. 기존 규칙을 유지합니다. |
 | [README.md](../README.md) | 프로젝트 안내와 구조 문서 진입 링크. |
+| [.github/pull_request_template.md](../.github/pull_request_template.md) | PR 작성 시 변경 이유·내용·확인 방법·관련 이슈를 안내하는 템플릿. |
+| [.github/ISSUE_TEMPLATE/task.md](../.github/ISSUE_TEMPLATE/task.md) | 작업 설명·완료할 내용·참고 사항을 작성하는 작업 이슈 템플릿. |
+| [.github/ISSUE_TEMPLATE/bug.md](../.github/ISSUE_TEMPLATE/bug.md) | 문제 설명·재현 방법·기대 결과와 실제 결과·참고 사항을 작성하는 버그 이슈 템플릿. |
 
 빈 `.gitkeep`은 폴더를 Git으로 공유하기 위한 표시 파일입니다. 실행 코드는 포함하지 않습니다.
+
+개발 서버 실행 방법은 [README의 개발 서버 실행](../README.md#개발-서버-실행)을 참고하세요. `package = false`는 실행 경로를 지정하는 설정이 아니며, 실행 명령에서 `src` 경로를 지정합니다.
 
 ## 의존성과 협업 규칙
 
