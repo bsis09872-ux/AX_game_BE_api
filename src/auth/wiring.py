@@ -1,18 +1,29 @@
-# AuthService에 비밀번호 해싱 구현과 회원 생성 어댑터를 연결한다.
+# 요청별 DB 세션을 회원 저장소, 토큰 폐기 저장소와 트랜잭션에 공유한다.
+from functools import lru_cache
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.application.service import AuthService
 from auth.infrastructure.password_hasher import PasslibPasswordHasher
+from auth.infrastructure.repositories import SqlAlchemyRevokedTokenRepository
+from auth.infrastructure.token_codec import get_token_codec
 from auth.infrastructure.user_creator import UserCreatorAdapter
-
+from auth.infrastructure.user_reader import UserReaderAdapter
 from users.wiring import build_user_service
 
+
+@lru_cache
+def get_password_hasher() -> PasslibPasswordHasher:
+    return PasslibPasswordHasher()
+
+
 def build_auth_service(session: AsyncSession) -> AuthService:
-    # 요청 세션을 users 저장소까지 공유하며 세션 수명은 호출자가 관리한다.
-    user_service = build_user_service(session=session)
-
-    user_creator = UserCreatorAdapter(user_service=user_service)
-
-    password_hasher = PasslibPasswordHasher()
-
-    return AuthService(password_hasher=password_hasher, user_creator=user_creator)
+    user_service = build_user_service(session)
+    return AuthService(
+        password_hasher=get_password_hasher(),
+        user_creator=UserCreatorAdapter(user_service),
+        user_reader=UserReaderAdapter(user_service),
+        token_codec=get_token_codec(),
+        revoked_tokens=SqlAlchemyRevokedTokenRepository(session),
+        transaction=session,
+    )

@@ -1,18 +1,62 @@
-# 회원가입에 필요한 해싱과 회원 생성을 조율한다. 지갑 생성과 트랜잭션 확정은 연결 예정이다.
-from auth.application.contracts import UserCreator, PasswordHasher, CreatedUser
+# 회원가입 저장, 로그인 토큰 발급, 인증 확인과 토큰 폐기를 조율한다.
+from auth.application.contracts import (
+    CreatedUser, IssuedToken, PasswordHasher, RevokedTokenRepository,
+    TokenClaims, TokenCodec, Transaction, UserCreator, UserReader,
+)
+from auth.domain.exceptions import InvalidCredentialsError, InvalidTokenError
+
 
 class AuthService:
-    def __init__(self, password_hasher: PasswordHasher, user_creator: UserCreator):
+    def __init__(
+        self, password_hasher: PasswordHasher, user_creator: UserCreator,
+        user_reader: UserReader, token_codec: TokenCodec,
+        revoked_tokens: RevokedTokenRepository, transaction: Transaction,
+    ):
         self.password_hasher = password_hasher
         self.user_creator = user_creator
+        self.user_reader = user_reader
+        self.token_codec = token_codec
+        self.revoked_tokens = revoked_tokens
+        self.transaction = transaction
 
-    # 중복 회원 등 의존성의 예외는 호출자에게 전파한다.
-    async def register_user(self, login_id: str, display_name: str, password: str) -> CreatedUser:
+    async def register_user(
+        self, login_id: str, display_name: str, password: str
+    ) -> CreatedUser:
         password_hash = await self.password_hasher.hash(password)
-
-        user = await self.user_creator.create_user(login_id=login_id, display_name=display_name, password_hash=password_hash)
-
-        # TODO: user.id로 초기 지갑 생성 기능을 호출한다. 실제 함수명은 wallet 구현과 맞춘다.
-        # TODO: 회원과 지갑이 공유하는 트랜잭션을 commit한 뒤 가입 결과를 반환한다.
-        # 현재 반환값은 저장 확정 전 결과다. 위 두 작업 연결 후 HTTP 가입 흐름에 사용한다.
+        user = await self.user_creator.create_user(
+            login_id=login_id, display_name=display_name, password_hash=password_hash
+        )
+        # 응답 전 저장을 확정한다. 실패 시 요청 세션의 get_db가 rollback한다.
+        await self.transaction.commit()
         return user
+
+    async def login(self, login_id: str, password: str) -> IssuedToken:
+        if not 4 <= len(login_id) <= 50 or not 1 <= len(password) <= 1024:
+            raise InvalidCredentialsError()
+        user = await self.user_reader.find_by_login_id(login_id)
+        if user is None:
+            # 없는 계정도 해싱 비용을 거쳐 즉시 실패 응답으로 계정 유무를 드러내지 않는다.
+            await self.password_hasher.hash(password)
+            raise InvalidCredentialsError()
+        matches = await self.password_hasher.verify(password, user.password_hash)
+        if not matches or not user.is_active:
+            raise InvalidCredentialsError()
+        return self.token_codec.issue(user.id)
+
+    async def authenticate(self, token: str) -> TokenClaims:
+        claims = self.token_codec.decode(token)
+        if await self.revoked_tokens.contains(claims.jti):
+            raise InvalidTokenError()
+        user = await self.user_reader.find_by_id(claims.user_id)
+        if user is None or not user.is_active:
+            raise InvalidTokenError()
+        return claims
+
+    async def logout(self, token: str) -> None:
+        # 서명과 만료는 검증하되 이미 폐기한 토큰도 재시도할 수 있다.
+        claims = self.token_codec.decode(token)
+        user = await self.user_reader.find_by_id(claims.user_id)
+        if user is None:
+            raise InvalidTokenError()
+        await self.revoked_tokens.revoke(claims)
+        await self.transaction.commit()
