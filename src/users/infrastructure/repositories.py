@@ -1,11 +1,12 @@
 # SQLAlchemy로 회원을 조회하거나 저장하고 결과를 도메인 User로 변환한다.
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from users.domain.repository import UserRepository
 from users.domain.user import User
 from users.infrastructure.models import UserModel
-from users.domain.exceptions import InvalidUserError
+from users.domain.exceptions import InvalidUserError, LoginIdAlreadyExistsError
 
 
 class SqlAlchemyUserRepository(UserRepository):
@@ -71,7 +72,22 @@ class SqlAlchemyUserRepository(UserRepository):
         )
         # flush로 INSERT를 보내 생성된 ID를 받는다. 최종 commit은 서비스 흐름이 담당한다.
         self.session.add(user_model)
-        await self.session.flush()
+        try:
+            await self.session.flush()
+        except IntegrityError as exc:
+            db_error = exc.orig.__cause__
+            sqlstate = getattr(db_error, "sqlstate", None)
+            table_name = getattr(db_error, "table_name", None)
+            constraint_name = getattr(db_error, "constraint_name", None)
+
+            # 동시 가입은 사전 조회를 함께 통과할 수 있어 로그인 ID 제약 위반만 중복 예외로 바꾼다.
+            if (
+                sqlstate == "23505"
+                and table_name == "users"
+                and constraint_name == "users_login_id_key"
+            ):
+                raise LoginIdAlreadyExistsError() from exc
+            raise
+
         # 입력 객체는 그대로 두고 ID가 채워진 새 User를 반환한다.
-        # DB 오류는 호출자에게 전달한다. 성공 로그는 전체 가입 commit 이후에 남긴다.
         return self._to_domain(user_model)
