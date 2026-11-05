@@ -1,7 +1,7 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 
 from database import Base, engine
 from shared.core.exception_handlers import register_exception_handlers
@@ -22,6 +22,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="AX Game BE API", lifespan=lifespan)
 register_exception_handlers(app)
+
+# 도메인 라우터는 /auth 등의 경로만 선언하고, 공통 버전은 여기서 적용한다.
+api_router = APIRouter(prefix="/v1")
+# 완성된 도메인 라우터는 아래 앱 등록 전에 api_router.include_router(...)로 연결한다.
+app.include_router(api_router)
 
 
 @app.get("/health")
