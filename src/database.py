@@ -1,1 +1,5 @@
-﻿# Shared database configuration belongs here. Connection logic is not implemented.
+from sqlalchemy.orm import DeclarativeBase
+
+
+class Base(DeclarativeBase):
+    pass
