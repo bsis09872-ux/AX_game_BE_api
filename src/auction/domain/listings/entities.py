@@ -2,8 +2,8 @@
 
 # 완료한 체크 항목은 테스트 확인 후 삭제하고 역할·README 안내는 유지한다.
 
-# [ ] ListingStatus: QUEUED / BIDDING / SOLD / FAILED 정의
-# [ ] AUCTION_DURATION(6분), _ALLOWED_TRANSITIONS 정의
+# [x] ListingStatus: QUEUED / BIDDING / SOLD / FAILED / CANCELLED 정의
+# [x] AUCTION_DURATION(6분), _ALLOWED_TRANSITIONS 정의
 # [ ] Listing dataclass: README 필드 표 적용 (필수 필드 먼저, 기본값 필드 뒤)
 # [ ] _ensure_aware: 시간 입력 규칙 검증
 # [ ] _require_status: 현재 상태 검증
@@ -18,9 +18,10 @@
 # [ ] remaining — AUC-03: 진행 중 남은 시간, 그 외 None 반환
 # [ ] mark_sold — AUC-05: 마감·입찰자 확인 후 SOLD 전환 및 종료 시각 기록
 # [ ] mark_failed — AUC-05: 마감 확인 후 FAILED 전환 및 종료 시각 기록
+# [ ] cancel — AUC-11: 본인 QUEUED 매물 취소, closed_at·updated_at = now
 # [ ] 테스트: 정상·금지 전이, 마감 정각, 입찰 금액 경계
 # [ ] 테스트: ends_at=None의 is_expired는 False
-# [ ] 테스트: 성공한 5개 행위의 updated_at 갱신, 조회·실패 시 기존 값 유지
+# [ ] 테스트: 성공한 6개 행위의 updated_at 갱신, 조회·실패 시 기존 값 유지
 
 # 책임 경계: 소유권·재판매 제한은 inventory, 잔액 확인·정산 조율은 application.
 # updated_at은 DB onupdate에 맡기지 않고 도메인의 now로 설정한다.
@@ -98,108 +99,108 @@ class Listing:
             updated_at=now,
         )
 
-# [AUC-01, AUC-06] 대기 매물을 공개할 때 입찰을 시작하고 마감 시각을 정한다.
-def start(self, now: datetime) -> None:
-    self._require_status(ListingStatus.QUEUED)
-    self._ensure_aware(now)
-    ends_at = now + AUCTION_DURATION
+    # [AUC-01, AUC-06] 대기 매물을 공개할 때 입찰을 시작하고 마감 시각을 정한다.
+    def start(self, now: datetime) -> None:
+        self._require_status(ListingStatus.QUEUED)
+        self._ensure_aware(now)
+        ends_at = now + AUCTION_DURATION
 
-    self._transition_to(ListingStatus.BIDDING, now)
-    self.started_at = now
-    self.ends_at = ends_at
+        self._transition_to(ListingStatus.BIDDING, now)
+        self.started_at = now
+        self.ends_at = ends_at
 
-# 판매자가 공개 전 본인 매물을 취소할 때 취소 상태로 바꾼다.
-def cancel(self, requester_id: int, now: datetime) -> None:
-    self._require_status(ListingStatus.QUEUED)
-    self._ensure_aware(now)
+    # [AUC-11] 판매자가 공개 전 본인 매물을 취소할 때 취소 상태로 바꾼다.
+    def cancel(self, requester_id: int, now: datetime) -> None:
+        self._require_status(ListingStatus.QUEUED)
+        self._ensure_aware(now)
 
-    if requester_id != self.seller_id:
-        raise BusinessRuleError("본인의 매물만 취소할 수 있습니다.")
+        if requester_id != self.seller_id:
+            raise BusinessRuleError("본인의 매물만 취소할 수 있습니다.")
 
-    self._transition_to(ListingStatus.CANCELLED, now)
-    self.closed_at = now
+        self._transition_to(ListingStatus.CANCELLED, now)
+        self.closed_at = now
 
-# [AUC-04] 새 입찰이 들어오면 조건을 검사하고 최고 입찰을 갱신한다.
-def place_bid(self, bidder_id: int, amount: int, now: datetime) -> None:
-    self._require_status(ListingStatus.BIDDING)
+    # [AUC-04] 새 입찰이 들어오면 조건을 검사하고 최고 입찰을 갱신한다.
+    def place_bid(self, bidder_id: int, amount: int, now: datetime) -> None:
+        self._require_status(ListingStatus.BIDDING)
 
-    if self.is_expired(now):
-        raise ConflictError("입찰 시간이 종료되었습니다.")
-    if bidder_id == self.seller_id:
-        raise BusinessRuleError("자기 매물에는 입찰할 수 없습니다.")
-    if bidder_id == self.current_bidder_id:
-        raise ConflictError("현재 최고 입찰자는 다시 입찰할 수 없습니다.")
+        if self.is_expired(now):
+            raise ConflictError("입찰 시간이 종료되었습니다.")
+        if bidder_id == self.seller_id:
+            raise BusinessRuleError("자기 매물에는 입찰할 수 없습니다.")
+        if bidder_id == self.current_bidder_id:
+            raise ConflictError("현재 최고 입찰자는 다시 입찰할 수 없습니다.")
 
-    if not self.has_bidder():
-        if amount <= self.start_price:
-            raise BusinessRuleError("입찰가는 시작가보다 커야 합니다.")
-    elif amount <= self.current_bid_amount:
-        raise ConflictError("현재 최고 입찰가보다 높게 입찰해야 합니다.")
+        if not self.has_bidder():
+            if amount <= self.start_price:
+                raise BusinessRuleError("입찰가는 시작가보다 커야 합니다.")
+        elif amount <= self.current_bid_amount:
+            raise ConflictError("현재 최고 입찰가보다 높게 입찰해야 합니다.")
 
-    self.current_bidder_id = bidder_id
-    self.current_bid_amount = amount
-    self.updated_at = now
+        self.current_bidder_id = bidder_id
+        self.current_bid_amount = amount
+        self.updated_at = now
 
-# [AUC-05] 마감 후 정산이 성공하면 낙찰 완료 상태로 바꾼다.
-def mark_sold(self, now: datetime) -> None:
-    self._require_status(ListingStatus.BIDDING)
+    # [AUC-05] 마감 후 정산이 성공하면 낙찰 완료 상태로 바꾼다.
+    def mark_sold(self, now: datetime) -> None:
+        self._require_status(ListingStatus.BIDDING)
 
-    if not self.is_expired(now):
-        raise ConflictError("마감 전에는 종료할 수 없습니다.")
-    if not self.has_bidder():
-        raise ConflictError("입찰자가 없는 매물은 낙찰 처리할 수 없습니다.")
+        if not self.is_expired(now):
+            raise ConflictError("마감 전에는 종료할 수 없습니다.")
+        if not self.has_bidder():
+            raise ConflictError("입찰자가 없는 매물은 낙찰 처리할 수 없습니다.")
 
-    self._transition_to(ListingStatus.SOLD, now)
-    self.closed_at = now
+        self._transition_to(ListingStatus.SOLD, now)
+        self.closed_at = now
 
-# [AUC-05] 마감 후 입찰자가 없거나 정산이 실패하면 유찰 처리한다.
-def mark_failed(self, now: datetime) -> None:
-    self._require_status(ListingStatus.BIDDING)
+    # [AUC-05] 마감 후 입찰자가 없거나 정산이 실패하면 유찰 처리한다.
+    def mark_failed(self, now: datetime) -> None:
+        self._require_status(ListingStatus.BIDDING)
 
-    if not self.is_expired(now):
-        raise ConflictError("마감 전에는 종료할 수 없습니다.")
+        if not self.is_expired(now):
+            raise ConflictError("마감 전에는 종료할 수 없습니다.")
 
-    self._transition_to(ListingStatus.FAILED, now)
-    self.closed_at = now
+        self._transition_to(ListingStatus.FAILED, now)
+        self.closed_at = now
 
-# [AUC-04, AUC-05] 입찰·종료 처리 전에 마감 시각 도달 여부를 확인한다.
-def is_expired(self, now: datetime) -> bool:
-    self._ensure_aware(now)
-    return self.ends_at is not None and now >= self.ends_at
+    # [AUC-04, AUC-05] 입찰·종료 처리 전에 마감 시각 도달 여부를 확인한다.
+    def is_expired(self, now: datetime) -> bool:
+        self._ensure_aware(now)
+        return self.ends_at is not None and now >= self.ends_at
 
-# [AUC-04, AUC-05] 입찰 금액 검사와 낙찰 처리에 필요한 입찰자 존재 여부를 확인한다.
-def has_bidder(self) -> bool:
-    return self.current_bidder_id is not None
+    # [AUC-04, AUC-05] 입찰 금액 검사와 낙찰 처리에 필요한 입찰자 존재 여부를 확인한다.
+    def has_bidder(self) -> bool:
+        return self.current_bidder_id is not None
 
-# [AUC-03] 매물 조회 시 보여줄 남은 시간을 계산한다.
-def remaining(self, now: datetime) -> timedelta | None:
-    self._ensure_aware(now)
+    # [AUC-03] 매물 조회 시 보여줄 남은 시간을 계산한다.
+    def remaining(self, now: datetime) -> timedelta | None:
+        self._ensure_aware(now)
 
-    if self.status != ListingStatus.BIDDING:
-        return None
+        if self.status != ListingStatus.BIDDING:
+            return None
 
-    return max(self.ends_at - now, timedelta(0))
+        return max(self.ends_at - now, timedelta(0))
 
-# 상태를 바꿀 때 허용된 전이인지 검사하고 변경 시각을 기록한다.
-def _transition_to(self, new_status: ListingStatus, now: datetime) -> None:
-    if new_status not in _ALLOWED_TRANSITIONS[self.status]:
-        raise ConflictError("허용되지 않은 매물 상태 변경입니다.")
+    # 상태를 바꿀 때 허용된 전이인지 검사하고 변경 시각을 기록한다.
+    def _transition_to(self, new_status: ListingStatus, now: datetime) -> None:
+        if new_status not in _ALLOWED_TRANSITIONS[self.status]:
+            raise ConflictError("허용되지 않은 매물 상태 변경입니다.")
 
-    self._ensure_aware(now)
-    self.status = new_status
-    self.updated_at = now
+        self._ensure_aware(now)
+        self.status = new_status
+        self.updated_at = now
 
-# 행위를 실행하기 전에 필요한 상태인지 확인한다.
-def _require_status(self, expected: ListingStatus) -> None:
-    if self.status != expected:
-        raise ConflictError(f"{expected.value} 상태에서만 실행할 수 있습니다.")
+    # 행위를 실행하기 전에 필요한 상태인지 확인한다.
+    def _require_status(self, expected: ListingStatus) -> None:
+        if self.status != expected:
+            raise ConflictError(f"{expected.value} 상태에서만 실행할 수 있습니다.")
 
-# 시간 계산 전에 전달받은 시각이 UTC인지 확인한다.
-@staticmethod
-def _ensure_aware(now: datetime) -> None:
-    offset = now.utcoffset()
+    # 시간 계산 전에 전달받은 시각이 UTC인지 확인한다.
+    @staticmethod
+    def _ensure_aware(now: datetime) -> None:
+        offset = now.utcoffset()
 
-    if offset is None:
-        raise ValueError("now에는 시간대 정보가 필요합니다.")
-    if offset != timedelta(0):
-        raise ValueError("now는 UTC 시각이어야 합니다.")
+        if offset is None:
+            raise ValueError("now에는 시간대 정보가 필요합니다.")
+        if offset != timedelta(0):
+            raise ValueError("now는 UTC 시각이어야 합니다.")
