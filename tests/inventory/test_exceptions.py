@@ -10,14 +10,15 @@ from inventory.domain.exceptions import (
     InvalidStateError,
     ItemNotFoundError,
     ItemRuleViolationError,
+    NotOwnerError,
     ResaleNotAvailableError,
 )
 from shared.core.exception_handlers import register_exception_handlers
-from shared.core.exceptions import BusinessRuleError, ConflictError, NotFoundError
+from shared.core.exceptions import AppError, BusinessRuleError, ConflictError, NotFoundError
 from tests.inventory.asgi_client import call_app
 
 # (예외, 부모 분류, 에러 코드, 팀 핸들러가 정하는 상태 코드)
-# NotOwnerError(403)는 팀 공통에 ForbiddenError가 생긴 뒤 U03에서 만들고 이 표에 넣는다
+# NotOwnerError(403)는 팀 공통에 ForbiddenError가 생기면 부모를 바꾸고 이 표로 옮긴다(아래 NotOwnerErrorTest)
 EXPECTED = [
     (ItemRuleViolationError, BusinessRuleError, "ITEM_RULE_VIOLATION", 400),
     (DefinitionImmutableFieldError, BusinessRuleError, "DEFINITION_IMMUTABLE", 400),
@@ -58,6 +59,20 @@ class ExceptionDefinitionTest(unittest.TestCase):
         error = ItemNotFoundError()
         self.assertEqual(error.message, ItemNotFoundError.message)
         self.assertEqual(str(error), ItemNotFoundError.message)
+
+
+class NotOwnerErrorTest(unittest.TestCase):
+    # 403은 팀 공통에 ForbiddenError가 생긴 뒤에 상태 코드까지 확인한다(D20).
+    # 그때까지는 AppError의 자식이고 code와 메시지만 확인한다
+    def test_definition(self):
+        self.assertTrue(issubclass(NotOwnerError, AppError))
+        self.assertEqual(NotOwnerError.code, "NOT_OWNER")
+        self.assertTrue(NotOwnerError.message)
+        self.assertNotEqual(NotOwnerError.message, AppError.message)
+
+    def test_code_is_different_from_the_other_inventory_codes(self):
+        codes = [row[0].code for row in EXPECTED]
+        self.assertNotIn(NotOwnerError.code, codes)
 
 
 def make_app() -> FastAPI:

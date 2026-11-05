@@ -6,3 +6,19 @@
 - 만드는 곳은 InventoryItem이고, 저장은 아이템과 같은 트랜잭션으로 레포지토리가 한다
 - 순수 파이썬만 쓴다 (FastAPI, Pydantic, SQLAlchemy, logging을 import하지 않는다)
 """
+
+from dataclasses import dataclass
+from datetime import datetime
+
+from inventory.domain.enums import ItemEventType
+
+# frozen=True → r
+@dataclass(frozen=True)
+class ItemEvent:
+    event_type: ItemEventType
+    from_owner_id: int | None
+    to_owner_id: int | None
+    created_at: datetime
+    actor_id: int | None=None
+    listing_id: int | None=None
+    trade_id: int | None=None

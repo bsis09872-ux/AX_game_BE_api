@@ -9,7 +9,7 @@
 - FastAPI, Pydantic, SQLAlchemy, logging을 import하지 않는다 (shared.core.exceptions는 순수 파이썬이라 import해도 된다)
 """
 
-from shared.core.exceptions import BusinessRuleError, ConflictError, NotFoundError
+from shared.core.exceptions import AppError, BusinessRuleError, ConflictError, NotFoundError
 
 # 400: 카탈로그를 만들거나 고칠 때 규칙을 어긴 경우
 class ItemRuleViolationError(BusinessRuleError):
@@ -40,3 +40,8 @@ class ItemNotFoundError(NotFoundError):
 class DefinitionNotFoundError(NotFoundError):
     code: str = 'DEFINITION_NOT_FOUND'
     message: str = '아이템 카탈로그를 찾을 수 없습니다.'
+
+# 403: 소유자가 아닌 사람이 아이템 상태 변경을 시도하는 경우
+class NotOwnerError(AppError):
+    code: str = 'NOT_OWNER'
+    message: str = '해당 아이템 소유자가 아닙니다.'
