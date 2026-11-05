@@ -15,6 +15,10 @@ class PasswordHasher(Protocol):
     async def hash(self, password: str) -> str:
         ...
 
+    # 비밀번호 일치 여부를 반환하며 해시 형식 오류와 검증 실패는 예외로 전달한다.
+    async def verify(self, password: str, password_hash: str) -> bool:
+        ...
+
 # 회원 생성은 flush까지 수행하며 가입 전체의 commit은 호출자가 결정한다.
 # 중복 로그인 ID는 LoginIdAlreadyExistsError로 전달한다.
 class UserCreator(Protocol):

@@ -14,3 +14,7 @@ class PasslibPasswordHasher(PasswordHasher):
     async def hash(self, password: str) -> str:
         # 동기 해싱을 별도 스레드에서 실행하며 실패 예외는 호출자에게 전파한다.
         return await to_thread(self._context.hash, password)
+
+    # 저장된 해시의 salt로 비밀번호를 검증하며 동기 계산은 별도 스레드에서 수행한다.
+    async def verify(self, password: str, password_hash: str) -> bool:
+        return await to_thread(self._context.verify, password, password_hash)
