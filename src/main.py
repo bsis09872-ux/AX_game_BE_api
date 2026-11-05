@@ -1,7 +1,7 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import APIRouter, FastAPI
+from fastapi import FastAPI
 
 from database import Base, engine
 from shared.core.exception_handlers import register_exception_handlers
@@ -9,6 +9,8 @@ from shared.core.logging_config import setup_logging
 
 # auth의 가입 흐름 완성 후 아래 import와 include_router 예시를 활성화한다.
 # from auth.presentation.router import router as auth_router
+
+API_PREFIX = "/v1"
 
 
 @asynccontextmanager
@@ -26,12 +28,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(title="AX Game BE API", lifespan=lifespan)
 register_exception_handlers(app)
 
-# 도메인 라우터는 /auth 등의 경로만 선언하고, 공통 버전은 여기서 적용한다.
-api_router = APIRouter(prefix="/v1")
-# 완성된 도메인 라우터는 아래 앱 등록 전에 api_router.include_router(...)로 연결한다.
+# 도메인 라우터는 /auth 등의 경로를 선언하고 앱에 직접 등록할 때 공통 버전을 적용한다.
 # 예: auth_router의 /auth + /register가 /v1/auth/register로 등록된다.
-# api_router.include_router(auth_router)
-app.include_router(api_router)
+# app.include_router(auth_router, prefix=API_PREFIX)
 
 
 @app.get("/health")
