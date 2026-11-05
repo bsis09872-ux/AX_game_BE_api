@@ -1,4 +1,4 @@
-# 회원 정보 검증 실패와 회원 조회 실패를 구분하는 도메인 예외를 정의한다.
+# 회원 정보 검증, 회원 조회, 로그인 ID 중복에 대한 도메인 예외를 정의한다.
 
 from shared.core.exceptions import BusinessRuleError, ConflictError, NotFoundError
 
@@ -11,3 +11,8 @@ class InvalidUserError(BusinessRuleError):
 class UserNotFoundError(NotFoundError):
     code: str = "USER_NOT_FOUND"
     message: str = "회원을 찾을 수 없습니다."
+
+# 가입하려는 로그인 ID가 이미 사용 중일 때 전역 핸들러가 409로 응답한다.
+class LoginIdAlreadyExistsError(ConflictError):
+    code: str = "LOGIN_ID_ALREADY_EXISTS"
+    message: str = "이미 사용 중인 로그인 ID입니다."
