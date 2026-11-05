@@ -25,3 +25,9 @@ class ConflictError(AppError):
     # 요청이 현재 상태와 충돌함. 이미 판매 완료된 글 같은 구체적인 상황은 도메인에서 정의한다.
     code: str = "RESOURCE_CONFLICT"
     message: str = "요청이 현재 상태와 충돌합니다."
+
+
+class ForbiddenError(AppError):
+    # 대상은 있지만 요청자에게 접근 권한이 없음. 남의 거래 조회 같은 상황은 도메인에서 정의한다.
+    code: str = "FORBIDDEN"
+    message: str = "접근 권한이 없습니다."
