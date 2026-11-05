@@ -1,3 +1,4 @@
+# 회원 조회와 신규 저장 구현. ORM 객체를 도메인 User로 변환해 반환한다.
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,9 +9,12 @@ from users.domain.exceptions import InvalidUserError
 
 
 class SqlAlchemyUserRepository(UserRepository):
+    # 주입받은 세션을 공유한다. 세션 생성과 트랜잭션 확정은 호출 측에서 담당한다.
     def __init__(self, session: AsyncSession):
         self.session = session
 
+    # DB에서 읽은 ID, 역할, 탈퇴 상태를 보존한다. 이 변환 자체에는 DB 통신이 없다.
+    # 가입 시각과 수정 시각도 User에 전달한다.
     def _to_domain(self, model: UserModel) -> User:
         return User(
             model.login_id,
@@ -25,6 +29,8 @@ class SqlAlchemyUserRepository(UserRepository):
             deleted_at=model.deleted_at,
         )
 
+    # 탈퇴 회원도 반환해 인증 계층에서 활성 상태를 판단할 수 있게 한다.
+    # 조회 결과가 없으면 변환 전에 None을 반환한다.
     async def find_by_id(self, user_id: int) -> User | None:
         user_model = await self.session.get(UserModel, user_id)
 
@@ -33,6 +39,8 @@ class SqlAlchemyUserRepository(UserRepository):
 
         return self._to_domain(user_model)
 
+    # 조회문(statement), 실행 결과(result), ORM 객체(user_model)를 구분한다.
+    # 정확히 일치하는 회원을 찾고, 여러 행이 나오거나 DB가 실패하면 오류를 전파한다.
     async def find_by_login_id(self, login_id: str) -> User | None:
         statement = select(UserModel).where(UserModel.login_id == login_id)
 
@@ -45,10 +53,13 @@ class SqlAlchemyUserRepository(UserRepository):
 
         return self._to_domain(user_model)
 
+    # 신규 회원만 등록하며 기존 회원의 갱신은 처리하지 않는다.
     async def create(self, user: User) -> User:
+        # 이미 ID가 있는 객체의 중복 생성을 DB 작업 전에 막는다.
         if user.id is not None:
             raise InvalidUserError("이미 저장된 회원은 새로 생성할 수 없습니다.")
 
+        # 해싱된 비밀번호와 회원 상태를 옮기고 ID와 가입 시각은 DB에 맡긴다.
         user_model = UserModel(
             login_id=user.login_id,
             password_hash=user.password_hash,
@@ -58,6 +69,9 @@ class SqlAlchemyUserRepository(UserRepository):
             auction_blocked_until=user.auction_blocked_until,
             deleted_at=user.deleted_at,
         )
+        # flush로 INSERT를 보내 생성된 ID를 받는다. 최종 commit은 서비스 흐름이 담당한다.
         self.session.add(user_model)
         await self.session.flush()
+        # 입력 객체는 그대로 두고 ID가 채워진 새 User를 반환한다.
+        # DB 오류는 호출자에게 전달한다. 성공 로그는 전체 가입 commit 이후에 남긴다.
         return self._to_domain(user_model)
