@@ -1,35 +1,16 @@
-"""
-[ListingRepository — 인터페이스(ABC)]
-무엇을 저장하고 찾을지만 정의한다. 구현은 infrastructure/listings/repositories.py
+# 매물 저장·조회 Repository 인터페이스만 정의한다.
+# 상세 계약: ../README.md → Repository 인터페이스 → ListingRepository
+# 완료한 체크 항목은 테스트 확인 후 삭제하고 역할·README 안내는 유지한다.
 
-■ 조회
-  - get(listing_id) -> Listing | None
-  - get_for_update(listing_id) -> Listing | None
-      행 잠금(FOR UPDATE). 입찰·마감처럼 동시에 수정될 수 있는 작업용
-  - list_bidding(page) -> list[Listing]
-      AUC-02 목록. BIDDING만 반환 (대기 매물은 서버가 숨김)
+# [ ] ListingRepository ABC 정의, 메서드별 입력·반환 타입 및 abstractmethod 선언
+# [ ] get: 단건 조회, 없으면 None
+# [ ] get_for_update: 수정 작업용 잠금 조회, 없으면 None
+# [ ] list_bidding: 공개 중인 매물 목록
+# [ ] exists_bidding: 같은 종류 공개 매물 존재 여부
+# [ ] next_queued: 같은 종류의 가장 오래된 대기 매물
+# [ ] list_expired_bidding: 마감 시각에 도달한 진행 매물
+# [ ] sum_leading_bids: 사용자가 최고 입찰자인 진행 매물의 입찰액 합
+# [ ] save: 매물 저장 및 엔티티 반환
+# [ ] 목록 조회의 page 입력 계약을 application·infrastructure와 확인
 
-■ 대기열  — AUC-01, AUC-06
-  - exists_bidding(item_definition_id) -> bool
-      같은 종류의 공개 매물이 있는지
-  - next_queued(item_definition_id) -> Listing | None
-      같은 종류의 QUEUED 중 created_at이 가장 오래된 1건
-
-■ 마감  — AUC-05
-  - list_expired_bidding(now) -> list[Listing]
-      BIDDING이고 ends_at <= now 인 매물
-
-■ 입찰 가능 금액 계산  — AUC-04
-  - sum_leading_bids(user_id) -> int
-      user가 current_bidder_id인 BIDDING 매물들의 current_bid_amount 합
-
-■ 저장
-  - save(listing) -> Listing
-
-■ DB 제약 (구현 시 반영)
-  - UNIQUE (item_definition_id) WHERE status = 'BIDDING'
-  - INDEX (item_definition_id, status, created_at)
-  - INDEX (status, ends_at)
-  - INDEX (current_bidder_id, status)
-"""
-
+# 책임 경계: SQL·잠금 실행·DB 제약·인덱스는 infrastructure에 구현한다.

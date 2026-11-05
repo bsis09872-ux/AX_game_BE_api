@@ -1,25 +1,17 @@
-"""
-[Trade 엔티티 — 도메인 규칙]
-낙찰이 확정된 거래 기록. DB·FastAPI를 모른다.
+# 낙찰이 확정된 거래를 변경 불가능한 기록으로 보존한다.
+# 상세 규칙: ../README.md → Trade, 공통 규칙, 예외
+# 완료한 체크 항목은 테스트 확인 후 삭제하고 역할·README 안내는 유지한다.
 
-■ 필드 (ERD trades와 동일)
-  listing_id, seller_id, buyer_id,
-  item_name_snapshot, seller_name_snapshot, buyer_name_snapshot,
-  price_snapshot, completed_at
-  - seller_id, buyer_id는 auction 컨텍스트의 역할 이름 (값은 users id, FK 없음)
-  - snapshot은 체결 시점 값을 고정 저장
+# [ ] Trade: README 필드 표에 맞춰 frozen dataclass 정의 (저장 전 id=None)
+# [ ] from_sold_listing: SOLD 상태와 필수 값 누락 검증
+# [ ] 양수 낙찰가·시간 입력 규칙 검증
+# [ ] 판매자·구매자·낙찰가·이름 스냅샷·체결 시각 저장
+# [ ] 테스트: 확정 매물의 값과 스냅샷이 정확히 복사되는지 확인
+# [ ] 테스트: 잘못된 상태·필수 값 누락·유효하지 않은 낙찰가 거부
+# [ ] 테스트: 생성 후 필드 변경 불가 확인
 
-■ 생성 from_sold_listing(listing, item_name, seller_name, buyer_name, now)
-  - listing.status != SOLD 이면 예외
-  - seller_id = listing.seller_id
-  - buyer_id = listing.current_bidder_id
-  - price_snapshot = listing.current_bid_amount  (0보다 커야 함)
-  - completed_at = now
+# 책임 경계: 정산은 application, 매물당 거래 1건의 DB 제약은 infrastructure.
 
-■ 불변
-  - 생성 후 변경 메서드 없음
-  - 매물당 거래 1건 (listing_id UNIQUE, DB에서 한 번 더 보장)
-"""
 
 from shared.core import exceptions
 
