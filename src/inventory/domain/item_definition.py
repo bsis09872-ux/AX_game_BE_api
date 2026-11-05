@@ -1,4 +1,4 @@
-"""아이템 종류(ItemDefinition): 서버 카탈로그에 있는 아이템의 공통 정보
+"""아이템 카탈로그(ItemDefinition): 서버 카탈로그에 있는 아이템의 공통 정보
 
 - 누구의 소유물도 아니다. 사용자가 가진 개별 아이템(InventoryItem)과 구분한다
 - code는 고유하고 ^[a-z][a-z0-9_]{2,49}$ 형식, name은 공백 제외 1~100자다
@@ -6,6 +6,7 @@
 - start_price는 0보다 큰 정수, weight는 0 이상의 정수, icon은 1~50자다
 - name과 category는 만든 뒤 바꿀 수 없다 (바꾸려 하면 도메인이 거절한다)
 - start_price가 바뀌어도 이미 등록된 매물에는 영향이 없다 (매물이 등록 때 복사해 간다)
+- id는 저장소가 DB에 저장할 때 정해진다. 만들 때는 비어 있고, 규칙 검사 대상이 아니다
 - 순수 파이썬만 쓴다 (FastAPI, Pydantic, SQLAlchemy, logging을 import하지 않는다)
 """
 
@@ -66,7 +67,9 @@ class ItemDefinition:
             icon: str = 'default',
             weight: int = 10,
             fishable: bool = True,
+            id: int | None=None # DB 조회용 
     ) -> None:
+        self.id = id # DB 조회용
         # 아래 property로만 읽게 해서 name.category 수정에 제약을 둠
         self._code = _check_code(code)
         self._name = _check_name(name)

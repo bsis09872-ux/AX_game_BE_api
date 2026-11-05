@@ -167,5 +167,13 @@ class ItemDefinitionUpdateTest(unittest.TestCase):
             definition.category = ItemCategory.GEM
 
 
+class ItemDefinitionIdTest(unittest.TestCase):
+    def test_id_is_none_until_the_repository_saves_it(self):
+        self.assertIsNone(make_definition().id)
+
+    def test_id_given_by_the_repository_is_kept(self):
+        self.assertEqual(make_definition(id=7).id, 7)
+
+
 if __name__ == "__main__":
     unittest.main()
