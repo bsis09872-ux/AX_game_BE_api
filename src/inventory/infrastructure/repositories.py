@@ -48,16 +48,6 @@ def _to_domain(row: ItemDefinitionModel) -> ItemDefinition:
         id=row.id
     )
 
-    # await 규칙
-    # - await를 붙이는 것: DB까지 다녀오는 일 (session.get, session.execute, session.flush)
-    #   DB 응답을 기다리는 동안 다른 일을 할 수 있게 async로 만든 함수라서 await를 붙여야 실제로 실행된다
-    #   await를 빼면 실행되지 않고 "coroutine was never awaited" 경고만 나오며,
-    #   돌려받은 값도 결과가 아니라 코루틴 객체라서 그 뒤의 .scalar_one() 같은 호출이 오류가 난다
-    # - await를 안 붙이는 것: 메모리 안에서 끝나는 일
-    #   session.add(row): 세션에 "저장할 것"으로 올려 두기만 한다. DB에는 flush 때 나간다
-    #   result.scalar_one() 등: execute가 이미 가져온 결과를 꺼내 볼 뿐이다
-    #   select(...), 모델 객체 만들기: SQL 문장이나 객체를 만들 뿐 DB를 부르지 않는다
-
 class ItemDefinitionRepository:
 
     # 세션은 레포지토리가 직접 만들지 않고 서비스가 만들어 넘겨준다
@@ -114,8 +104,8 @@ class ItemDefinitionRepository:
         #   → 한 행을 뽑고 싶을 때는 혹시 모를 상황을 고려해 .scalar 대신 .scalar_one을 쓰자 
         return [_to_domain(row) for row in rows], total
 
+    # 도메인 객체 레코드 추가와 업데이트
     async def save(self, definition: ItemDefinition) -> ItemDefinition:
-
         # id가 없으면 아직 DB에 없는 아이템 카탈로그이기 때문에 행을 새로 만든다 (INSERT)
         if definition.id is None:
             row = ItemDefinitionModel(
@@ -133,12 +123,10 @@ class ItemDefinitionRepository:
             await self._session.flush() # 세션에 저장한 것을 DB로 보낸다 
             definition.id = row.id # DB가 받을 때 지정한 id 값을 도메인 객체에도 넣어준다 
             return definition
-
         # id가 있으면 이미 있는 아이템 카탈로그이기 때문에 행을 찾아 값만 바꾼다 (UPDATE)
         row = await self._session.get(ItemDefinitionModel, definition.id)
         if row is None:
             raise DefinitionNotFoundError() # id가 있는데 None이면 당연히 에러
-
         # 변경 가능한 속성값들만 변경시키고 (새 레코드로 옮기고) DB에 보낼 준비를 한다 
         row.start_price = definition.start_price
         row.weight = definition.weight
@@ -149,7 +137,7 @@ class ItemDefinitionRepository:
         await self._session.flush()
         return definition
 
-    # 해당 아이템 카탈로그를 가진 아이템이 몇 개인지 센다 (관리자가 바라볼 때)
+    # 해당 아이템 카탈로그를 가진 아이템이 몇 개인지 카운트
     async def count_items(self, definition_id: int) -> int:
         result = await self._session.execute(
             select(func.count())
@@ -159,9 +147,10 @@ class ItemDefinitionRepository:
         return result.scalar_one() 
         # scalar_one(): 1행 1열의 값을 꺼낸다. count_item은 항상 1행이라서 맞다
 
+    # 도메인 객체 레코드 삭제
     async def delete(self, definition: ItemDefinition) -> None:
         result = await self._session.execute(
             delete(ItemDefinitionModel).where(ItemDefinitionModel.id == definition.id)
         )
-        if result.rowcount == 0: # 지워진 행 수가 0이면 지울 행이 없는 상황 = 지울 건 다 지웠다
+        if result.rowcount == 0: # 지워진 행 수가 0이면 지울 행이 없는 상황 = 지울 건 다 지운 상황
             raise DefinitionNotFoundError()
