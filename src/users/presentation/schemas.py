@@ -1,11 +1,9 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 
 from pydantic import BaseModel
 
 from users.domain.user import User
-from datetime import timezone
-
 
 # [AUTH-03] 본인 계정에서 클라이언트에 공개할 필드만 반환한다.
 class UserMeResponse(BaseModel):
