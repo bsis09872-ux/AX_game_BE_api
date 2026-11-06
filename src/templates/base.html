@@ -12,6 +12,20 @@
     {% block head %}{% endblock %}
 </head>
 <body {% block body_attributes %}{% endblock %}>
+    <div class="title-carousel" aria-hidden="true">
+        <div class="title-carousel__rows">
+            {% for _ in range(12) %}
+                <div class="title-carousel__row">
+                    <div class="title-carousel__track">
+                        {% for _ in range(9) %}
+                            <img src="{{ url_for('static', path='/images/catch-and-bid-logo.png') }}" alt="" width="1774" height="887" draggable="false">
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
     <a class="skip-link" href="#main-content">본문 바로가기</a>
 
     <header class="topbar">
