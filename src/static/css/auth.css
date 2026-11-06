@@ -1,0 +1,86 @@
+/* 화면별 폭과 폼 배치를 지정한다. 색상, 폰트와 공통 UI는 global.css를 사용한다. */
+.auth-layout {
+    width: 100%;
+    max-width: 400px;
+    margin: 32px auto;
+}
+
+.profile-layout {
+    width: 100%;
+    max-width: 640px;
+    margin: 32px auto;
+}
+
+.auth-panel {
+    padding: 24px;
+}
+
+.auth-form .field {
+    margin-bottom: 20px;
+}
+
+.auth-form label {
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.auth-form input,
+.auth-submit {
+    width: 100%;
+    min-height: 44px;
+}
+
+/* 상태 메시지는 스크립트가 갱신한다. 내용이 없을 때는 빈 공간도 감춘다. */
+.session-message {
+    margin: 0 0 20px;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+}
+
+.session-message:empty {
+    display: none;
+}
+
+.auth-error {
+    padding: 12px;
+    margin: 0 0 20px;
+    color: var(--text);
+    background: var(--night);
+    border-left: var(--px) solid var(--pink);
+}
+
+.profile-details {
+    display: grid;
+    grid-template-columns: 110px minmax(0, 1fr);
+    gap: 16px;
+    margin: 0 0 24px;
+}
+
+.profile-details dt {
+    color: var(--muted);
+}
+
+.profile-details dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 480px) {
+    .auth-layout,
+    .profile-layout {
+        margin: 16px auto;
+    }
+
+    .auth-panel {
+        padding: 20px;
+    }
+
+    .profile-details {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
+    }
+
+    .profile-details dd {
+        margin-bottom: 12px;
+    }
+}

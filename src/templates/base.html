@@ -6,16 +6,51 @@
 
     <title>{% block title %}AX Game{% endblock %}</title>
 
+    {# 공통 픽셀 테마와 로컬 Galmuri 폰트를 모든 자식 화면에서 사용한다. #}
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/global.css') }}">
+    {% block styles %}{% endblock %}
+
     {# defer로 HTML 구성이 끝난 뒤 인증 스크립트를 실행한다. #}
     <script src="{{ url_for('static', path='/auth-session.js') }}" defer></script>
+    {% block head %}{% endblock %}
 </head>
 {# 자식 화면의 종류와 쿠키 복구 시도 여부를 인증 스크립트에 전달한다. 토큰 원문은 넣지 않는다. #}
 <body
     data-auth-page="{% block page %}{% endblock %}"
     data-resume="{{ 'true' if resume else 'false' }}"
 >
-    <main>
+    <a class="skip-link" href="#main-content">본문 바로가기</a>
+
+    {# 회원 정보는 인증을 마친 /me에서만 전달된다. 연결된 화면의 메뉴만 표시한다. #}
+    <header class="topbar">
+        <div class="wrap">
+            <a class="brand" href="{{ '/me' if user is defined else '/login' }}">AX Game</a>
+
+            <nav class="nav" aria-label="주 메뉴">
+                {% if user is defined %}
+                    <a class="on" href="/me" aria-current="page">내 정보</a>
+                {% else %}
+                    <a class="on" href="/login" aria-current="page">로그인</a>
+                {% endif %}
+            </nav>
+
+            {% if user is defined %}
+                <div class="hud">
+                    <span class="user-name">{{ user.display_name }}</span>
+                </div>
+            {% endif %}
+        </div>
+    </header>
+
+    <main id="main-content" class="wrap main-content" tabindex="-1">
         {% block content %}{% endblock %}
     </main>
+
+    <footer class="footer">
+        AX Game / 글꼴:
+        <a href="{{ url_for('static', path='/fonts/LICENSE-galmuri-OFL.txt') }}">Galmuri11 (OFL)</a>
+    </footer>
+
+    {% block scripts %}{% endblock %}
 </body>
 </html>

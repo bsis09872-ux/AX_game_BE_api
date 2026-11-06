@@ -3,32 +3,40 @@
 {% block title %}내 정보 | AX Game{% endblock %}
 {% block page %}me{% endblock %}
 
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/auth.css') }}">
+{% endblock %}
+
 {% block content %}
-    <h1>내 정보</h1>
+    <section class="profile-layout" aria-labelledby="profile-title">
+        <h1 id="profile-title" class="title-tab">내 정보</h1>
 
-    {# 웹 라우터가 UserMeResponse로 골라낸 공개 회원 정보만 표시한다. #}
-    <dl>
-        <dt>회원 ID</dt>
-        <dd>{{ user.id }}</dd>
+        <div class="panel auth-panel">
+            {# 웹 라우터가 UserMeResponse로 골라낸 공개 회원 정보만 표시한다. #}
+            <dl class="profile-details">
+                <dt>회원 ID</dt>
+                <dd>{{ user.id }}</dd>
 
-        <dt>로그인 ID</dt>
-        <dd>{{ user.login_id }}</dd>
+                <dt>로그인 ID</dt>
+                <dd>{{ user.login_id }}</dd>
 
-        <dt>표시 이름</dt>
-        <dd>{{ user.display_name }}</dd>
+                <dt>표시 이름</dt>
+                <dd>{{ user.display_name }}</dd>
 
-        <dt>역할</dt>
-        <dd>{{ user.role }}</dd>
+                <dt>역할</dt>
+                <dd>{{ user.role }}</dd>
 
-        <dt>가입 시각</dt>
-        <dd>{{ user.created_at }}</dd>
-    </dl>
+                <dt>가입 시각</dt>
+                <dd>{{ user.created_at }}</dd>
+            </dl>
 
-    {# 자동 갱신 중 통신 오류가 발생하면 인증 스크립트가 상태 메시지를 표시한다. #}
-    <p id="session-message" role="status"></p>
+            {# 자동 갱신 중 통신 오류가 발생하면 인증 스크립트가 상태 메시지를 표시한다. #}
+            <p id="session-message" class="session-message" role="status"></p>
 
-    {# 서버에서 현재 로그인 세션을 폐기하고 브라우저 쿠키도 지운다. #}
-    <form method="post" action="/logout">
-        <button type="submit">로그아웃</button>
-    </form>
+            {# 서버에서 현재 로그인 세션을 폐기하고 브라우저 쿠키도 지운다. #}
+            <form method="post" action="/logout">
+                <button class="btn wood" type="submit">로그아웃</button>
+            </form>
+        </div>
+    </section>
 {% endblock %}
