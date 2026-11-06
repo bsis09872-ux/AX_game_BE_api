@@ -1,7 +1,8 @@
-"""인증 의존성 (임시)
+"""인증 의존성 (wallet 임시본)
 
-TODO(auth 담당): 폐기 토큰(revoked_tokens)·탈퇴 회원 검사, 설정 관리로 시크릿 이동.
-지금은 다른 도메인 라우터가 import할 수 있도록 Access Token의 sub만 꺼낸다.
+auth 도메인에 현재 사용자 ID 의존성이 아직 없어 wallet 안에 임시로 둔다.
+TODO: auth에 get_current_user_id(폐기 토큰·탈퇴 회원 검사 포함)가 생기면
+      router.py의 import를 auth 쪽으로 바꾸고 이 파일을 삭제한다.
 """
 import os
 from typing import Annotated

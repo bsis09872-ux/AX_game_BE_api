@@ -16,11 +16,11 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth.presentation.dependencies import get_current_user_id  # HTTPBearer, int 반환
 from shared.core.database import get_session
 from shared.core.schemas import PageParams, PageResponse
 from wallet.application import service
 
+from .dependencies import get_current_user_id  # 임시. auth 쪽이 생기면 교체
 from .schemas import TradeDetailResponse, TradeListItem, WalletResponse
 
 router = APIRouter(prefix="/v1", tags=["wallet"])
