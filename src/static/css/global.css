@@ -84,7 +84,7 @@ body {
 
 .title-carousel__row {
     --tile-width: 28vmax;
-    --duration: 38s;
+    --duration: 19s;
     --delay: -12s;
     position: relative;
     flex: 1;
@@ -110,7 +110,7 @@ body {
 
 .title-carousel__row:nth-child(4n + 2) {
     --tile-width: 24vmax;
-    --duration: 52s;
+    --duration: 26s;
     --delay: -31s;
     opacity: .09;
 }
@@ -121,13 +121,13 @@ body {
 
 .title-carousel__row:nth-child(4n + 3) {
     --tile-width: 32vmax;
-    --duration: 29s;
+    --duration: 14.5s;
     --delay: -9s;
     opacity: .18;
 }
 
 .title-carousel__row:nth-child(4n) {
-    --duration: 44s;
+    --duration: 22s;
     --delay: -27s;
     opacity: .12;
 }
