@@ -15,7 +15,7 @@
 - 이력 조회는 오래된 순이다
 """
 
-from sqlalchemy import case, delete, func, select
+from sqlalchemy import case, delete, exists, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from inventory.domain.enums import ItemEventType, ItemOrigin, ItemRarity, ItemStatus
@@ -191,7 +191,7 @@ _ITEM_SORTS = {
 _WITH_DEFINITION = InventoryItemModel.item_definition_id == ItemDefinitionModel.id
 
 # [개별 아이템 객체] 아이템 행 + 아이템 카탈로그 행 조합이 도메인 객체
-def _item_to_domain(item_row: InventoryItemModel, definition_row: ItemDefinitionModel) -> InventoryItemModel:
+def _item_to_domain(item_row: InventoryItemModel, definition_row: ItemDefinitionModel) -> InventoryItem:
     return InventoryItem(
         definition=_to_domain(definition_row),
         owner_id=item_row.owner_id,
@@ -249,7 +249,7 @@ class InventoryItemRepository:
 
     # [조회] 개별 아이템 잠금 조회
     # → 상태 변화가 일어날 것 같은 상황에서 조회 = 매물 도메인이 상태를 변경하기 위해 조회
-    async def find_by_for_update(self, item_id: int) -> InventoryItem | None:
+    async def find_by_id_for_update(self, item_id: int) -> InventoryItem | None:
         return await self._find_one(item_id, for_update=True)
 
 
@@ -344,45 +344,45 @@ class InventoryItemRepository:
                     created_at=event.created_at,
                 )
             )
-            await self._session.flush() # DB에 flush / commit은 서비스가 한다 
-            return item
+        await self._session.flush() # DB에 flush / commit은 서비스가 한다 
+        return item
 
 
-        # [조회] 아이템 이력 목록 조회 (오래된순)
-        async def find_events(
-            self, item_id: int, *, page=1, size=20
-        ) -> tuple[list[ItemEvent], int]:
-            
-            # 1. total 조회 (총 몇 페이지가 나올지 프론트가 판단할 때 사용 가능)
-            total = (
-                await self._session.execute(
-                    select(func.count())
-                    .select_from(ItemEventModel)
-                    .where(ItemEventModel.item_id == item_id)
-                )
-            ).scalar_one()
+    # [조회] 아이템 이력 목록 조회 (오래된순)
+    async def find_events(
+        self, item_id: int, *, page=1, size=20
+    ) -> tuple[list[ItemEvent], int]:
+        
+        # 1. total 조회 (총 몇 페이지가 나올지 프론트가 판단할 때 사용 가능)
+        total = (
+            await self._session.execute(
+                select(func.count())
+                .select_from(ItemEventModel)
+                .where(ItemEventModel.item_id == item_id)
+            )
+        ).scalar_one()
 
-            # 2. 목록 내역 조회
-            rows = (
-                await self._session.execute(
-                    select(ItemEventModel)
-                    .where(ItemEventModel.item_id == item_id)
-                    .order_by(ItemEventModel.created_at, ItemEventModel.id)
-                    .limit(size)
-                    .offset((page-1)*size)
-                )
-            ).scalars()
-            return [_event_to_domain(row) for row in rows], total
+        # 2. 목록 내역 조회
+        rows = (
+            await self._session.execute(
+                select(ItemEventModel)
+                .where(ItemEventModel.item_id == item_id)
+                .order_by(ItemEventModel.created_at, ItemEventModel.id)
+                .limit(size)
+                .offset((page-1)*size)
+            )
+        ).scalars()
+        return [_event_to_domain(row) for row in rows], total
 
 
-        # [조회] 특정 소유자의 판매 예약 아이템 조회 (회원탈퇴 점검용)
-        async def has_listed_items(self, owner_id: int) -> bool:
-            result = await self._session.execute(
-                select(
-                    exists().where(
-                        InventoryItemModel.owner_id == owner_id,
-                        InventoryItemModel.status == ItemStatus.LISTED,
-                    )
+    # [조회] 특정 소유자의 판매 예약 아이템 조회 (회원탈퇴 점검용)
+    async def has_listed_items(self, owner_id: int) -> bool:
+        result = await self._session.execute(
+            select(
+                exists().where(
+                    InventoryItemModel.owner_id == owner_id,
+                    InventoryItemModel.status == ItemStatus.LISTED,
                 )
             )
-            return result.scalar_one()
+        )
+        return result.scalar_one()
