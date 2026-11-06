@@ -8,6 +8,131 @@
 - 규칙 판정을 여기서 if-else로 하지 않는다 (도메인에 맡긴다)
 - 로그는 logging.getLogger(__name__)로 남긴다 (설정은 팀 공통 shared.core.logging_config가 한다)
 - 저장 성공 로그는 commit 성공 후에 남긴다
+- 읽기 메서드는 commit하지 않는다. 지급(grant_item)만 저장 뒤에 commit한다
 - 오류 로그는 팀 공통 핸들러가 남기므로 여기서 중복해서 남기지 않는다. 토큰·비밀번호·요청 본문은 남기지 않는다
 - FastAPI와 SQLAlchemy의 세부 사항을 모른다
 """
+
+import logging
+from datetime import datetime
+
+from inventory.application.contracts import (
+    DefinitionRepository,
+    ItemRepository, 
+    UnitOfWork, 
+    UserLookup
+)
+from inventory.application.dto import DefinitionInfo, ItemInfo
+from inventory.domain.enums import ItemOrigin
+from inventory.domain.exceptions import (
+    DefinitionNotFoundError,
+    ItemNotFoundError,
+    OwnerNotFoundError
+)
+from inventory.domain.inventory_item import InventoryItem
+from inventory.domain.item_definition import ItemDefinition
+
+# 성공 로그
+logger = logging.getLogger(__name__)
+
+# 도메인 객체 → DTO
+def _to_definition_info(definition: ItemDefinition) -> DefinitionInfo:
+    return DefinitionInfo(
+        id=definition.id,
+        code=definition.code,
+        name=definition.name,
+        category=definition.category.value,
+        rarity=definition.rarity.value,
+        icon=definition.icon,
+        start_price=definition.start_price,
+        description=definition.description,
+        weight=definition.weight,
+        fishable=definition.fishable,
+    )
+
+# 도메인 객체 → DTO
+def _to_item_info(item: InventoryItem) -> ItemInfo:
+    return ItemInfo(
+        id=item.id,
+        definition=_to_definition_info(item.definition),
+        owner_id=item.owner_id,
+        status=item.status.value,
+        origin=item.origin.value,
+        acquired_at=item.acquired_at,
+        resale_available_at=item.resale_available_at,
+    )
+
+# 의존성 주입
+class InventoryService:
+
+    def __init__(
+        self,
+        items: ItemRepository,
+        definitions: DefinitionRepository,
+        user_lookup: UserLookup,
+        unit_of_work: UnitOfWork
+    ) -> None:
+        self._items = items
+        self._definitions = definitions
+        self._user_lookup = user_lookup
+        self._unit_of_work = unit_of_work
+
+    # 내 아이템 목록
+    async def list_my_items(
+            self, owner_id: int, *, status=None, category=None, rarity=None, sort: str = 'acquired_desc', page: int = 1, size: int = 20
+    ) -> tuple[list[ItemInfo], int]:
+        items, total = await self._items.find_by_owner(
+            owner_id, status=status, category=category, rarity=rarity, sort=sort, page=page, size=size
+        )
+        return [_to_item_info(item) for item in items], total
+
+    # 내 아이템 상세
+    async def get_my_item(self, owner_id: int, item_id: int) -> ItemInfo:
+        item = await self._items.find_by_id(item_id)
+        if item is None or item.owner_id != owner_id:
+            raise ItemNotFoundError()
+        return _to_item_info(item)
+
+    # 카탈로그 목록
+    async def list_definitions(
+        self, *, category=None, rarity=None, sort: str = 'rarity_desc',
+        page: int = 1, size: int = 20,
+    ) -> tuple[list[DefinitionInfo], int]:
+        definitions, total = await self._definitions.find_all(
+            category=category, rarity=rarity, sort=sort, page=page, size=size
+        )
+        return [_to_definition_info(definition) for definition in definitions], total
+
+    async def get_definition(self, definition_id: int) -> DefinitionInfo:
+        definition = await self._definitions.find_by_id(definition_id)
+        if definition is None:
+            raise DefinitionNotFoundError()
+        return _to_definition_info(definition)
+
+    # 아이템 지급 (저장 후 flush가 아닌 commit) 
+    async def grant_item(
+            self, definition_id: int, owner_id: int, origin: ItemOrigin, now:datetime, actor_id: int | None=None
+    ) -> ItemInfo:
+
+        # 1. 카탈로그가 있는지 
+        definition = await self._definitions.find_by_id(definition_id)
+        if definition is None:
+            raise DefinitionNotFoundError()
+
+        # 2. 활성 사용자인지
+        if owner_id not in await self._user_lookup.find_active_user_ids([owner_id]):
+            raise OwnerNotFoundError()
+
+        # 3. 규칙에 따라 아이탬 지급
+        item = InventoryItem.grant(definition, owner_id, origin, now, actor_id=actor_id)
+
+        # 4. 저장
+        await self._items.save(item)
+        await self._unit_of_work.commit()
+
+        # 5. 성공 로그
+        logger.info(
+            'item_granted item_id=%s definition_id=%s owner_id=%s origin=%s',
+            item.id, definition.id, owner_id, origin.value
+        )
+        return _to_item_info(item)
