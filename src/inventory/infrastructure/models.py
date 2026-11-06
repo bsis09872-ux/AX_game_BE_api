@@ -7,7 +7,7 @@
 - 시각 컬럼은 시간대가 있는 UTC 값이다
 - 도메인 객체와 이 모델 사이의 변환은 repositories.py가 맡는다
 - owner_id, from_owner_id, to_owner_id, actor_id는 users.id를 가리키는 FK다. 사용자가 남아 있는 동안은 지울 수 없다 (회원 탈퇴는 deleted_at으로 소프트 삭제)
-- users 모델을 import해서 같은 Base에 등록한다 (FK가 가리키는 테이블이 create_all에 같이 잡히게 한다)
+- users 테이블 등록은 앱을 조립하는 main.py가 한다. 이 파일은 다른 도메인의 모델을 import하지 않고 FK 문자열("users.id")만 쓴다
 - inventory_items.updated_at은 ORM이 행을 수정할 때마다 DB 시각으로 바뀐다 (onupdate)
 """
 
@@ -31,8 +31,6 @@ from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database import Base
-
-from users.infrastructure.models import UserModel # FK 연결용
 
 class ItemDefinitionModel(Base):
     # 테이블 이름 지정
