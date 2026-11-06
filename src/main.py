@@ -4,6 +4,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from database import Base, engine
+# import inventory.infrastructure.models
+
 from shared.core.exception_handlers import register_exception_handlers
 from shared.core.logging_config import setup_logging
 
