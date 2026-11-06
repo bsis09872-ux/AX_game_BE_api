@@ -163,8 +163,7 @@ async def session_status(
     # 서명, 만료, 세션 폐기와 활성 회원 여부를 검증하고 갱신 예약용 시간만 반환한다.
     claims = await service.authenticate(request.cookies.get("access_token", ""))
     now = datetime.now(timezone.utc)
-    # 세션 ID 없는 이전 토큰은 JWT 만료를 로그인 종료 시각으로 사용한다.
-    session_expires_at = claims.session_expires_at or claims.expires_at
+    session_expires_at = claims.session_expires_at
 
     return JSONResponse(
         {
@@ -217,7 +216,7 @@ async def logout(
         except AuthenticationError:
             pass
 
-    # 남아 있는 access token도 폐기한다. 이전 버전의 세션 ID 없는 토큰도 처리한다.
+    # access cookie만 남아 있어도 연결된 로그인 세션을 폐기한다.
     if access_token:
         try:
             await service.logout(access_token)

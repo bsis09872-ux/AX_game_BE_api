@@ -23,14 +23,14 @@ class JwtTokenCodec(TokenCodec):
         self._issuer = "ax-game-be-api"
         self._audience = "ax-game-client"
 
-    def issue(self, user_id: int, session_id: UUID | None = None) -> IssuedToken:
+    def issue(self, user_id: int, session_id: UUID) -> IssuedToken:
         now = datetime.now(timezone.utc)
         token = jwt.encode(
             {
                 "sub": str(user_id), "jti": str(uuid4()),
                 "iat": now, "exp": now + timedelta(seconds=self._ttl_seconds),
                 "iss": self._issuer, "aud": self._audience, "token_type": "access",
-                **({"sid": str(session_id)} if session_id is not None else {}),
+                "sid": str(session_id),
             },
             self._secret, algorithm="HS256",
         )
@@ -41,7 +41,7 @@ class JwtTokenCodec(TokenCodec):
             payload = jwt.decode(
                 token, self._secret, algorithms=["HS256"],
                 issuer=self._issuer, audience=self._audience,
-                options={"require": ["sub", "jti", "iat", "exp", "iss", "aud", "token_type"]},
+                options={"require": ["sub", "jti", "sid", "iat", "exp", "iss", "aud", "token_type"]},
             )
             # 서명만으로 DB 식별자와 시간 필드의 형식까지 보장되지는 않는다.
             subject = payload["sub"]
@@ -55,12 +55,12 @@ class JwtTokenCodec(TokenCodec):
                 raise ValueError("Invalid token lifetime")
             if not isinstance(payload["jti"], str):
                 raise ValueError("Invalid token identifier")
-            if "sid" in payload and not isinstance(payload["sid"], str):
+            if not isinstance(payload["sid"], str):
                 raise ValueError("Invalid session identifier")
             return TokenClaims(
                 user_id=int(subject), jti=UUID(payload["jti"]),
                 expires_at=datetime.fromtimestamp(payload["exp"], timezone.utc),
-                session_id=UUID(payload["sid"]) if "sid" in payload else None,
+                session_id=UUID(payload["sid"]),
             )
         except (jwt.InvalidTokenError, ValueError, TypeError, OverflowError, OSError) as exc:
             raise InvalidTokenError() from exc

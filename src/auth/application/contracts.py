@@ -55,16 +55,9 @@ class UserReader(Protocol):
 
 
 class TokenCodec(Protocol):
-    def issue(self, user_id: int, session_id: UUID | None = None) -> IssuedToken: ...
+    def issue(self, user_id: int, session_id: UUID) -> IssuedToken: ...
 
     def decode(self, token: str) -> TokenClaims: ...
-
-
-class RevokedTokenRepository(Protocol):
-    async def contains(self, jti: UUID) -> bool: ...
-
-    # 동일 토큰의 반복 폐기는 성공으로 취급한다. commit은 포함하지 않는다.
-    async def revoke(self, claims: TokenClaims) -> None: ...
 
 
 class Transaction(Protocol):

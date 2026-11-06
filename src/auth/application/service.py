@@ -1,11 +1,10 @@
-# 회원가입 저장, 로그인 토큰 발급, 인증 확인과 토큰 폐기를 조율한다.
+# 회원가입 저장, 로그인 토큰 발급, 인증 확인과 세션 폐기를 조율한다.
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from auth.application.contracts import (
     PasswordHasher,
-    RevokedTokenRepository,
     TokenCodec,
     Transaction,
     UserCreator,
@@ -29,7 +28,6 @@ class AuthService:
         user_creator: UserCreator,
         user_reader: UserReader,
         token_codec: TokenCodec,
-        revoked_tokens: RevokedTokenRepository,
         transaction: Transaction,
         sessions: SessionRepository,
         refresh_codec: RefreshTokenCodec,
@@ -39,7 +37,6 @@ class AuthService:
         self.user_creator = user_creator
         self.user_reader = user_reader
         self.token_codec = token_codec
-        self.revoked_tokens = revoked_tokens
         self.transaction = transaction
         if not 30 <= refresh_ttl_seconds <= 2592000:
             raise ValueError("REFRESH_TTL_SECONDS는 30~2592000 사이여야 합니다.")
@@ -110,29 +107,27 @@ class AuthService:
 
     async def authenticate(self, token: str) -> TokenClaims:
         claims = self.token_codec.decode(token)
-        if await self.revoked_tokens.contains(claims.jti):
+        session = await self.sessions.find(claims.session_id)
+        if (session is None or session.user_id != claims.user_id
+                or session.revoked_at is not None
+                or session.expires_at <= datetime.now(timezone.utc)):
             raise InvalidTokenError()
-        if claims.session_id is not None:
-            session = await self.sessions.find(claims.session_id)
-            if (session is None or session.user_id != claims.user_id
-                    or session.revoked_at is not None
-                    or session.expires_at <= datetime.now(timezone.utc)):
-                raise InvalidTokenError()
-            claims = replace(claims, session_expires_at=session.expires_at)
+        claims = replace(claims, session_expires_at=session.expires_at)
         user = await self.user_reader.find_by_id(claims.user_id)
         if user is None or not user.is_active:
             raise InvalidTokenError()
         return claims
 
     async def logout(self, token: str) -> None:
-        # 서명과 만료는 검증하되 이미 폐기한 토큰도 재시도할 수 있다.
+        # 서명과 만료는 검증하되 이미 폐기한 세션의 로그아웃도 재시도할 수 있다.
         claims = self.token_codec.decode(token)
+        session = await self.sessions.find(claims.session_id)
+        if session is None or session.user_id != claims.user_id:
+            raise InvalidTokenError()
         user = await self.user_reader.find_by_id(claims.user_id)
         if user is None:
             raise InvalidTokenError()
-        await self.revoked_tokens.revoke(claims)
-        if claims.session_id is not None:
-            await self.sessions.revoke(claims.session_id, datetime.now(timezone.utc))
+        await self.sessions.revoke(claims.session_id, datetime.now(timezone.utc))
         await self.transaction.commit()
 
     async def logout_session(self, refresh_token: str) -> None:
