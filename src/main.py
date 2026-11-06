@@ -4,6 +4,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from database import Base, engine
+
+# 모델 등록 대비 주석 / 공통 모듈 생성 시 삭제하고 메인에서 사용 시 활성화한다.
+# import users.infrastructure.models
+# import inventory.infrastructure.models
+
 from shared.core.exception_handlers import register_exception_handlers
 from shared.core.logging_config import setup_logging
 
