@@ -38,8 +38,8 @@ class AuthService:
         self.token_codec = token_codec
         self.revoked_tokens = revoked_tokens
         self.transaction = transaction
-        if not 300 <= refresh_ttl_seconds <= 2592000:
-            raise ValueError("REFRESH_TTL_SECONDS는 300~2592000 사이여야 합니다.")
+        if not 30 <= refresh_ttl_seconds <= 2592000:
+            raise ValueError("REFRESH_TTL_SECONDS는 30~2592000 사이여야 합니다.")
         self.sessions = sessions
         self.refresh_codec = refresh_codec
         self.refresh_ttl_seconds = refresh_ttl_seconds

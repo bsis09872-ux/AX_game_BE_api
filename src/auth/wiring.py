@@ -22,8 +22,8 @@ def initialize_auth() -> None:
 
 def get_refresh_ttl_seconds() -> int:
     ttl = int(os.environ.get("REFRESH_TTL_SECONDS", "604800"))
-    if not 300 <= ttl <= 2592000:
-        raise ValueError("REFRESH_TTL_SECONDS는 300~2592000 사이여야 합니다.")
+    if not 30 <= ttl <= 2592000:
+        raise ValueError("REFRESH_TTL_SECONDS는 30~2592000 사이여야 합니다.")
     return ttl
 
 
