@@ -1,43 +1,36 @@
-# 서비스 (작업 순서 지휘)
+# auction / application
 
-### 가능한 폴더 내 파일 구조
-1. service.py
-- 등록/입찰/시작/마감 흐름 지휘
+등록·입찰·취소·정산의 실행 순서를 조율한다. 현재 서비스 파일은 구현 전 작업 주석이다.
 
-# 생성자로 받는 것:
-#   ListingRepository, TradeRepository
-#   + 인벤토리 / 지갑 / 유저 쪽 기능 (각 도메인의 Repository 인터페이스 또는 Service)
+## 파일 역할
 
-# [매물 등록]
-#   ① 인벤토리 아이템 조회 → 없으면 404
-#   ② 소유자 == 요청자?            아니면 403
-#   ③ 상태가 OWNED?                아니면 409
-#   ④ resale_available_at 지났나?  아니면 400
-#   ⑤ Listing 엔티티 생성 (QUEUED, start_price는 item_definitions에서)
-#   ⑥ 인벤토리 아이템 → LISTED,  item_event(LISTED) 기록
-#   ⑦ 같은 종류에 진행 중 매물이 없으면 바로 공개 시작? (대기열 정책, 확인 필요)
+- `listings/service.py`: 매물 등록·조회·입찰·취소.
+- `trades/service.py`: 내 낙찰·판매 내역과 참여 제한 상태 조회.
+- [TO DO] `contract.py`: 외부 도메인 연결 인터페이스 정의.
+- [TO DO] `auction_service.py`: 마감·정산·Trade 생성·제한 상태 갱신·다음 매물 공개.
 
-# [입찰]
-#   ① 매물을 "잠금 조회"
-#   ② 입찰자의 auction_blocked_until 확인 → 제한 중이면 403
-#   ③ 엔티티의 입찰 메서드 호출 (규칙은 엔티티가 판단)
-#   ④ 지갑: 새 입찰자 예약금 확보 / 직전 입찰자 예약금 해제
-#       ("예약금 포함 총잔액"이라는 ERD 주석 → 예약 방식 설계 확인 필요)
+## 정산 순서
 
-# [마감] — 사용자 요청이 아니라 스케줄러(주기 작업)가 호출하는 기능
-#   ① 마감 지난 BIDDING 매물을 잠금 조회
-#   ② 엔티티 마감 메서드
-#   ③ SOLD이면:
-#       - 판매자·구매자 이름, 아이템 이름 조회 → Trade 생성 (스냅샷)
-#       - 지갑: 구매자 → 판매자 금액 이동
-#       - 인벤토리: 소유자 변경, 상태 OWNED, origin=TRADE, resale_available_at 설정
-#       - item_event(TRANSFERRED) 기록 (listing_id, trade_id 포함)
-#       - 구매자 auction_purchase_count 증가 (+ 제한 조건 넘으면 blocked_until 설정)
-#   ④ FAILED이면:
-#       - 인벤토리 아이템 → OWNED,  item_event(UNLISTED)
-#   ⑤ 같은 종류의 다음 대기 매물 공개 시작
+1. 합의한 잠금 순서로 매물과 사용자·자산 상태를 조회하고 종료 여부를 재검사한다.
+2. 입찰자가 없으면 유찰과 아이템 예약 해제를 처리한다.
+3. 입찰자가 있으면 재화·아이템 이전 후 SOLD 처리와 Trade 저장을 진행한다.
+4. 이번 Trade.completed_at을 포함하여 B 정책을 계산하고 User 제한 상태를 갱신한다.
+5. 다음 대기 매물 공개를 조율하고 전체 성공 시 commit한다.
 
+제한 중 기존 입찰이 낙찰돼도 정산한다. 기술적 오류는 전체 rollback하며 무조건 유찰로 바꾸지 않는다.
 
-----
-### 판단해야할 부분
-- 낙찰 이후 거래 생성과 정산 요청을 조율 -> 상위 service 파일 별도로 두어야 하나? 각 애그리거트 안에서 해결?
+## 외부 계약 요청
+
+- [TO DO] User 담당자: `get_for_update_many(user_ids: list[int]) -> dict[int, AuctionUserState]` 제공 협의. 상세 양식은 contract.py 참고.
+- [TO DO] User 담당자: `update_limit(user_id: int, purchase_count: int, blocked_until: datetime | None) -> None` 제공 협의.
+- [TO DO] 두 메서드는 async이며 같은 주입 세션을 사용하고 내부 commit하지 않는 계약이 필요하다. 현재 User Repository에는 없다.
+- [TO DO] inventory 담당자: 예약·예약 해제·소유권 이전의 공개 인터페이스와 실패 예외 합의.
+- [TO DO] wallet 담당자: 잔액 조회·잠금·입출금 계약 합의. 현재 Auction은 최고 입찰액 합산 방식이다.
+- [TO DO][제공 → wallet] `ListingRepository.sum_leading_bids(user_id: int) -> int`: 최고 입찰자로 묶인 금액 합계. 출금·사용 가능 금액 계산에 쓰도록 공유한다.
+- [TO DO] 모든 담당자: 잠금 순서·세션 공유·commit 주체·동시 정산 방식을 합의한다.
+- [TO DO] 앱 담당자: 모델·라우터·마감 실행 등록 요청. Auction 밖 파일은 수정하지 않는다.
+
+## 정책과 응답
+
+- 공통 BusinessRuleError는 현재 400으로 변환된다. 새 예외 체계나 403 분기는 추가하지 않는다.
+- 남은 시간 메시지는 정책 결과를 사용한다. 정책 함수가 HTTP 응답을 만들지 않는다.
