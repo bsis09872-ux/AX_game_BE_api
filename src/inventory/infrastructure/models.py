@@ -6,6 +6,9 @@
 - item_events는 쌓기만 한다. (item_id, created_at) 인덱스를 두고 listing_id, trade_id에는 FK를 걸지 않는다
 - 시각 컬럼은 시간대가 있는 UTC 값이다
 - 도메인 객체와 이 모델 사이의 변환은 repositories.py가 맡는다
+- owner_id, from_owner_id, to_owner_id, actor_id는 users.id를 가리키는 FK다. 사용자가 남아 있는 동안은 지울 수 없다 (회원 탈퇴는 deleted_at으로 소프트 삭제)
+- users 모델을 import해서 같은 Base에 등록한다 (FK가 가리키는 테이블이 create_all에 같이 잡히게 한다)
+- inventory_items.updated_at은 ORM이 행을 수정할 때마다 DB 시각으로 바뀐다 (onupdate)
 """
 
 from datetime import datetime
@@ -28,6 +31,8 @@ from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database import Base
+
+from users.infrastructure.models import UserModel # FK 연결용
 
 class ItemDefinitionModel(Base):
     # 테이블 이름 지정
@@ -77,13 +82,14 @@ class InventoryItemModel(Base):
     # 테이블 컬럼 생성
     id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
     item_definition_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('item_definitions.id', ondelete='RESTRICT'))
-    owner_id: Mapped[int] = mapped_column(BigInteger)
+    # users.id를 가리키는 외래키: 없는 사용자 번호는 저장되지 않는다
+    owner_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.id', ondelete='RESTRICT'))
     status: Mapped[str] = mapped_column(String(10), server_default='OWNED')
     origin: Mapped[str] = mapped_column(String(20))
     acquired_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True))
     resale_available_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
     # 테이블 제약 조건
     __table_args__ = (
         CheckConstraint(
@@ -105,9 +111,9 @@ class ItemEventModel(Base):
     id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
     item_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('inventory_items.id', ondelete='RESTRICT'))
     event_type: Mapped[str] = mapped_column(String(20))
-    from_owner_id: Mapped[int | None] = mapped_column(BigInteger)
-    to_owner_id: Mapped[int] = mapped_column(BigInteger)
-    actor_id: Mapped[int | None] = mapped_column(BigInteger)
+    from_owner_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey('users.id', ondelete='RESTRICT'))
+    to_owner_id: Mapped[int] = mapped_column(BigInteger, ForeignKey('users.id', ondelete='RESTRICT'))
+    actor_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey('users.id', ondelete='RESTRICT'))
     listing_id: Mapped[int | None] = mapped_column(BigInteger)
     trade_id: Mapped[int | None] = mapped_column(BigInteger)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
