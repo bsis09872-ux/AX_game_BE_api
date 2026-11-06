@@ -117,7 +117,7 @@ class ItemDefinitionRepository:
     # [추가] 도메인 객체 추가
     async def save(self, definition: ItemDefinition) -> ItemDefinition:
 
-        # (INSERT) id가 없으면 아직 DB에 없는 아이템 카탈로그이기 때문에 행을 새로 만든다 
+        # (INSERT) id가 없으면 아직 DB에 없는 레코드이기 때문에 행을 새로 만든다 
         if definition.id is None:
             row = ItemDefinitionModel(
                 code=definition.code,
@@ -135,7 +135,7 @@ class ItemDefinitionRepository:
             definition.id = row.id # DB가 받을 때 지정한 id 값을 도메인 객체에도 넣어준다 
             return definition
 
-        # (UPDATE) id가 있으면 이미 있는 아이템 카탈로그이기 때문에 행을 찾아 값만 바꾼다 
+        # (UPDATE) id가 있으면 이미 있는 레코드이기 때문에 행을 찾아 값만 바꾼다 
         row = await self._session.get(ItemDefinitionModel, definition.id)
         if row is None:
             raise DefinitionNotFoundError() # id가 있는데 None이면 당연히 에러
@@ -251,15 +251,15 @@ class InventoryItemRepository:
 
     # [조회] 특정 소유자의 아이템 목록 조회
     async def find_by_owner(
-            self,
-            owner_id: int,
-            *,
-            status=None,
-            category=None,
-            rarity=None,
-            sort='acquired_desc',
-            page=1,
-            size=20,
+        self,
+        owner_id: int,
+        *,
+        status=None,
+        category=None,
+        rarity=None,
+        sort='acquired_desc',
+        page=1,
+        size=20,
     ) -> tuple[list[InventoryItem], int]:
 
         # 1. 조건 초기화, 특정 소유자의 아이템 목록이기 때문에 owner_id는 무조건 있어야 한다
@@ -292,5 +292,93 @@ class InventoryItemRepository:
                 .limit(size)
                 .offset((page-1)*size)
             )
-        ).all()
+        ).all() # 개별 아이템은 행조합 객체이기 때문에 all로 다 받는다 
         return [_item_to_domain(item_row, definition_row) for item_row, definition_row in rows], total
+
+
+    # [추가] 개별 아이템 및 아이템 이력 도메인 객체 추가
+    async def save(self, item:InventoryItem) -> InventoryItem:
+
+        # (INSERT) id가 없으면 아직 DB에 없는 레코드이기 때문에 행을 새로 만든다
+        if item.id is None:
+            row = InventoryItemModel(
+                item_definition_id=item.definition.id,
+                owner_id=item.owner_id,
+                status=item.status,
+                origin=item.origin,
+                acquired_at=item.acquired_at,
+                resale_available_at=item.resale_available_at,
+            )
+            self._session.add(row)
+            # 아이템 이력 도메인 객체가 item.id를 가리켜야 하므로 먼저 flush
+            await self._session.flush()
+            item.id = row.id
+
+        # (UPDATE) id가 있으면 이미 있는 레코드이기 때문에 행을 찾아 값만 바꾼다 
+        else:
+            row = await self._session.get(InventoryItemModel, item.id)
+            if row is None:
+                raise ItemNotFoundError()
+            row.owner_id=item.owner_id
+            row.status=item.status
+            row.origin=item.origin
+            row.acquired_at=item.acquired_at
+            row-resale_available_at=item.resale_available_at
+            row.updated_at=func.now()
+
+        # (INSERT) 아이템에 그동안 쌓인 이력을 꺼내서 추가 / item_event 도메인 참조
+        for event in item.pop_events():
+            self._session.add(
+                ItemEventModel(
+                    item_id=item.id,
+                    event_type=event.event_type,
+                    from_owner_id=event.from_owner_id,
+                    to_owner_id=event.to_owner_id,
+                    actor_id=event.actor_id,
+                    listing_id=event.listing_id,
+                    trade_id=event.trade_id,
+                    created_at=event.created_at,
+                )
+            )
+            await self._session.flush() # DB에 flush / commit은 서비스가 한다 
+            return item
+
+
+        # [조회] 아이템 이력 목록 조회 (오래된순)
+        async def find_events(
+            self, item_id: int, *, page=1, size=20
+        ) -> tuple[list[ItemEvent], int]:
+            
+            # 1. total 조회 (총 몇 페이지가 나올지 프론트가 판단할 때 사용 가능)
+            total = (
+                await self._session.execute(
+                    select(func.count())
+                    .select_from(ItemEventModel)
+                    .where(ItemEventModel.item_id == item_id)
+                )
+            ).scalar_one()
+
+            # 2. 목록 내역 조회
+            rows = (
+                await self._session.execute(
+                    select(ItemEventModel)
+                    .where(ItemEventModel.item_id == item_id)
+                    .order_by(ItemEventModel.created_at, ItemEventModel.id)
+                    .limit(size)
+                    .offset((page-1)*size)
+                )
+            ).scalars()
+            return [_event_to_domain(row) for row in rows], total
+
+
+        # [조회] 특정 소유자의 판매 예약 아이템 조회 (회원탈퇴 점검용)
+        async def has_listed_items(self, owner_id: int) -> bool:
+            result = await self._session.execute(
+                select(
+                    exists().where(
+                        InventoryItemModel.owner_id == owner_id,
+                        InventoryItemModel.status == ItemStatus.LISTED,
+                    )
+                )
+            )
+            return result.scalar_one()
