@@ -25,11 +25,15 @@ class User:
         if re.fullmatch(string=login_id, pattern=r"[a-z0-9_]{4,50}") is None:
             raise InvalidUserError("로그인 ID는 소문자, 숫자, 밑줄로 4~50자여야 합니다.")
 
+        # 거래 기록의 이름 스냅샷 길이와 맞추며 공백뿐인 표시 이름은 허용하지 않는다.
+        if not display_name.strip() or not 2 <= len(display_name) <= 50:
+            raise InvalidUserError("표시 이름은 공백이 아닌 문자를 포함한 2~50자여야 합니다.")
+
         # 해시의 누락만 검사하고 원본은 보존한다. 실제 해싱은 별도 구현이 담당한다.
         if not password_hash.strip():
             raise InvalidUserError("비밀번호 해시가 필요합니다.")
 
-        # 관리자 역할은 회원 등급과 다르며 가입 요청에서 임의 지정하지 못하게 한다.
+        # 도메인은 역할의 허용 값을 검사한다. 가입 요청에서의 역할 지정은 입력 스키마가 막는다.
         if role not in ("USER", "ADMIN"):
             raise InvalidUserError("유효하지 않은 회원 역할입니다.")
 
@@ -48,3 +52,13 @@ class User:
     # 탈퇴 시각이 없으면 활성 회원이다. 인증과 권한 검사는 이 상태를 참고한다.
     def is_active(self) -> bool:
         return self.deleted_at is None
+
+    # 제한 종료 시각 이전에만 입찰 제한으로 판단한다. 탈퇴 상태는 별도 검사한다.
+    def is_auction_blocked(self, now: datetime) -> bool:
+        if now.utcoffset() is None:
+            raise ValueError("현재 시각에 시간대 정보가 없습니다.")
+        if self.auction_blocked_until is None:
+            return False
+        if self.auction_blocked_until.utcoffset() is None:
+            raise RuntimeError("입찰 제한 종료 시각에 시간대 정보가 없습니다.")
+        return now < self.auction_blocked_until

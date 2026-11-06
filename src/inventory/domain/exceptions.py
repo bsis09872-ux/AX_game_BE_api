@@ -3,13 +3,13 @@
 - 업무 규칙을 어기면 도메인이 스스로 던지는 예외들이다
 - 팀 공통 shared.core.exceptions의 분류를 상속한다: BusinessRuleError(400), NotFoundError(404), ConflictError(409)
 - 각 예외는 code와 message를 클래스에 적는다. 상태 코드는 팀 공통 핸들러가 부모 분류로 정한다
-- 팀 공통에 없는 상태 코드(403 등)는 팀 공통 파일(shared.core)에 분류를 추가해서 쓴다 (예: ForbiddenError)
+- 팀 공통에 없는 상태 코드는 팀 공통 파일(shared.core)에 분류를 추가해서 쓴다
 - 이름은 "의미 + Error" 형식이다 (예: NotOwnerError)
 - 예외의 글자(메시지)로 분기하지 않고 예외 클래스로 구분한다
 - FastAPI, Pydantic, SQLAlchemy, logging을 import하지 않는다 (shared.core.exceptions는 순수 파이썬이라 import해도 된다)
 """
 
-from shared.core.exceptions import AppError, BusinessRuleError, ConflictError, NotFoundError
+from shared.core.exceptions import BusinessRuleError, ConflictError, NotFoundError, ForbiddenError
 
 # 400: 카탈로그를 만들거나 고칠 때 규칙을 어긴 경우
 class ItemRuleViolationError(BusinessRuleError):
@@ -41,7 +41,12 @@ class DefinitionNotFoundError(NotFoundError):
     code: str = 'DEFINITION_NOT_FOUND'
     message: str = '아이템 카탈로그를 찾을 수 없습니다.'
 
+# 404: 아이템을 받을 사용자가 없거나 탈퇴한 경우
+class OwnerNotFoundError(NotFoundError):
+    code: str = 'OWNER_NOT_FOUND'
+    message: str = '아이템을 받을 사용자를 찾을 수 없습니다.'
+
 # 403: 소유자가 아닌 사람이 아이템 상태 변경을 시도하는 경우
-class NotOwnerError(AppError):
+class NotOwnerError(ForbiddenError):
     code: str = 'NOT_OWNER'
     message: str = '해당 아이템 소유자가 아닙니다.'

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block head %}
+    {{ super() }}
+    {# 인증 화면에만 쿠키 복구와 세션 만료 처리를 연결한다. #}
+    <script src="{{ url_for('static', path='/auth-session.js') }}" defer></script>
+{% endblock %}
+
+{% block body_attributes %}
+    data-auth-page="{% block page %}{% endblock %}"
+    data-resume="{{ 'true' if resume else 'false' }}"
+{% endblock %}
+
+{% block brand %}
+    <a href="{{ '/me' if user is defined else '/login' }}">{{ super() }}</a>
+{% endblock %}
+
+{% block navigation %}
+    <nav class="nav" aria-label="주 메뉴">
+        {% if user is defined %}
+            <a class="on" href="/me" aria-current="page">내 정보</a>
+        {% else %}
+            <a
+                href="/login"
+                {% if self.page() == "login" %}class="on" aria-current="page"{% endif %}
+            >로그인</a>
+            <a
+                href="/register"
+                {% if self.page() == "register" %}class="on" aria-current="page"{% endif %}
+            >회원가입</a>
+        {% endif %}
+    </nav>
+{% endblock %}
+
+{% block header_status %}
+    {% if user is defined %}
+        <div class="hud"><span class="user-name">{{ user.display_name }}</span></div>
+    {% endif %}
+{% endblock %}
