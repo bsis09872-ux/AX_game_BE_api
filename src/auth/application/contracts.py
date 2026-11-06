@@ -1,26 +1,64 @@
-# auth에서 사용하는 해싱과 회원 생성의 계약 및 회원 생성 결과를 정의한다.
-from dataclasses import dataclass
+# 인증 서비스가 사용하는 외부 기능의 계약을 정의한다.
 from datetime import datetime
 from typing import Protocol
+from uuid import UUID
 
-# 저장 후 발급된 ID와 가입 시각을 전달하며 비밀번호 정보는 제외한다.
-@dataclass(frozen=True)
-class CreatedUser:
-    id: int
-    login_id: str
-    created_at: datetime
+from auth.application.dto import (
+    AuthUser,
+    CreatedUser,
+    IssuedToken,
+    LoginSession,
+    RefreshState,
+    TokenClaims,
+)
 
-# 해싱 구현은 비동기 호출로 해시 문자열을 반환한다.
+
+class RefreshTokenCodec(Protocol):
+    def generate(self) -> str: ...
+
+    def digest(self, token: str) -> str: ...
+
+
+class SessionRepository(Protocol):
+    async def create(self, session: LoginSession, token_hash: str) -> None: ...
+
+    async def find(self, session_id: UUID) -> LoginSession | None: ...
+
+    async def find_refresh_for_update(self, token_hash: str) -> RefreshState | None: ...
+
+    async def rotate(
+        self, session_id: UUID, old_hash: str, new_hash: str, used_at: datetime
+    ) -> None: ...
+
+    async def revoke(self, session_id: UUID, now: datetime) -> None: ...
+
+
 class PasswordHasher(Protocol):
-    async def hash(self, password: str) -> str:
-        ...
+    async def hash(self, password: str) -> str: ...
 
-    # 비밀번호 일치 여부를 반환하며 해시 형식 오류와 검증 실패는 예외로 전달한다.
-    async def verify(self, password: str, password_hash: str) -> bool:
-        ...
+    # 비밀번호 불일치는 False, 저장된 해시의 형식 오류는 예외로 전달한다.
+    async def verify(self, password: str, password_hash: str) -> bool: ...
 
-# 회원 생성은 flush까지 수행하며 가입 전체의 commit은 호출자가 결정한다.
-# 중복 로그인 ID는 LoginIdAlreadyExistsError로 전달한다.
+
+# 회원 생성은 flush까지 수행하며 가입 전체의 commit은 인증 서비스가 결정한다.
 class UserCreator(Protocol):
-    async def create_user(self, login_id: str, display_name: str, password_hash: str) ->CreatedUser:
-        ...
+    async def create_user(
+        self, login_id: str, display_name: str, password_hash: str
+    ) -> CreatedUser: ...
+
+
+# 탈퇴 상태를 포함해 조회하며, 없는 회원은 None으로 전달한다.
+class UserReader(Protocol):
+    async def find_by_login_id(self, login_id: str) -> AuthUser | None: ...
+
+    async def find_by_id(self, user_id: int) -> AuthUser | None: ...
+
+
+class TokenCodec(Protocol):
+    def issue(self, user_id: int, session_id: UUID) -> IssuedToken: ...
+
+    def decode(self, token: str) -> TokenClaims: ...
+
+
+class Transaction(Protocol):
+    async def commit(self) -> None: ...

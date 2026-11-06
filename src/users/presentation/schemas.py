@@ -11,7 +11,7 @@ class UserMeResponse(BaseModel):
     login_id: str
     created_at: datetime
     display_name: str
-    # 화면은 이 값으로 운영자 메뉴를 표시하고, API 접근 권한은 서버에서 검사한다.
+    # 화면에 공개하는 역할이며, 이 값의 표시가 서버의 권한 검증을 대신하지 않는다.
     role: Literal["USER", "ADMIN"]
 
     # 저장된 회원의 공개 필드를 응답 형식으로 변환한다.

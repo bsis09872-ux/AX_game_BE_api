@@ -1,18 +1,45 @@
-# AuthService에 비밀번호 해싱 구현과 회원 생성 어댑터를 연결한다.
+# 요청별 DB 세션을 회원 저장소, 로그인 세션 저장소와 트랜잭션에 공유한다.
+from functools import lru_cache
+import os
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.application.service import AuthService
 from auth.infrastructure.password_hasher import PasslibPasswordHasher
+from auth.infrastructure.token_codec import get_token_codec
 from auth.infrastructure.user_creator import UserCreatorAdapter
-
+from auth.infrastructure.user_reader import UserReaderAdapter
 from users.wiring import build_user_service
+from auth.infrastructure.refresh_token_codec import OpaqueRefreshTokenCodec
+from auth.infrastructure.session_repository import SqlAlchemySessionRepository
+
+
+def initialize_auth() -> None:
+    get_token_codec()
+    get_refresh_ttl_seconds()
+
+
+def get_refresh_ttl_seconds() -> int:
+    ttl = int(os.environ.get("REFRESH_TTL_SECONDS", "604800"))
+    if not 30 <= ttl <= 2592000:
+        raise ValueError("REFRESH_TTL_SECONDS는 30~2592000 사이여야 합니다.")
+    return ttl
+
+
+@lru_cache
+def get_password_hasher() -> PasslibPasswordHasher:
+    return PasslibPasswordHasher()
+
 
 def build_auth_service(session: AsyncSession) -> AuthService:
-    # 요청 세션을 users 저장소까지 공유하며 세션 수명은 호출자가 관리한다.
-    user_service = build_user_service(session=session)
-
-    user_creator = UserCreatorAdapter(user_service=user_service)
-
-    password_hasher = PasslibPasswordHasher()
-
-    return AuthService(password_hasher=password_hasher, user_creator=user_creator)
+    user_service = build_user_service(session)
+    return AuthService(
+        password_hasher=get_password_hasher(),
+        user_creator=UserCreatorAdapter(user_service),
+        user_reader=UserReaderAdapter(user_service),
+        token_codec=get_token_codec(),
+        transaction=session,
+        sessions=SqlAlchemySessionRepository(session),
+        refresh_codec=OpaqueRefreshTokenCodec(),
+        refresh_ttl_seconds=get_refresh_ttl_seconds(),
+    )
