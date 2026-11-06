@@ -24,6 +24,11 @@ class ItemRepository(Protocol):
     
     async def find_by_id(self, item_id: int) -> InventoryItem | None:
         ...
+    
+    # ===== 옥션 도메인이 참고할 내용 =====
+    # 행을 잠그고 가져온다 → 잠근 뒤 최신 상태를 돌려준다 → 잠금은 매물 도메인이 커밋하거나 롤백할 때 풀린다
+    async def find_by_id_for_update(self, item_id: int) -> InventoryItem | None:
+        ...    
 
     # 키워드 전용 인자: 이름을 붙여서 넣고 싶을 때
     async def find_by_owner(
