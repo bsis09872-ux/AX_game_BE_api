@@ -48,6 +48,24 @@ class SqlAlchemyWalletRepository(WalletRepository):
             raise WalletNotFoundError()
         return _to_wallet(model)
 
+    async def create(self, user_id: int, balance: int) -> Wallet:
+        model = WalletModel(user_id=user_id, balance=balance)
+        self.session.add(model)
+        await self.session.flush()  # 같은 계정 지갑이 있으면 여기서 PK 위반
+        await self.session.refresh(model)  # server_default인 updated_at 읽기
+        return _to_wallet(model)
+
+    async def lock(self, user_ids: list[int]) -> dict[int, Wallet]:
+        result = await self.session.execute(
+            select(WalletModel)
+            .where(WalletModel.user_id.in_(user_ids))
+            .order_by(WalletModel.user_id)
+            .with_for_update()
+            # 이미 세션에 올라온 객체도 잠근 시점의 값으로 다시 읽는다
+            .execution_options(populate_existing=True)
+        )
+        return {m.user_id: _to_wallet(m) for m in result.scalars()}
+
     async def held_amount(self, user_id: int) -> int:
         statement = select(func.coalesce(func.sum(listings.c.current_bid_amount), 0)).where(
             listings.c.current_bidder_id == user_id,

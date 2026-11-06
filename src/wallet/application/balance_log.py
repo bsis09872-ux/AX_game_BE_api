@@ -14,13 +14,11 @@ import logging
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Literal
+
+# 종류 목록은 도메인(BalanceRecord 계약)이 정한다
+from wallet.domain.service import BalanceEventType
 
 logger = logging.getLogger(__name__)
-
-BalanceEventType = Literal[
-    "INITIAL_GRANT", "PURCHASE_DEBIT", "SALE_CREDIT", "BALANCE_CREDIT", "BALANCE_DEBIT"
-]
 
 
 @dataclass(frozen=True)

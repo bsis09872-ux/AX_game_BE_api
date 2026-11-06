@@ -1,7 +1,7 @@
 """
 1. 회원은 하나의 지갑을 가지고 있다. 
 2. 지갑에 보유하는 금액은 관리자에 의해서 충전이 된다.
-3. 입찰시 금액이 차감되고, 유찰시에 복구된다.
+3. 입찰시 금액이 묶이고, 낙찰 정산때 차감된다.
 4. 금액 변동은 로그로 기록한다.
 """
 
@@ -9,7 +9,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from wallet.domain.exceptions import InsufficientAuthorityError, InsufficientBalanceError
-from wallet.domain.service import BalanceRecord
+from wallet.domain.service import BalanceEventType, BalanceRecord
 
 @dataclass
 class Balance:
@@ -32,23 +32,27 @@ class Wallet:
     updated_at: datetime  # balance가 마지막으로 바뀐 시각
 
 
-    def add_balance(self, amount: int, logger: BalanceRecord):
+    def add_balance(
+        self, amount: int, logger: BalanceRecord, event_type: BalanceEventType = "BALANCE_CREDIT"
+    ):
 
         prev_balance = self.balance.value
 
         self.balance.plus(amount)
 
-        self.logging(prev_balance, logger)
+        self.logging(prev_balance, logger, event_type)
 
-    def subtract_balance(self, amount: int, logger: BalanceRecord):
+    def subtract_balance(
+        self, amount: int, logger: BalanceRecord, event_type: BalanceEventType = "BALANCE_DEBIT"
+    ):
 
         prev_balance = self.balance.value
         self.balance.minus(amount)
 
-        self.logging(prev_balance, logger)
+        self.logging(prev_balance, logger, event_type)
 
-    def logging(self, prev_balance: int, logger: BalanceRecord):
-        logger.logging(self.user_id, prev_balance, self.balance.value)
+    def logging(self, prev_balance: int, logger: BalanceRecord, event_type: BalanceEventType):
+        logger.logging(self.user_id, prev_balance, self.balance.value, event_type)
         
 
 

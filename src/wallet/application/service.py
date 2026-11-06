@@ -22,7 +22,7 @@ class WalletService:
     async def get_wallet(self, user_id) -> Wallet:
         wallet = await self.wallet_repo.get(user_id)
         if not wallet:
-            raise WalletNotFoundError
+            raise WalletNotFoundError()
 
         return wallet
 
@@ -37,6 +37,74 @@ class WalletService:
             available_balance=rules.available_balance(wallet.balance.value, held),
             updated_at=wallet.updated_at,
         )
+
+
+    async def create_wallet(self, user_id: int) -> Wallet:
+        """WALL-06 지갑 생성, 초기 골드 지급.
+
+        AUTH-01 가입 트랜잭션 안에서 user flush 직후 호출한다. commit은 호출자가 하고,
+        commit 성공 뒤 service.logger.flush()로 지급 로그를 남긴다.
+        같은 계정에 두 번 호출하면 PK 위반이 그대로 올라가 가입 전체가 롤백된다.
+        """
+        wallet = await self.wallet_repo.create(user_id, rules.INITIAL_BALANCE)
+        self.logger.logging(user_id, 0, wallet.balance.value, "INITIAL_GRANT")
+        return wallet
+
+    async def check_bid_funds(
+        self,
+        *,
+        bidder_id: int,
+        amount: int,
+        current_bidder_id: int | None,
+        current_bid_amount: int | None,
+    ) -> rules.BidFundsCheck:
+        """WALL-07 입찰 가능 금액 확인 (예약 방식: 검사만, 잔액은 바꾸지 않는다)
+
+        AUCT-01이 매물을 FOR UPDATE로 잠그고 경매 규칙을 검사한 뒤, 매물의 현재 입찰 정보를 넘긴다.
+        입찰자 지갑을 잠가서 같은 사람의 동시 입찰이 예약 합계를 동시에 늘리지 못하게 한다.
+        밀려나는 이전 입찰자 지갑은 잠그지 않는다(사용 가능 금액이 늘기만 하므로).
+        통과하면 listings의 current_bidder_id·current_bid_amount 갱신은 경매 쪽이 한다.
+        실제 차감은 낙찰 정산(WALL-08)에서 한다.
+        """
+        locked = await self.wallet_repo.lock([bidder_id])
+        wallet = locked.get(bidder_id)
+        if wallet is None:
+            raise WalletNotFoundError()
+
+        extra = rules.required_extra(
+            bidder_id=bidder_id,
+            amount=amount,
+            current_bidder_id=current_bidder_id,
+            current_bid_amount=current_bid_amount,
+        )
+        # 잠금 뒤에 읽어야 다른 매물에 대한 내 동시 입찰 결과까지 반영된다
+        held = await self.wallet_repo.held_amount(bidder_id)
+        return rules.check_bid_funds(balance=wallet.balance.value, held_amount=held, extra=extra)
+
+    async def settle_sale(self, *, buyer_id: int, seller_id: int, price: int) -> rules.SettlementAmounts:
+        """WALL-08 낙찰 정산 중 지갑 부분: 구매자 차감, 판매자 지급.
+
+        AUCT-04가 매물을 FOR UPDATE로 잠그고 BIDDING·마감 경과를 확인한 뒤 호출한다.
+        유찰(입찰자 없음)이면 호출하지 않는다. 예약 방식이라 돌려줄 돈이 없다.
+        trades 기록, SOLD 처리, 아이템 이전은 경매 쪽이 한다(담당 확정 전).
+        commit은 호출자가 하고, commit 성공 뒤 service.logger.flush()로 로그를 남긴다.
+        """
+        if buyer_id == seller_id:
+            raise ValueError("판매자와 구매자가 같습니다.")
+
+        # 두 지갑을 user_id 오름차순으로 잠가 교차 정산(A↔B) 데드락을 피한다
+        locked = await self.wallet_repo.lock([buyer_id, seller_id])
+        buyer, seller = locked.get(buyer_id), locked.get(seller_id)
+        if buyer is None or seller is None:
+            raise WalletNotFoundError()
+
+        amounts = rules.settlement_amounts(price=price, buyer_balance=buyer.balance.value)
+        buyer.subtract_balance(amounts.buyer_debit, self.logger, "PURCHASE_DEBIT")
+        seller.add_balance(amounts.seller_credit, self.logger, "SALE_CREDIT")
+
+        await self.wallet_repo.save(buyer_id, buyer.balance.value)
+        await self.wallet_repo.save(seller_id, seller.balance.value)
+        return amounts
 
 
     async def add_balance(self, user_id: int, amount: int):

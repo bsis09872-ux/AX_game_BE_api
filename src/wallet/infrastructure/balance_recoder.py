@@ -5,18 +5,20 @@ balance_log.py 규칙대로 commit 전에는 로그를 쓰지 않는다.
 commit이 실패하면 flush 대신 discard()로 버린다.
 """
 from wallet.application.balance_log import BalanceChange, log_balance_changes
-from wallet.domain.service import BalanceRecord
+from wallet.domain.service import BalanceEventType, BalanceRecord
 
 
 class BalanceRecordImpl(BalanceRecord):
     def __init__(self) -> None:
         self._pending: list[BalanceChange] = []
 
-    def logging(self, user_id: int, prev_balance: int, current_balance: int):
+    def logging(
+        self, user_id: int, prev_balance: int, current_balance: int, event_type: BalanceEventType
+    ):
         amount = current_balance - prev_balance
         self._pending.append(
             BalanceChange(
-                event_type="BALANCE_CREDIT" if amount >= 0 else "BALANCE_DEBIT",
+                event_type=event_type,
                 user_id=user_id,
                 balance_before=prev_balance,
                 amount=amount,

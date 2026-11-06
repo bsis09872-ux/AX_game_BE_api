@@ -15,7 +15,7 @@ from wallet.domain.exceptions import BuyerBalanceShortError, InsufficientBalance
 FEE_PERCENT = 0
 
 # 가입 시 지급하는 초기 골드 (WALL-06). 초안 값, 회의에서 확정한다.
-INITIAL_BALANCE = 100_000
+INITIAL_BALANCE = 3_000
 
 
 def available_balance(balance: int, held_amount: int) -> int:
