@@ -30,7 +30,14 @@
                 {% if user is defined %}
                     <a class="on" href="/me" aria-current="page">내 정보</a>
                 {% else %}
-                    <a class="on" href="/login" aria-current="page">로그인</a>
+                    <a
+                        href="/login"
+                        {% if self.page() == "login" %}class="on" aria-current="page"{% endif %}
+                    >로그인</a>
+                    <a
+                        href="/register"
+                        {% if self.page() == "register" %}class="on" aria-current="page"{% endif %}
+                    >회원가입</a>
                 {% endif %}
             </nav>
 

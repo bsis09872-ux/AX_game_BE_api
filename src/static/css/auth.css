@@ -49,6 +49,26 @@
     border-left: var(--px) solid var(--pink);
 }
 
+.auth-success {
+    padding: 12px;
+    margin: 0 0 20px;
+    color: var(--text);
+    background: var(--night);
+    border-left: var(--px) solid var(--green);
+}
+
+.auth-link {
+    margin: 20px 0 0;
+    text-align: center;
+    color: var(--muted);
+}
+
+.field-help {
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: var(--muted);
+}
+
 .profile-details {
     display: grid;
     grid-template-columns: 110px minmax(0, 1fr);

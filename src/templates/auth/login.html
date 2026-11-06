@@ -12,6 +12,10 @@
         <h1 id="login-title" class="title-tab">로그인</h1>
 
         <div class="panel auth-panel">
+            {% if registered %}
+                <p class="auth-success" role="status">회원가입이 완료됐습니다. 로그인해 주세요.</p>
+            {% endif %}
+
             {# refresh cookie가 있으면 스크립트가 기존 로그인 복구를 시도한다. #}
             <p id="session-message" class="session-message" role="status">
                 {%- if resume -%}
@@ -51,6 +55,8 @@
 
                 <button class="btn big auth-submit" type="submit">로그인</button>
             </form>
+
+            <p class="auth-link">계정이 없다면 <a href="/register">회원가입</a></p>
         </div>
     </section>
 {% endblock %}

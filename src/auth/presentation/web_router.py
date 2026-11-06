@@ -2,28 +2,34 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from pydantic import ValidationError
 
 from auth.application.service import AuthService
 from auth.domain.exceptions import AuthenticationError
 from auth.presentation.dependencies import get_auth_service
+from auth.presentation.schemas import RegisterUserRequest
 from auth.presentation.web_dependencies import (
     clear_auth_cookies,
     require_web_origin,
     set_auth_cookies,
 )
+from shared.core.exceptions import BusinessRuleError, ConflictError
 
 router = APIRouter()
 
 
 def login_page(request: Request, *, error: str = "", status_code: int = 200):
     # 쿠키가 있어도 인증 성공으로 판단하지 않는다. 화면에서 서버에 복구를 요청한다.
-    # 로그인 입력 오류가 있으면 자동 이동보다 오류 안내를 우선한다.
+    # 오류나 가입 완료 안내가 있으면 이전 쿠키로 자동 이동하지 않고 로그인 폼을 보여준다.
+    registered = request.query_params.get("registered") == "1"
+
     response = request.app.state.templates.TemplateResponse(
         request=request,
         name="auth/login.html",
         context={
             "error": error,
-            "resume": bool(request.cookies.get("refresh_token")) and not error,
+            "registered": registered,
+            "resume": bool(request.cookies.get("refresh_token")) and not (error or registered),
         },
         status_code=status_code,
     )
@@ -31,6 +37,88 @@ def login_page(request: Request, *, error: str = "", status_code: int = 200):
     response.headers["Cache-Control"] = "no-store"
 
     return response
+
+
+def register_page(
+    request: Request,
+    *,
+    error: str = "",
+    login_id: str = "",
+    display_name: str = "",
+    status_code: int = 200,
+):
+    # 실패한 입력 중 ID와 표시 이름만 복원한다. 비밀번호는 context에 전달하지 않는다.
+    response = request.app.state.templates.TemplateResponse(
+        request=request,
+        name="auth/register.html",
+        context={
+            "error": error,
+            "login_id": login_id,
+            "display_name": display_name,
+        },
+        status_code=status_code,
+    )
+
+    response.headers["Cache-Control"] = "no-store"
+
+    return response
+
+
+@router.get("/register", response_class=HTMLResponse)
+async def get_register(request: Request):
+    return register_page(request)
+
+
+@router.post("/register", dependencies=[Depends(require_web_origin)])
+async def register(
+    request: Request,
+    service: AuthService = Depends(get_auth_service),
+):
+    # API와 같은 입력 스키마로 검증한다. 추가 필드나 HTML 제한을 우회한 요청도 거절한다.
+    async with request.form(max_files=0) as form:
+        values = dict(form)
+
+    public_values = {
+        name: values[name][:50] if isinstance(values.get(name), str) else ""
+        for name in ("login_id", "display_name")
+    }
+
+    try:
+        signup = RegisterUserRequest.model_validate(values)
+    except ValidationError as exc:
+        # 검증 예외에 들어 있는 비밀번호 원문 대신 미리 정한 안내만 공개한다.
+        field = exc.errors(include_input=False)[0]["loc"][0]
+        messages = {
+            "login_id": "로그인 ID는 소문자, 숫자, 밑줄로 4~50자를 입력해 주세요.",
+            "display_name": "표시 이름은 공백이 아닌 문자를 포함해 2~50자를 입력해 주세요.",
+            "password": "비밀번호는 1~1024자를 입력해 주세요.",
+        }
+
+        return register_page(
+            request,
+            error=messages.get(field, "허용되지 않은 입력 항목이 있습니다."),
+            status_code=422,
+            **public_values,
+        )
+
+    # 기존 가입 서비스가 해싱, 회원 생성과 commit을 담당한다.
+    try:
+        await service.register_user(
+            login_id=signup.login_id,
+            display_name=signup.display_name,
+            password=signup.password,
+        )
+    except ConflictError as exc:
+        return register_page(request, error=exc.message, status_code=409, **public_values)
+    except BusinessRuleError as exc:
+        return register_page(request, error=exc.message, status_code=400, **public_values)
+
+    # 가입 POST가 새로고침으로 반복되지 않도록 로그인 화면으로 이동한다.
+    return RedirectResponse(
+        "/login?registered=1",
+        status_code=303,
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @router.get("/login", response_class=HTMLResponse)
