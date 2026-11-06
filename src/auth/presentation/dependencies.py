@@ -6,7 +6,7 @@ from database import get_db
 
 from auth.application.service import AuthService
 from auth.wiring import build_auth_service
-from auth.application.contracts import TokenClaims
+from auth.application.dto import TokenClaims
 from auth.domain.exceptions import AuthenticationError
 
 

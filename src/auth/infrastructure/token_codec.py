@@ -7,7 +7,8 @@ from uuid import UUID, uuid4
 
 import jwt
 
-from auth.application.contracts import IssuedToken, TokenClaims, TokenCodec
+from auth.application.contracts import TokenCodec
+from auth.application.dto import IssuedToken, TokenClaims
 from auth.domain.exceptions import InvalidTokenError
 
 

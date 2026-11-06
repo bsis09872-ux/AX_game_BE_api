@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth.application.contracts import LoginSession, RefreshState
+from auth.application.dto import LoginSession, RefreshState
 from auth.infrastructure.models import LoginSessionModel, RefreshTokenModel
 
 

@@ -1,5 +1,6 @@
 # users의 조회 결과를 인증에 필요한 데이터로 바꾸는 도메인 연결 어댑터다.
-from auth.application.contracts import AuthUser, UserReader
+from auth.application.contracts import UserReader
+from auth.application.dto import AuthUser
 from users.application.service import UserService
 from users.domain.exceptions import UserNotFoundError
 from users.domain.user import User

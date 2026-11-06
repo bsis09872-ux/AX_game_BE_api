@@ -3,17 +3,19 @@ from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from auth.application.contracts import (
-    CreatedUser,
     PasswordHasher,
     RevokedTokenRepository,
-    TokenClaims,
     TokenCodec,
     Transaction,
     UserCreator,
     UserReader,
-    LoginSession,
     RefreshTokenCodec,
     SessionRepository,
+)
+from auth.application.dto import (
+    CreatedUser,
+    TokenClaims,
+    LoginSession,
     TokenPair,
 )
 from auth.domain.exceptions import InvalidCredentialsError, InvalidTokenError

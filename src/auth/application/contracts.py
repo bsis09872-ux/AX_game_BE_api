@@ -1,58 +1,16 @@
-# 인증 서비스가 사용하는 외부 기능의 계약과 전달 데이터를 정의한다.
-from dataclasses import dataclass, field
+# 인증 서비스가 사용하는 외부 기능의 계약을 정의한다.
 from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
-
-@dataclass(frozen=True)
-class CreatedUser:
-    id: int
-    login_id: str
-    created_at: datetime
-
-
-@dataclass(frozen=True)
-class AuthUser:
-    id: int
-    is_active: bool
-    password_hash: str = field(repr=False)
-
-
-@dataclass(frozen=True)
-class TokenClaims:
-    user_id: int
-    jti: UUID
-    expires_at: datetime
-    session_id: UUID | None = None
-
-
-@dataclass(frozen=True)
-class IssuedToken:
-    access_token: str = field(repr=False)
-    expires_in: int
-
-
-@dataclass(frozen=True)
-class TokenPair:
-    access_token: str = field(repr=False)
-    refresh_token: str = field(repr=False)
-    expires_in: int
-    refresh_expires_in: int
-
-
-@dataclass(frozen=True)
-class LoginSession:
-    id: UUID
-    user_id: int
-    expires_at: datetime
-    revoked_at: datetime | None = None
-
-
-@dataclass(frozen=True)
-class RefreshState:
-    session: LoginSession
-    used_at: datetime | None
+from auth.application.dto import (
+    AuthUser,
+    CreatedUser,
+    IssuedToken,
+    LoginSession,
+    RefreshState,
+    TokenClaims,
+)
 
 
 class RefreshTokenCodec(Protocol):

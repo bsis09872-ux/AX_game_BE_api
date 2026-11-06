@@ -5,7 +5,8 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auth.application.contracts import RevokedTokenRepository, TokenClaims
+from auth.application.contracts import RevokedTokenRepository
+from auth.application.dto import TokenClaims
 from auth.infrastructure.models import RevokedTokenModel
 
 

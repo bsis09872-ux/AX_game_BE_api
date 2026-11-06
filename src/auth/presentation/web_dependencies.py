@@ -6,7 +6,7 @@ from urllib.parse import urlsplit
 from fastapi import Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
-from auth.application.contracts import TokenPair
+from auth.application.dto import TokenPair
 from auth.application.service import AuthService
 from auth.domain.exceptions import AuthenticationError
 from auth.presentation.dependencies import get_auth_service
