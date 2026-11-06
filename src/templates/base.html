@@ -1,12 +1,19 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}AX Game{% endblock %}</title>
-  <script src="{{ url_for('static', path='/auth-session.js') }}" defer></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>{% block title %}AX Game{% endblock %}</title>
+
+    <script src="{{ url_for('static', path='/auth-session.js') }}" defer></script>
 </head>
-<body data-auth-page="{% block page %}{% endblock %}" data-resume="{{ 'true' if resume else 'false' }}">
-  <main>{% block content %}{% endblock %}</main>
+<body
+    data-auth-page="{% block page %}{% endblock %}"
+    data-resume="{{ 'true' if resume else 'false' }}"
+>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
 </body>
 </html>

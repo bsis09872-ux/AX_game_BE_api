@@ -19,7 +19,6 @@ def create_user_web_router(
         user_id: int = Depends(current_user_id),
         service: UserService = Depends(get_user_service),
     ) -> HTMLResponse:
-        
         user = await service.get_user(user_id=user_id)
 
         public_user = UserMeResponse.from_user(user)
@@ -31,7 +30,7 @@ def create_user_web_router(
         )
 
         response.headers["Cache-Control"] = "no-store"
-        
+
         return response
 
     return router

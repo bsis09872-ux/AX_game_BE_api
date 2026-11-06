@@ -1,15 +1,31 @@
 {% extends "base.html" %}
+
 {% block title %}내 정보 | AX Game{% endblock %}
 {% block page %}me{% endblock %}
+
 {% block content %}
-<h1>내 정보</h1>
-<dl>
-  <dt>회원 ID</dt><dd>{{ user.id }}</dd>
-  <dt>로그인 ID</dt><dd>{{ user.login_id }}</dd>
-  <dt>표시 이름</dt><dd>{{ user.display_name }}</dd>
-  <dt>역할</dt><dd>{{ user.role }}</dd>
-  <dt>가입 시각</dt><dd>{{ user.created_at }}</dd>
-</dl>
-<p id="session-message" role="status"></p>
-<form method="post" action="/logout"><button type="submit">로그아웃</button></form>
+    <h1>내 정보</h1>
+
+    <dl>
+        <dt>회원 ID</dt>
+        <dd>{{ user.id }}</dd>
+
+        <dt>로그인 ID</dt>
+        <dd>{{ user.login_id }}</dd>
+
+        <dt>표시 이름</dt>
+        <dd>{{ user.display_name }}</dd>
+
+        <dt>역할</dt>
+        <dd>{{ user.role }}</dd>
+
+        <dt>가입 시각</dt>
+        <dd>{{ user.created_at }}</dd>
+    </dl>
+
+    <p id="session-message" role="status"></p>
+
+    <form method="post" action="/logout">
+        <button type="submit">로그아웃</button>
+    </form>
 {% endblock %}
