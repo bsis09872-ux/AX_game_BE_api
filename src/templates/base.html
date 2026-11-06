@@ -19,6 +19,20 @@
     data-auth-page="{% block page %}{% endblock %}"
     data-resume="{{ 'true' if resume else 'false' }}"
 >
+    <div class="title-carousel" aria-hidden="true">
+        <div class="title-carousel__rows">
+            {% for _ in range(12) %}
+                <div class="title-carousel__row">
+                    <div class="title-carousel__track">
+                        {% for _ in range(9) %}
+                            <img src="{{ url_for('static', path='/images/catch-and-bid-logo.png') }}" alt="" width="1774" height="887" draggable="false">
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
     <a class="skip-link" href="#main-content">본문 바로가기</a>
 
     {# 회원 정보는 인증을 마친 /me에서만 전달된다. 연결된 화면의 메뉴만 표시한다. #}

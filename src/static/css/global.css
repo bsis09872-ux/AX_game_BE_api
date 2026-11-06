@@ -47,6 +47,7 @@ html, body {
 }
 
 body {
+    isolation: isolate;
     background: var(--night);
     background-image:
         linear-gradient(45deg, var(--night-2) 25%, transparent 25%, transparent 75%, var(--night-2) 75%),
@@ -58,6 +59,85 @@ body {
     font-size: 14px;
     line-height: 1.5;
     -webkit-font-smoothing: none;
+}
+
+/* 체크무늬 위에서 로고 줄을 서로 다른 속도와 방향으로 순환한다. */
+.title-carousel {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+    user-select: none;
+}
+
+.title-carousel__rows {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 160vmax;
+    height: 160vmax;
+    display: flex;
+    flex-direction: column;
+    transform: translate(-50%, -50%) rotate(-18deg);
+}
+
+.title-carousel__row {
+    --tile-width: 28vmax;
+    --duration: 38s;
+    --delay: -12s;
+    position: relative;
+    flex: 1;
+    opacity: .14;
+}
+
+.title-carousel__track {
+    position: absolute;
+    left: calc(-1 * var(--tile-width));
+    height: 100%;
+    display: flex;
+    align-items: center;
+    width: max-content;
+    animation: title-carousel-drift var(--duration) linear var(--delay) infinite;
+}
+
+.title-carousel__track img {
+    flex: 0 0 var(--tile-width);
+    width: var(--tile-width);
+    height: auto;
+    padding-inline: calc(var(--tile-width) * .14);
+}
+
+.title-carousel__row:nth-child(4n + 2) {
+    --tile-width: 24vmax;
+    --duration: 52s;
+    --delay: -31s;
+    opacity: .09;
+}
+
+.title-carousel__row:nth-child(even) .title-carousel__track {
+    animation-direction: reverse;
+}
+
+.title-carousel__row:nth-child(4n + 3) {
+    --tile-width: 32vmax;
+    --duration: 29s;
+    --delay: -9s;
+    opacity: .18;
+}
+
+.title-carousel__row:nth-child(4n) {
+    --duration: 44s;
+    --delay: -27s;
+    opacity: .12;
+}
+
+@keyframes title-carousel-drift {
+    to { transform: translateX(var(--tile-width)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .title-carousel__track { animation: none; }
 }
 
 a {
