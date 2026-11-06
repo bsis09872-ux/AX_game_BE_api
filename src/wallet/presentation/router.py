@@ -45,7 +45,7 @@ async def get_my_wallet(service: ServiceDep, user_id: UserIdDep) -> WalletRespon
     response_model=WalletResponse,
     summary="관리자 지갑 충전",
     responses={
-        400: {"description": "INSUFFICIENT_AUTHORITY (관리자가 아님)"},
+        403: {"description": "INSUFFICIENT_AUTHORITY (관리자가 아님)"},
         404: {"description": "WALLET_NOT_FOUND"},
     },
 )

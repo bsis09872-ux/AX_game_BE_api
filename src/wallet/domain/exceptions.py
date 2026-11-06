@@ -2,12 +2,13 @@
 
 shared.core.exceptions의 큰 분류를 상속한다.
 HTTP 상태 코드는 여기서 정하지 않는다. presentation의 공통 핸들러가 부모 분류로 결정한다.
-  BusinessRuleError → 400, NotFoundError → 404, 분류 없는 AppError → 500
+  BusinessRuleError → 400, ForbiddenError → 403, NotFoundError → 404, 분류 없는 AppError → 500
 """
-from shared.core.exceptions import AppError, BusinessRuleError, NotFoundError
+from shared.core.exceptions import AppError, BusinessRuleError, ForbiddenError, NotFoundError
 
 
-class InsufficientAuthorityError(BusinessRuleError):
+class InsufficientAuthorityError(ForbiddenError):
+    # 로그인은 했지만 관리자가 아님 → 403
     code = "INSUFFICIENT_AUTHORITY"
     message = "지갑 충전은 관리자만 가능합니다."
 

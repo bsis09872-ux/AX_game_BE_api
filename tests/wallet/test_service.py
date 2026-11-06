@@ -195,3 +195,28 @@ def test_settle_same_user_rejected():
 
     with pytest.raises(ValueError):
         settle(make_service(repo), buyer_id=1, seller_id=1, price=100)
+
+
+# ---------- 관리자 충전 권한 ----------
+
+def test_charge_by_non_admin_is_forbidden():
+    from shared.core.exceptions import ForbiddenError
+    from wallet.domain.exceptions import InsufficientAuthorityError
+
+    repo = FakeRepo()
+    repo.wallets[1] = 3_000
+
+    with pytest.raises(InsufficientAuthorityError) as e:
+        asyncio.run(make_service(repo).add_balance(1, 1_000))
+    assert isinstance(e.value, ForbiddenError)  # 공통 핸들러가 403으로 응답
+    assert repo.wallets[1] == 3_000
+
+
+def test_charge_by_admin_adds_balance():
+    repo = FakeRepo()
+    repo.wallets[1] = 3_000
+    service = WalletService(roleCheck=RoleCheckImpl("ADMIN"), logger=BalanceRecordImpl(), wallet_repo=repo)
+
+    asyncio.run(service.add_balance(1, 1_000))
+
+    assert repo.wallets[1] == 4_000
