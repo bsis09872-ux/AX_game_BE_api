@@ -1,9 +1,14 @@
 # [외부 계약] 경매 서비스가 다른 도메인에 요청하는 기능의 이름·양식을 정의한다.
 # 여기에는 인터페이스(Protocol/ABC)만 두고 구현은 각 도메인이 맡는다.
 # 다른 도메인의 엔티티·ORM·코드를 import하지 않고, 경매 쪽이 정한 이름과 dto.py의 양식만 사용한다.
-# 사용처: auction_service.py (마감 정산), listings/service.py (등록·입찰·취소)
+# 사용처: auction_service.py (마감 정산), listings/service.py (등록·입찰·취소), trades/service.py (참여 상태 조회)
 #
 # ── 요청 → users: AuctionUserGateway ─────────────────────────────────────
+# [TO DO][요청 → users] async get_state(user_id: int) -> AuctionUserState | None
+#         용도: 참여 상태 조회용 사용자 정보를 읽는다. 없으면 None, 조회만 하며 저장·commit하지 않는다.
+#         실제 User 조회 기능을 Adapter로 호출하고 User 필드를 AuctionUserState로 변환한다.
+#         낙찰 횟수는 참고 저장값이다. 최근 30분 유효 횟수는 Trade 기록으로 다시 계산한다.
+#         입찰·정산의 경쟁 제어에는 아래 잠금 계약을 사용한다. 일반 조회만으로 입찰을 확정하지 않는다.
 # [TO DO][요청 → users] get_for_update_many(user_ids: list[int]) -> dict[int, AuctionUserState]
 #         용도: 정산하는 동안 구매자·판매자 상태가 동시에 바뀌지 않게 잠그고, 제한 계산용 횟수·blocked_until을 받는다.
 # [TO DO][요청 → users] update_limit(user_id: int, purchase_count: int, blocked_until: datetime | None) -> None

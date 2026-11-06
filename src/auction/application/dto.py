@@ -1,4 +1,4 @@
-# 서비스 입력·출력과 외부 연결에 필요한 최소 데이터를 순수 Python 객체로 정의한다.
+# DTO: 계약으로 주고받을 데이터의 모양을 순수 Python 객체로 정의한다.
 # ORM 객체나 HTTP 요청·응답 스키마를 이 파일에 넣지 않는다.
 # [TO DO] AuctionUserState(user_id: int, purchase_count: int, blocked_until: datetime | None)
 #         용도: 정산·제한 계산용 사용자 상태. contract.py의 AuctionUserGateway가 반환한다.
@@ -8,3 +8,7 @@
 # 사용자 표시 이름은 DTO 없이 contract.py의 get_display_names -> dict[int, str]로 받는다.
 # 제한 상태 결과는 domain의 AuctionLimitState를 재사용하고 같은 필드를 중복 정의하지 않는다.
 # [TO DO] 서비스 반환값이 엔티티로 충분하면 별도 DTO를 추가하지 않는다.
+
+# [TO DO] AuctionUserState는 frozen dataclass로 정의하고 조회 시점의 값을 전달한다.
+# Adapter 변환: User.id → user_id, auction_purchase_count → purchase_count, auction_blocked_until → blocked_until.
+# TradeService는 get_state로 이 DTO를 받은 뒤 정책에 Trade 시각 목록과 blocked_until을 전달한다.
