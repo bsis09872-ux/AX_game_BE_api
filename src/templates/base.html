@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>{% block title %}AX Game{% endblock %}</title>
+    <title>{% block title %}Catch &amp; Bid{% endblock %}</title>
 
     {# 공통 픽셀 테마와 로컬 Galmuri 폰트를 모든 자식 화면에서 사용한다. #}
     <link rel="stylesheet" href="{{ url_for('static', path='/css/global.css') }}">
@@ -24,7 +24,7 @@
     {# 회원 정보는 인증을 마친 /me에서만 전달된다. 연결된 화면의 메뉴만 표시한다. #}
     <header class="topbar">
         <div class="wrap">
-            <a class="brand" href="{{ '/me' if user is defined else '/login' }}">AX Game</a>
+            <a class="brand" href="{{ '/me' if user is defined else '/login' }}">Catch &amp; Bid</a>
 
             <nav class="nav" aria-label="주 메뉴">
                 {% if user is defined %}
@@ -54,7 +54,7 @@
     </main>
 
     <footer class="footer">
-        AX Game / 글꼴:
+        Catch &amp; Bid / 글꼴:
         <a href="{{ url_for('static', path='/fonts/LICENSE-galmuri-OFL.txt') }}">Galmuri11 (OFL)</a>
     </footer>
 
