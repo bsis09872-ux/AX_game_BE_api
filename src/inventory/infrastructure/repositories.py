@@ -93,7 +93,7 @@ class ItemDefinitionRepository:
         if rarity is not None:
             conditions.append(ItemDefinitionModel.rarity == rarity)
 
-        # 2. total 조회 (총 몇 페이지가 나올지 프론트가 판단할 때 사용할 수 있다)
+        # 2. total 조회 (총 몇 페이지가 나올지 프론트가 판단할 때 사용 가능)
         total = (
             await self._session.execute(
                 select(func.count()).select_from(ItemDefinitionModel).where(*conditions)
@@ -249,7 +249,7 @@ class InventoryItemRepository:
         return await self._find_one(item_id, for_update=True)
 
 
-    # [조회] 특정 소유자의 아이템 목록
+    # [조회] 특정 소유자의 아이템 목록 조회
     async def find_by_owner(
             self,
             owner_id: int,
@@ -262,10 +262,35 @@ class InventoryItemRepository:
             size=20,
     ) -> tuple[list[InventoryItem], int]:
 
+        # 1. 조건 초기화, 특정 소유자의 아이템 목록이기 때문에 owner_id는 무조건 있어야 한다
         conditions = [InventoryItemModel.owner_id == owner_id]
+
+        # 2. 개별 아이템 도메인은 행조합 객체이기 때문에 join 필요
         if status is not None:
             conditions.append(InventoryItemModel.status == status)
         if category is not None:
             conditions.append(ItemDefinitionModel.category == category)
         if rarity is not None:
             conditions.append(ItemDefinitionModel.rarity == rarity)
+
+        # 3. total 조회 (총 몇 페이지가 나올지 프론트가 판단할 때 사용 가능)
+        total = (
+            await self._session.execute(
+                select(func.count())
+                .select_from(InventoryItemModel)
+                .join(ItemDefinitionModel, _WITH_DEFINITION)
+                .where(*conditions)
+            )
+        ).scalar_one()
+
+        # 4. 목록 내역 조회
+        rows = (
+            await self._session.execute(
+                self._select_items()
+                .where(*conditions)
+                .order_by(*_ITEM_SORTS[sort])
+                .limit(size)
+                .offset((page-1)*size))
+            )
+        ).all()
+        return [_item_to_domain(item_row, )]
