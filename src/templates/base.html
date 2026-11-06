@@ -24,7 +24,15 @@
     {# 회원 정보는 인증을 마친 /me에서만 전달된다. 연결된 화면의 메뉴만 표시한다. #}
     <header class="topbar">
         <div class="wrap">
-            <a class="brand" href="{{ '/me' if user is defined else '/login' }}">Catch &amp; Bid</a>
+            <a class="brand" href="{{ '/me' if user is defined else '/login' }}">
+                <img
+                    class="brand-logo"
+                    src="{{ url_for('static', path='/images/catch-and-bid-logo.png') }}"
+                    alt="Catch &amp; Bid"
+                    width="1774"
+                    height="887"
+                >
+            </a>
 
             <nav class="nav" aria-label="주 메뉴">
                 {% if user is defined %}

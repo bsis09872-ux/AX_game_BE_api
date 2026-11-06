@@ -171,6 +171,14 @@ img.px, .px {
     text-decoration: none;
 }
 
+/* 투명 로고의 원본 비율을 유지하고 공통 헤더 높이에 맞춘다. */
+.brand-logo {
+    display: block;
+    width: auto;
+    height: 72px;
+    object-fit: contain;
+}
+
 .nav a {
     color: var(--muted);
     padding: 6px 10px;
@@ -506,6 +514,10 @@ body {
 }
 
 @media (max-width: 640px) {
+    .brand-logo {
+        height: 56px;
+    }
+
     .wrap {
         padding: 10px;
     }
