@@ -6,6 +6,7 @@
 {% block content %}
     <h1>로그인</h1>
 
+    {# refresh cookie가 있으면 스크립트가 기존 로그인 복구를 시도한다. #}
     <p id="session-message" role="status">
         {% if resume %}
             로그인 상태를 확인하고 있습니다.
@@ -16,6 +17,7 @@
         <p role="alert">{{ error }}</p>
     {% endif %}
 
+    {# 입력값은 웹 로그인 라우터로 제출한다. 성공 시 서버가 쿠키를 설정하고 /me로 이동시킨다. #}
     <form method="post" action="/login">
         <p>
             <label>

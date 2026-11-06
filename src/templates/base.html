@@ -6,8 +6,10 @@
 
     <title>{% block title %}AX Game{% endblock %}</title>
 
+    {# defer로 HTML 구성이 끝난 뒤 인증 스크립트를 실행한다. #}
     <script src="{{ url_for('static', path='/auth-session.js') }}" defer></script>
 </head>
+{# 자식 화면의 종류와 쿠키 복구 시도 여부를 인증 스크립트에 전달한다. 토큰 원문은 넣지 않는다. #}
 <body
     data-auth-page="{% block page %}{% endblock %}"
     data-resume="{{ 'true' if resume else 'false' }}"
