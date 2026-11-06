@@ -1,11 +1,14 @@
 import os
 from collections.abc import AsyncIterator
+from pathlib import Path
 
 from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
-load_dotenv()
+project_root = Path(__file__).resolve().parents[1]
+load_dotenv(project_root / ".env.local")
+load_dotenv(project_root / ".env")
 engine = create_async_engine(os.environ["DATABASE_URL"], pool_pre_ping=True)
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
