@@ -20,16 +20,20 @@ router = APIRouter()
 
 def login_page(request: Request, *, error: str = "", status_code: int = 200):
     # 쿠키가 있어도 인증 성공으로 판단하지 않는다. 화면에서 서버에 복구를 요청한다.
-    # 오류나 가입 완료 안내가 있으면 이전 쿠키로 자동 이동하지 않고 로그인 폼을 보여준다.
+    # 오류, 가입 완료, 세션 만료 안내가 있으면 이전 쿠키로 자동 복구하지 않는다.
     registered = request.query_params.get("registered") == "1"
+    expired = request.query_params.get("expired") == "1"
 
     response = request.app.state.templates.TemplateResponse(
         request=request,
         name="auth/login.html",
         context={
-            "error": error,
+            "error": error or (
+                "로그인 시간이 만료됐습니다. 다시 로그인해 주세요." if expired else ""
+            ),
             "registered": registered,
-            "resume": bool(request.cookies.get("refresh_token")) and not (error or registered),
+            "resume": bool(request.cookies.get("refresh_token"))
+            and not (error or registered or expired),
         },
         status_code=status_code,
     )
@@ -158,13 +162,17 @@ async def session_status(
 ):
     # 서명, 만료, 세션 폐기와 활성 회원 여부를 검증하고 갱신 예약용 시간만 반환한다.
     claims = await service.authenticate(request.cookies.get("access_token", ""))
+    now = datetime.now(timezone.utc)
+    # 세션 ID 없는 이전 토큰은 JWT 만료를 로그인 종료 시각으로 사용한다.
+    session_expires_at = claims.session_expires_at or claims.expires_at
 
     return JSONResponse(
         {
             "expires_in": max(
                 0,
-                int((claims.expires_at - datetime.now(timezone.utc)).total_seconds()),
+                int((claims.expires_at - now).total_seconds()),
             ),
+            "session_expires_in": max(0, (session_expires_at - now).total_seconds()),
         },
         headers={"Cache-Control": "no-store"},
     )
@@ -185,7 +193,10 @@ async def refresh(
         return response
 
     # JavaScript에는 남은 시간만 공개하고 새 토큰은 HttpOnly 쿠키로 전달한다.
-    response = JSONResponse({"expires_in": tokens.expires_in})
+    response = JSONResponse({
+        "expires_in": tokens.expires_in,
+        "session_expires_in": tokens.refresh_expires_in,
+    })
     set_auth_cookies(response, tokens)
 
     return response

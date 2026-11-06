@@ -12,6 +12,40 @@
 
     let pending = null; // 같은 탭에서 진행 중인 인증 확인 요청
     let timer = null; // 다음 인증 확인을 예약한 타이머
+    let expiryTimer = null; // 서버가 알려 준 로그인 세션의 최종 만료 타이머
+    let sessionDeadline = Infinity;
+    let ended = false;
+
+    function requireLogin() {
+        ended = true;
+        clearTimeout(timer);
+        clearTimeout(expiryTimer);
+
+        if (page === "me") {
+            location.replace("/login?expired=1");
+        } else {
+            document.getElementById("session-message").textContent = "다시 로그인해 주세요.";
+        }
+    }
+
+    function checkExpiry() {
+        clearTimeout(expiryTimer);
+
+        const remaining = sessionDeadline - performance.now();
+        if (remaining <= 0) {
+            requireLogin();
+            return;
+        }
+
+        // 최대 30일 세션도 setTimeout의 약 24.8일 상한을 넘지 않게 나눠 예약한다.
+        expiryTimer = setTimeout(checkExpiry, Math.min(remaining, 2147483647));
+    }
+
+    function scheduleExpiry(seconds) {
+        // 서버의 남은 수명으로 예약한다. 화면 조작이나 통신 실패로 세션을 연장하지 않는다.
+        sessionDeadline = performance.now() + seconds * 1000;
+        checkExpiry();
+    }
 
     // 현재 access token을 서버에서 검증하고 남은 유효 시간을 조회한다.
     async function status() {
@@ -60,6 +94,15 @@
 
     // 인증 확인 결과에 따라 화면을 이동하거나 다음 확인을 예약한다.
     async function update() {
+        // 백그라운드 타이머가 지연돼도 화면에 돌아오면 만료부터 확인한다.
+        if (ended) {
+            return;
+        }
+        if (performance.now() >= sessionDeadline) {
+            requireLogin();
+            return;
+        }
+
         // 초기 로드, 화면 복귀, 타이머가 겹쳐도 같은 탭에서는 한 요청만 진행한다.
         if (pending) {
             return pending;
@@ -73,16 +116,21 @@
                     ? await navigator.locks.request("ax-game-session-refresh", renewIfNeeded)
                     : await renewIfNeeded();
 
+                // 요청을 기다리는 중 세션 만료 타이머가 실행됐다면 결과를 적용하지 않는다.
+                if (ended) {
+                    return;
+                }
+
                 clearTimeout(timer);
 
                 // 세션 만료/폐기로 갱신할 수 없으면 재로그인이 필요하다.
                 if (!result) {
-                    if (page === "me") {
-                        location.replace("/login");
-                    } else {
-                        document.getElementById("session-message").textContent = "다시 로그인해 주세요.";
-                    }
+                    requireLogin();
+                    return;
+                }
 
+                scheduleExpiry(result.session_expires_in);
+                if (ended) {
                     return;
                 }
 
@@ -101,6 +149,9 @@
                 // access 만료 30초 전에 다시 확인한다. 로그인 세션의 최종 만료는 연장하지 않는다.
                 timer = setTimeout(update, Math.max(1000, (result.expires_in - 30) * 1000));
             } catch {
+                if (ended) {
+                    return;
+                }
                 // 통신 실패는 로그아웃으로 취급하지 않고 30초 뒤 다시 확인한다.
                 clearTimeout(timer);
                 timer = setTimeout(update, 30000);

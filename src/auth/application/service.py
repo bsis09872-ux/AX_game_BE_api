@@ -1,4 +1,5 @@
 # 회원가입 저장, 로그인 토큰 발급, 인증 확인과 토큰 폐기를 조율한다.
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
@@ -117,6 +118,7 @@ class AuthService:
                     or session.revoked_at is not None
                     or session.expires_at <= datetime.now(timezone.utc)):
                 raise InvalidTokenError()
+            claims = replace(claims, session_expires_at=session.expires_at)
         user = await self.user_reader.find_by_id(claims.user_id)
         if user is None or not user.is_active:
             raise InvalidTokenError()

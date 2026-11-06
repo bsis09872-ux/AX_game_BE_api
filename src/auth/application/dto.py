@@ -24,6 +24,8 @@ class TokenClaims:
     jti: UUID
     expires_at: datetime
     session_id: UUID | None = None
+    # JWT의 만료와 별개인 DB 로그인 세션의 최종 만료 시각이다.
+    session_expires_at: datetime | None = None
 
 
 @dataclass(frozen=True)
