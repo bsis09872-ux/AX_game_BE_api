@@ -22,5 +22,12 @@ class RegisterUserResponse(BaseModel):
 # 클라이언트는 access_token을 Authorization: Bearer 헤더로 전달한다.
 class TokenResponse(BaseModel):
     access_token: str = Field(repr=False)
+    refresh_token: str = Field(repr=False)
     token_type: Literal["bearer"] = "bearer"
     expires_in: int
+    refresh_expires_in: int
+
+
+class RefreshTokenRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    refresh_token: str = Field(min_length=64, max_length=64, repr=False)

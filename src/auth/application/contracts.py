@@ -24,12 +24,55 @@ class TokenClaims:
     user_id: int
     jti: UUID
     expires_at: datetime
+    session_id: UUID | None = None
 
 
 @dataclass(frozen=True)
 class IssuedToken:
     access_token: str = field(repr=False)
     expires_in: int
+
+
+@dataclass(frozen=True)
+class TokenPair:
+    access_token: str = field(repr=False)
+    refresh_token: str = field(repr=False)
+    expires_in: int
+    refresh_expires_in: int
+
+
+@dataclass(frozen=True)
+class LoginSession:
+    id: UUID
+    user_id: int
+    expires_at: datetime
+    revoked_at: datetime | None = None
+
+
+@dataclass(frozen=True)
+class RefreshState:
+    session: LoginSession
+    used_at: datetime | None
+
+
+class RefreshTokenCodec(Protocol):
+    def generate(self) -> str: ...
+
+    def digest(self, token: str) -> str: ...
+
+
+class SessionRepository(Protocol):
+    async def create(self, session: LoginSession, token_hash: str) -> None: ...
+
+    async def find(self, session_id: UUID) -> LoginSession | None: ...
+
+    async def find_refresh_for_update(self, token_hash: str) -> RefreshState | None: ...
+
+    async def rotate(
+        self, session_id: UUID, old_hash: str, new_hash: str, used_at: datetime
+    ) -> None: ...
+
+    async def revoke(self, session_id: UUID, now: datetime) -> None: ...
 
 
 class PasswordHasher(Protocol):
@@ -54,7 +97,7 @@ class UserReader(Protocol):
 
 
 class TokenCodec(Protocol):
-    def issue(self, user_id: int) -> IssuedToken: ...
+    def issue(self, user_id: int, session_id: UUID | None = None) -> IssuedToken: ...
 
     def decode(self, token: str) -> TokenClaims: ...
 

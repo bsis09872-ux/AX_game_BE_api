@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}로그인 | AX Game{% endblock %}
+{% block page %}login{% endblock %}
+{% block content %}
+<h1>로그인</h1>
+<p id="session-message" role="status">{% if resume %}로그인 상태를 확인하고 있습니다.{% endif %}</p>
+{% if error %}<p role="alert">{{ error }}</p>{% endif %}
+<form method="post" action="/login">
+  <p><label>로그인 ID <input name="login_id" required minlength="4" maxlength="50" autocomplete="username"></label></p>
+  <p><label>비밀번호 <input type="password" name="password" required maxlength="1024" autocomplete="current-password"></label></p>
+  <button type="submit">로그인</button>
+</form>
+{% endblock %}

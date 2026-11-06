@@ -5,7 +5,7 @@ from datetime import timezone
 
 from auth.application.service import AuthService
 from auth.presentation.dependencies import get_auth_service, get_bearer_token
-from auth.presentation.schemas import RegisterUserRequest, RegisterUserResponse, TokenResponse
+from auth.presentation.schemas import RegisterUserRequest, RegisterUserResponse, TokenResponse, RefreshTokenRequest
 
 # 공통 /v1 접두사는 main.py의 앱 등록 시 적용한다.
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -44,7 +44,32 @@ async def login(
     result = await service.login(login_id=form.username, password=form.password)
     response.headers["Cache-Control"] = "no-store"
     response.headers["Pragma"] = "no-cache"
-    return TokenResponse(access_token=result.access_token, expires_in=result.expires_in)
+    return TokenResponse(
+        access_token=result.access_token, refresh_token=result.refresh_token,
+        expires_in=result.expires_in, refresh_expires_in=result.refresh_expires_in,
+    )
+
+
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh(
+    request: RefreshTokenRequest, response: Response,
+    service: AuthService = Depends(get_auth_service),
+) -> TokenResponse:
+    result = await service.refresh(request.refresh_token)
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["Pragma"] = "no-cache"
+    return TokenResponse(
+        access_token=result.access_token, refresh_token=result.refresh_token,
+        expires_in=result.expires_in, refresh_expires_in=result.refresh_expires_in,
+    )
+
+
+@router.post("/refresh/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout_session(
+    request: RefreshTokenRequest, service: AuthService = Depends(get_auth_service),
+) -> Response:
+    await service.logout_session(request.refresh_token)
+    return Response(status_code=204, headers={"Cache-Control": "no-store"})
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
@@ -52,6 +77,6 @@ async def logout(
     token: str = Depends(get_bearer_token),
     service: AuthService = Depends(get_auth_service),
 ) -> Response:
-    # 현재 토큰만 폐기한다. 다른 기기의 토큰은 그대로 유지한다.
+    # 현재 로그인 세션을 폐기한다. 다른 로그인 세션은 유지한다.
     await service.logout(token)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

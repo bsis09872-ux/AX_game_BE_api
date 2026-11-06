@@ -22,13 +22,14 @@ class JwtTokenCodec(TokenCodec):
         self._issuer = "ax-game-be-api"
         self._audience = "ax-game-client"
 
-    def issue(self, user_id: int) -> IssuedToken:
+    def issue(self, user_id: int, session_id: UUID | None = None) -> IssuedToken:
         now = datetime.now(timezone.utc)
         token = jwt.encode(
             {
                 "sub": str(user_id), "jti": str(uuid4()),
                 "iat": now, "exp": now + timedelta(seconds=self._ttl_seconds),
                 "iss": self._issuer, "aud": self._audience, "token_type": "access",
+                **({"sid": str(session_id)} if session_id is not None else {}),
             },
             self._secret, algorithm="HS256",
         )
@@ -51,9 +52,14 @@ class JwtTokenCodec(TokenCodec):
                 raise ValueError("Invalid token timestamp")
             if payload["exp"] <= payload["iat"]:
                 raise ValueError("Invalid token lifetime")
+            if not isinstance(payload["jti"], str):
+                raise ValueError("Invalid token identifier")
+            if "sid" in payload and not isinstance(payload["sid"], str):
+                raise ValueError("Invalid session identifier")
             return TokenClaims(
                 user_id=int(subject), jti=UUID(payload["jti"]),
                 expires_at=datetime.fromtimestamp(payload["exp"], timezone.utc),
+                session_id=UUID(payload["sid"]) if "sid" in payload else None,
             )
         except (jwt.InvalidTokenError, ValueError, TypeError, OverflowError, OSError) as exc:
             raise InvalidTokenError() from exc
