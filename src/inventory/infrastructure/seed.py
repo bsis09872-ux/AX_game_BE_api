@@ -44,9 +44,9 @@ CATALOG = [
 # 개별 아이템
 # 소유자 정보(1, 2, 3)는 임시로 넣어 둔 값
 DEMO_ITEMS = {
-    'user1': {'crucian_carp': 3, 'mackerel': 2, 'sea_bass': 1, 'pufferfish': 1, 'pearl': 1, 'old_boot': 1},
-    'user2': {'crucian_carp': 2, 'salmon': 2, 'sapphire': 1, 'seaweed': 1, 'message_bottle': 1},
-    'user3': {
+    1: {'crucian_carp': 3, 'mackerel': 2, 'sea_bass': 1, 'pufferfish': 1, 'pearl': 1, 'old_boot': 1},
+    2: {'crucian_carp': 2, 'salmon': 2, 'sapphire': 1, 'seaweed': 1, 'message_bottle': 1},
+    3: {
         'mackerel': 1, 'sea_bass': 1, 'golden_carp': 1, 'black_pearl': 1,
         'sea_dragon': 1, 'seaweed': 1, 'crucian_carp': 1, 'old_boot': 1,
     },
@@ -61,19 +61,23 @@ async def run_seed(session: AsyncSession, now: datetime, user_lookup: UserLookup
     definitions = {}
     created_definitions = 0
     for code, name, category, rarity, start_price, weight, icon in CATALOG:
-        definition = await definition_repository.save(
-            ItemDefinition(
-                code=code,
-                name=name,
-                category=category,
-                rarity=rarity,
-                start_price=start_price,
-                weight=weight,
-                icon=icon
+        # 이미 있는 카탈로그는 값을 덮어쓰지 않고 그대로 쓴다 (관리자가 고쳤을 수 있어서)
+        definition = await definition_repository.find_by_code(code)
+        if definition is None:
+            definition = await definition_repository.save(
+                ItemDefinition(
+                    code=code,
+                    name=name,
+                    category=category,
+                    rarity=rarity,
+                    start_price=start_price,
+                    weight=weight,
+                    icon=icon
+                )
             )
-        )
-        created_definitions += 1
-    definitions[code] = definition
+            created_definitions += 1
+        # 찾은 것이든 새로 만든 것이든 담는다 (아이템이 이 객체를 가리킨다)
+        definitions[code] = definition
 
     # 2. 소유자 중 활성 사용자만 계약으로 한 번에 조회한다
     #   → owner_id는 users.id FK이기 때문에 없는 번호로 아이템을 만들면 DB가 거절한다
@@ -89,7 +93,7 @@ async def run_seed(session: AsyncSession, now: datetime, user_lookup: UserLookup
             continue
 
         # 이미 아이템이 하나라도 있는 소유자는 건너뛴다 (멱등)
-        # 중복 소유를 막는다는 의미가 아니라 시드 주입을 여러 번 할 때 계속 들어가는 걸 막기 위함
+        # 중복 소유 제한이 아니라 시드 주입을 여러 번 할 때 계속 들어가는 걸 막기 위함
         _, total = await item_repository.find_by_owner(owner_id, size=1)
         if total:
             continue
@@ -122,5 +126,6 @@ async def main() -> None:
     print(result)
     await engine.dispose() # 깔끔하게 종료!
 
+# 파일을 직접 실행할 때만 main()을 시작하고 시드를 주입한다 
 if __name__ == '__main__':
     asyncio.run(main())

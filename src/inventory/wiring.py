@@ -8,7 +8,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from inventory.application.contracts import UserLookup
-from inventory.user_lookup import UserLookupAdapter
+from inventory.infrastructure.user_lookup import UserLookupAdapter
 
 # 이걸 쓰면 users의 infrastructure를 몰라도 된다 
 from users.wiring import build_user_service
