@@ -128,19 +128,31 @@ LEFT JOIN refresh_tokens r ON r.session_id = s.id
 WHERE u.login_id = 'YOUR_TEST_LOGIN_ID'
 GROUP BY s.id
 ORDER BY s.created_at DESC;
-
-SELECT t.expires_at, t.revoked_at
-FROM revoked_tokens t
-JOIN users u ON u.id = t.user_id
-WHERE u.login_id = 'YOUR_TEST_LOGIN_ID'
-ORDER BY t.revoked_at DESC;
 ```
 
 - 로그인하면 새 세션과 refresh 기록이 생성된다.
 - 자동 재발급되면 같은 세션에서 refresh 기록 수와 사용된 기록 수가 증가한다. `expires_at`은 그대로다.
-- 로그아웃한 세션은 `revoked_at`이 채워진다.
+- 로그아웃한 세션은 `revoked_at`이 채워지며, 해당 세션에서 발급한 모든 Access Token과 Refresh Token이 차단된다. 다른 로그인 세션은 유지된다.
 - 시간 만료만으로 `revoked_at`이 채워지는 것은 아니다. `expires_at`과 현재 시각을 비교해 만료를 판단한다.
 - 만료된 행과 사용된 refresh 기록은 삭제하지 않는다. 화면 이동이 DB 행 삭제를 의미하지 않는다.
+
+### 기존 revoked_tokens 테이블을 사용하던 환경
+
+로그아웃 차단은 `auth_sessions`의 세션 폐기로 통일했다. `refresh_tokens`는 갱신 토큰 교체와 이전 토큰 재사용 감지를 위해 유지한다. API 주소와 응답 형식은 그대로이며, 다른 도메인의 테이블 구조는 변경하지 않는다.
+
+Access Token의 `sid`는 이제 필수다. 세션 ID가 없는 구형 토큰은 401로 거절되므로 다시 로그인한다. 기존 세션에 연결된 유효한 토큰은 계속 사용할 수 있다. 삭제한 인증 내부 모델, 저장소, 계약을 직접 참조하거나 `TokenCodec.issue()`를 직접 호출하는 코드는 새 계약에 맞춰 수정해야 한다.
+
+새 DB에는 `revoked_tokens`를 생성하지 않는다. 기존 DB에서는 `create_all()`이 테이블을 삭제하지 않으므로 남아 있어도 새 코드 실행에는 문제가 없다. 실제 삭제는 같은 DB를 사용하는 서버가 모두 새 코드로 전환된 후 수행한다. 구버전 서버가 남아 있으면 해당 테이블 조회와 기록에 실패한다.
+
+기존 DB를 백업한 뒤, 해당 DB에 연결한 SQL 도구에서 아래 SQL을 실행한다. `CASCADE`를 사용하지 않으므로 별도 의존 객체가 있으면 삭제가 실패하며, 의존 관계를 먼저 확인해야 한다.
+
+```sql
+BEGIN;
+DROP TABLE IF EXISTS public.revoked_tokens;
+COMMIT;
+```
+
+`users`, `auth_sessions`, `refresh_tokens`의 데이터는 삭제하지 않는다. 구버전으로 되돌릴 때는 백업의 `revoked_tokens` 구조와 폐기 기록도 복구해야 한다. 빈 테이블만 재생성하면 구형 토큰의 기존 차단 기록을 잃는다.
 
 ## 7. API 확인과 문제 구분
 
