@@ -9,6 +9,10 @@
 - ItemDefinitionRepository는 아이템 카탈로그를 저장하고 읽는다. 같은 code와 아이템이 있는 카탈로그 삭제는 DB가 거절하고 저장소는 그 오류를 그대로 올려 보낸다 (서비스가 변환한다)
 - 목록은 (도메인 객체 목록, 총개수)를 돌려준다. 희귀도는 순위(COMMON이 가장 낮음)로 정렬하고 동점은 name, id 순이다
 - ORM 모델은 이 파일 밖으로 내보내지 않는다 (도메인 객체로 바꿔 돌려준다)
+- InventoryItemRepository는 개별 아이템을 읽고 저장한다. 아이템은 카탈로그와 함께 한 번에 읽어 InventoryItem으로 돌려준다
+- find_by_id_for_update는 아이템 행만 잠그고(카탈로그 행은 잠그지 않는다) 잠금은 commit이나 rollback 때 풀린다
+- save는 pop_events()로 꺼낸 이력의 시각을 도메인이 정한 값 그대로 저장한다. 저장이 실패하면 그 객체로 다시 저장하지 않고 새로 읽는다
+- 이력 조회는 오래된 순이다
 """
 
 from sqlalchemy import case, delete, func, select
@@ -323,7 +327,7 @@ class InventoryItemRepository:
             row.status=item.status
             row.origin=item.origin
             row.acquired_at=item.acquired_at
-            row-resale_available_at=item.resale_available_at
+            row.resale_available_at=item.resale_available_at
             row.updated_at=func.now()
 
         # (INSERT) 아이템에 그동안 쌓인 이력을 꺼내서 추가 / item_event 도메인 참조
