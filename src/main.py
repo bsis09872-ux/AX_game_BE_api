@@ -2,6 +2,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.templating import Jinja2Templates
 
 from database import Base, engine
 from shared.core.exception_handlers import register_exception_handlers
@@ -31,6 +32,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="AX Game BE API", lifespan=lifespan)
+app.state.templates = Jinja2Templates(directory="src/templates")
+
 register_exception_handlers(app)
 register_auth_exception_handlers(app)
 
