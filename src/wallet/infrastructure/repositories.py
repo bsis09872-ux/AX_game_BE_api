@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from wallet.domain.exceptions import WalletNotFoundError
 from wallet.domain.repository import WalletRepository
 from wallet.domain.wallet import Balance, Wallet
+from wallet.infrastructure.external_tables import listings
 from wallet.infrastructure.models import WalletModel
 
 
@@ -46,6 +47,13 @@ class SqlAlchemyWalletRepository(WalletRepository):
         if model is None:
             raise WalletNotFoundError()
         return _to_wallet(model)
+
+    async def held_amount(self, user_id: int) -> int:
+        statement = select(func.coalesce(func.sum(listings.c.current_bid_amount), 0)).where(
+            listings.c.current_bidder_id == user_id,
+            listings.c.status == "BIDDING",  # 마감이 지나도 정산 전이면 BIDDING이라 포함된다
+        )
+        return int(await self.session.scalar(statement))
 
 
 # from datetime import datetime

@@ -37,8 +37,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_db)]
     responses={404: {"description": "WALLET_NOT_FOUND"}},
 )
 async def get_my_wallet(service: ServiceDep, user_id: UserIdDep) -> WalletResponse:
-    wallet = await service.get_wallet(user_id)
-    return WalletResponse.from_wallet(wallet)
+    return WalletResponse.model_validate(await service.get_my_wallet(user_id))
 
 
 @router.post(
@@ -60,8 +59,7 @@ async def charge_wallet(
     await session.commit()
     # commit이 성공한 뒤에만 잔액 변경 로그를 남긴다 (balance_log.py 규칙)
     service.logger.flush()
-    wallet = await service.get_wallet(user_id)
-    return WalletResponse.from_wallet(wallet)
+    return WalletResponse.model_validate(await service.get_my_wallet(user_id))
 
 
 # 거래 내역(WALL-04)·거래 상세(WALL-05)는 서비스에서 빠져 있어 라우터도 잠시 뺀다.

@@ -10,8 +10,6 @@ from typing import Annotated, Generic, Literal, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, PlainSerializer
 
-from wallet.domain.wallet import Wallet
-
 # 내부 int, JSON 응답에서만 "123" (JS Number는 2^53 이상 정수를 정확히 표현하지 못함)
 IdStr = Annotated[int, PlainSerializer(lambda v: str(v), return_type=str, when_used="json")]
 
@@ -37,16 +35,13 @@ class _FromAttrs(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class WalletResponse(BaseModel):
-    """WALL-01 내 지갑 조회"""
+class WalletResponse(_FromAttrs):
+    """WALL-01 내 지갑 조회. application의 WalletView를 model_validate로 받는다."""
     user_id: IdStr
-    balance: int            # 총잔액
+    balance: int            # 총잔액 (예약금 포함)
+    held_amount: int        # 입찰로 묶인 금액 합계
+    available_balance: int  # 사용 가능 금액 = balance - held_amount
     updated_at: datetime    # balance가 마지막으로 바뀐 시각
-
-    @classmethod
-    def from_wallet(cls, wallet: "Wallet") -> "WalletResponse":
-        # 도메인 Wallet.balance는 값 객체 Balance라서 .value로 꺼낸다
-        return cls(user_id=wallet.user_id, balance=wallet.balance.value, updated_at=wallet.updated_at)
 
 
 class ChargeRequest(BaseModel):

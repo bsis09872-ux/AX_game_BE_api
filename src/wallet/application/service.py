@@ -5,6 +5,8 @@
 - 잔액 변경 로그는 결과의 balance_changes로 돌려주고, 호출자가 commit 성공 뒤에 남긴다.
 - 금액 판단은 domain/rules.py가 하고, 여기서는 조회·잠금·저장 순서만 조율한다.
 """
+from wallet.application.dto import WalletView
+from wallet.domain import rules
 from wallet.domain.wallet import Wallet
 from wallet.domain.service import RoleCheck, BalanceRecord
 from wallet.domain.repository import WalletRepository
@@ -23,6 +25,18 @@ class WalletService:
             raise WalletNotFoundError
 
         return wallet
+
+    async def get_my_wallet(self, user_id: int) -> WalletView:
+        """WALL-01 내 지갑 조회: 총잔액 + 예약 합계 + 사용 가능 금액"""
+        wallet = await self.get_wallet(user_id)
+        held = await self.wallet_repo.held_amount(user_id)
+        return WalletView(
+            user_id=wallet.user_id,
+            balance=wallet.balance.value,
+            held_amount=held,
+            available_balance=rules.available_balance(wallet.balance.value, held),
+            updated_at=wallet.updated_at,
+        )
 
 
     async def add_balance(self, user_id: int, amount: int):

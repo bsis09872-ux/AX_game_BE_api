@@ -19,6 +19,11 @@ class WalletRepository(ABC):
     @abstractmethod
     async def save(self, user_id: int, balance: int) -> Wallet: ...
 
+    # ---------- 다른 도메인 테이블 조회 ----------
+    @abstractmethod
+    async def held_amount(self, user_id: int) -> int:
+        """내가 current_bidder_id인 BIDDING 매물의 current_bid_amount 합계 (없으면 0)"""
+
     # @abstractmethod
     # async def lock(self, user_ids: list[int]) -> dict[int, Wallet]:
     #     """지갑들을 FOR UPDATE로 잠근다. 데드락을 피하려고 항상 user_id 오름차순으로 잠근다."""
