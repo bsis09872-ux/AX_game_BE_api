@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>{% block title %}Catch &amp; Bid{% endblock %}</title>
+
+    {# 공통 테마와 로컬 폰트를 모든 자식 화면에서 사용한다. #}
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/global.css') }}">
+    {% block styles %}{% endblock %}
+    {% block head %}{% endblock %}
+</head>
+<body {% block body_attributes %}{% endblock %}>
+    <a class="skip-link" href="#main-content">본문 바로가기</a>
+
+    <header class="topbar">
+        <div class="wrap">
+            {% block brand %}
+                <div class="brand">
+                    <img
+                        class="brand-logo"
+                        src="{{ url_for('static', path='/images/catch-and-bid-logo.png') }}"
+                        alt="Catch &amp; Bid"
+                        width="1774"
+                        height="887"
+                    >
+                </div>
+            {% endblock %}
+
+            {# 메뉴와 회원 표시는 화면별로 연결하며 공통 레이아웃은 인증 상태를 판단하지 않는다. #}
+            {% block navigation %}{% endblock %}
+            {% block header_status %}{% endblock %}
+        </div>
+    </header>
+
+    <main id="main-content" class="wrap main-content" tabindex="-1">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        Catch &amp; Bid / 글꼴:
+        <a href="{{ url_for('static', path='/fonts/LICENSE-galmuri-OFL.txt') }}">Galmuri11 (OFL)</a>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

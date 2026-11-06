@@ -1,0 +1,528 @@
+/* Catch-and-Bid의 pixel.css 공통 테마를 가져왔다. 원본: uogji-lee/Catch-and-Bid, 9027dbb. */
+/* 낚시 경매장 픽셀 UI
+ * 레벨(스케일) 규칙: 16×16 스프라이트는 정수배(2배 32px, 3배 48px, 4배 64px)로만 키우고
+ * 항상 image-rendering: pixelated 로 그린다. 테두리 두께도 3px(=3배 스케일의 1px) 단위로 맞춘다.
+ */
+@font-face {
+    font-family: Galmuri11;
+    font-weight: 400;
+    font-display: swap;
+    src: url('../fonts/Galmuri11.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: Galmuri11;
+    font-weight: 700;
+    font-display: swap;
+    src: url('../fonts/Galmuri11-Bold.woff2') format('woff2');
+}
+
+:root {
+    --outline: #3f2631;
+    --night: #241a1f;
+    --night-2: #2f2228;
+    --wood: #8a5a35;
+    --wood-light: #b07a48;
+    --wood-dark: #5c3b22;
+    --slot: #6b4428;
+    --slot-in: #4e301c;
+    --text: #fff4e0;
+    --muted: #e8c9a0;
+    --gold: #f7c94a;
+    --green: #84c669;
+    --green-dark: #479f4a;
+    --red: #c34b35;
+    --pink: #f28462;
+    --water: #75e3ff;
+    --steel: #8b9bb4;
+    --px: 3px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+}
+
+body {
+    background: var(--night);
+    background-image:
+        linear-gradient(45deg, var(--night-2) 25%, transparent 25%, transparent 75%, var(--night-2) 75%),
+        linear-gradient(45deg, var(--night-2) 25%, transparent 25%, transparent 75%, var(--night-2) 75%);
+    background-size: 48px 48px;
+    background-position: 0 0, 24px 24px;
+    color: var(--text);
+    font-family: Galmuri11, 'Malgun Gothic', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: none;
+}
+
+a {
+    color: var(--gold);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+img.px, .px {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+.s2 {
+    width: 32px;
+    height: 32px;
+}
+
+.s3 {
+    width: 48px;
+    height: 48px;
+}
+
+.s4 {
+    width: 64px;
+    height: 64px;
+}
+
+.s6 {
+    width: 96px;
+    height: 96px;
+}
+
+/* ---------- 레이아웃 ---------- */
+.wrap {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 16px;
+}
+
+.row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.col {
+    flex: 1 1 320px;
+    min-width: 0;
+}
+
+.grid {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+.spacer {
+    flex: 1;
+}
+
+.muted {
+    color: var(--muted);
+}
+
+.center {
+    text-align: center;
+}
+
+.mt {
+    margin-top: 16px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ---------- 상단 바 ---------- */
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--wood-dark);
+    border-bottom: var(--px) solid var(--outline);
+    box-shadow: inset 0 calc(-1 * var(--px)) 0 #3a2415;
+}
+
+.topbar .wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--text);
+    margin-right: 8px;
+}
+
+.brand:hover {
+    text-decoration: none;
+}
+
+/* 투명 로고의 원본 비율을 유지하고 공통 헤더 높이에 맞춘다. */
+.brand-logo {
+    display: block;
+    width: auto;
+    height: 72px;
+    object-fit: contain;
+}
+
+.nav a {
+    color: var(--muted);
+    padding: 6px 10px;
+    border: var(--px) solid transparent;
+}
+
+.nav a.on, .nav a:hover {
+    color: var(--text);
+    background: var(--wood);
+    border-color: var(--outline);
+    text-decoration: none;
+}
+
+.hud {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.hud .gold {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--gold);
+    font-weight: 700;
+}
+
+body.embed .topbar, body.embed .footer {
+    display: none;
+}
+
+/* ---------- 나무 패널과 슬롯 ---------- */
+.panel {
+    background: var(--wood);
+    border: var(--px) solid var(--outline);
+    box-shadow: inset var(--px) var(--px) 0 var(--wood-light), inset calc(-1 * var(--px)) calc(-1 * var(--px)) 0 var(--wood-dark);
+    padding: 14px;
+}
+
+.panel > h2, .panel > h3 {
+    margin: 0 0 10px;
+    font-size: 16px;
+}
+
+.panel.dark {
+    background: var(--slot-in);
+    box-shadow: inset var(--px) var(--px) 0 #3a2415;
+}
+
+.title-tab {
+    display: inline-block;
+    background: var(--wood);
+    border: var(--px) solid var(--outline);
+    border-bottom: none;
+    padding: 4px 14px;
+    font-weight: 700;
+    position: relative;
+    top: var(--px);
+}
+
+.slot {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--slot);
+    border: var(--px) solid var(--outline);
+    box-shadow: inset var(--px) var(--px) 0 var(--slot-in);
+    min-height: 72px;
+    padding: 6px;
+    cursor: pointer;
+    text-align: center;
+}
+
+.slot:hover {
+    background: #7a4f2f;
+}
+
+.slot.sel {
+    outline: var(--px) solid var(--text);
+    outline-offset: -6px;
+}
+
+.slot.listed {
+    filter: grayscale(.6) brightness(.85);
+}
+
+.slot .count {
+    position: absolute;
+    right: 4px;
+    bottom: 2px;
+    font-weight: 700;
+    text-shadow: 2px 2px 0 var(--outline);
+}
+
+.slot .badge {
+    position: absolute;
+    left: 4px;
+    top: 2px;
+    font-size: 11px;
+    color: var(--gold);
+    text-shadow: 1px 1px 0 var(--outline);
+}
+
+.slots {
+    display: grid;
+    gap: 6px;
+    grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+}
+
+.rarity-보석 {
+    border-color: #2e5f8f;
+    box-shadow: inset var(--px) var(--px) 0 #4a8fd0;
+}
+
+.rarity-물고기 {
+    border-color: #2e6b3a;
+    box-shadow: inset var(--px) var(--px) 0 var(--green-dark);
+}
+
+/* ---------- 버튼과 입력 ---------- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font: inherit;
+    font-weight: 700;
+    color: var(--text);
+    cursor: pointer;
+    background: var(--green-dark);
+    border: var(--px) solid var(--outline);
+    box-shadow: inset 0 calc(-1 * var(--px)) 0 #2e6b3a, inset 0 var(--px) 0 var(--green);
+    padding: 7px 14px;
+    text-decoration: none;
+}
+
+.btn:hover {
+    filter: brightness(1.1);
+    text-decoration: none;
+}
+
+.btn:active {
+    transform: translateY(2px);
+}
+
+.btn.btn:disabled {
+    /* 색 버튼(.red, .gold, .wood)보다 우선 */
+    background: var(--steel);
+    box-shadow: none;
+    cursor: not-allowed;
+    color: #e7e7e7;
+}
+
+.btn.wood {
+    background: var(--wood-light);
+    box-shadow: inset 0 calc(-1 * var(--px)) 0 var(--wood-dark);
+}
+
+.btn.red {
+    background: var(--red);
+    box-shadow: inset 0 calc(-1 * var(--px)) 0 #7e2d20, inset 0 var(--px) 0 var(--pink);
+}
+
+.btn.gold {
+    background: #c99a2e;
+    box-shadow: inset 0 calc(-1 * var(--px)) 0 #7d5c14, inset 0 var(--px) 0 var(--gold);
+    color: var(--outline);
+}
+
+.btn.big {
+    font-size: 18px;
+    padding: 12px 22px;
+}
+
+input, select {
+    font: inherit;
+    color: var(--outline);
+    background: var(--text);
+    border: var(--px) solid var(--outline);
+    padding: 6px 8px;
+    min-width: 0;
+}
+
+label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 2px;
+}
+
+.field {
+    margin-bottom: 10px;
+}
+
+form.inline {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+/* ---------- 표, 태그와 탭 ---------- */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 6px 8px;
+    text-align: left;
+    border-bottom: 2px solid var(--wood-dark);
+    vertical-align: middle;
+}
+
+th {
+    color: var(--muted);
+    font-weight: 400;
+    font-size: 12px;
+}
+
+td.num, th.num {
+    text-align: right;
+}
+
+.tag {
+    display: inline-block;
+    padding: 1px 6px;
+    border: 2px solid var(--outline);
+    font-size: 12px;
+    background: var(--slot-in);
+}
+
+.tag.OPEN, .tag.ACTIVE, .tag.OWNED {
+    background: var(--green-dark);
+}
+
+.tag.SOLD, .tag.WON {
+    background: #c99a2e;
+    color: var(--outline);
+}
+
+.tag.UNSOLD, .tag.REFUNDED, .tag.CANCELLED {
+    background: var(--steel);
+    color: var(--outline);
+}
+
+.tag.LISTED {
+    background: #2e5f8f;
+}
+
+.tabs {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.tabs button {
+    font: inherit;
+    color: var(--muted);
+    background: var(--wood-dark);
+    border: var(--px) solid var(--outline);
+    border-bottom: none;
+    padding: 6px 12px;
+    cursor: pointer;
+}
+
+.tabs button.on {
+    background: var(--wood);
+    color: var(--text);
+}
+
+/* 공통 화면 틀: 짧은 화면에서도 하단 안내가 아래에 놓이도록 본문을 늘린다. */
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+.main-content {
+    width: 100%;
+    flex: 1;
+}
+
+.title-tab {
+    margin: 0;
+    font-size: 16px;
+}
+
+.nav {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.user-name {
+    overflow-wrap: anywhere;
+}
+
+.hud {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.footer {
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+    padding: 24px 16px;
+}
+
+/* 키보드 사용자는 공통 메뉴를 건너뛰고 본문으로 바로 이동할 수 있다. */
+.skip-link {
+    position: absolute;
+    top: 0;
+    left: 16px;
+    z-index: 30;
+    padding: 12px;
+    color: var(--outline);
+    background: var(--gold);
+    transform: translateY(-120%);
+}
+
+.skip-link:focus {
+    transform: translateY(0);
+}
+
+:focus-visible {
+    outline: var(--px) solid var(--water);
+    outline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+    .brand-logo {
+        height: 56px;
+    }
+
+    .wrap {
+        padding: 10px;
+    }
+
+    .hud {
+        margin-left: 0;
+    }
+}

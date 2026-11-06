@@ -1,7 +1,10 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 from database import Base, engine
 from shared.core.exception_handlers import register_exception_handlers
@@ -26,6 +29,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="AX Game BE API", lifespan=lifespan)
+
+# 실행 폴더와 관계없이 src 아래의 공통 화면과 정적 파일을 찾는다.
+SRC_DIR = Path(__file__).resolve().parent
+app.state.templates = Jinja2Templates(directory=str(SRC_DIR / "templates"))
+app.mount("/static", StaticFiles(directory=str(SRC_DIR / "static")), name="static")
+
 register_exception_handlers(app)
 
 # 도메인 라우터는 /auth 등의 경로를 선언하고 앱에 직접 등록할 때 공통 버전을 적용한다.
