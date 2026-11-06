@@ -26,7 +26,7 @@ if TEST_URL:
     from users.infrastructure.repositories import SqlAlchemyUserRepository
 
 
-async def request(method, path, body=None, token=None, form=False):
+async def request(method, path, body=None, token=None, form=False, application=None, query_string=b""):
     data = (urlencode(body) if form else json.dumps(body)).encode() if body is not None else b""
     headers = [(b"content-type", b"application/x-www-form-urlencoded" if form else b"application/json")]
     if token is not None:
@@ -34,7 +34,7 @@ async def request(method, path, body=None, token=None, form=False):
     scope = {
         "type": "http", "asgi": {"version": "3.0"}, "http_version": "1.1",
         "method": method, "scheme": "http", "path": path, "raw_path": path.encode(),
-        "root_path": "", "query_string": b"", "headers": headers,
+        "root_path": "", "query_string": query_string, "headers": headers,
         "client": ("127.0.0.1", 12345), "server": ("test", 80),
     }
     messages = []
@@ -46,7 +46,7 @@ async def request(method, path, body=None, token=None, form=False):
         messages.append(message)
 
     try:
-        await app(scope, receive, send)
+        await (application if application is not None else app)(scope, receive, send)
     except Exception:
         # ServerErrorMiddleware는 500 응답 전송 후 원래 예외를 다시 발생시킨다.
         if not any(m.get("status") == 500 for m in messages):
@@ -130,6 +130,38 @@ class AuthIntegrationTests(unittest.IsolatedAsyncioTestCase):
         expired = jwt.encode(payload, os.environ["JWT_SECRET_KEY"], algorithm="HS256")
         self.assertEqual((await request("GET", "/v1/users/me", token=expired))[0], 401)
         self.assertEqual((await request("POST", "/v1/auth/logout", token=expired))[0], 401)
+
+    async def test_me_uses_authenticated_id_not_query_parameter(self):
+        _, created, _ = await self.register()
+        _, issued, _ = await self.login()
+        status, me, _ = await request(
+            "GET", "/v1/users/me", token=issued["access_token"],
+            query_string=b"user_id=9223372036854775807",
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(me["id"], created["id"])
+        self.assertEqual((await request(
+            "GET", "/v1/users/me", query_string=f"user_id={created['id']}".encode(),
+        ))[0], 401)
+
+    async def test_user_router_accepts_an_independent_identity_provider(self):
+        from fastapi import FastAPI
+        from users.presentation.router import create_user_router
+
+        _, created, _ = await self.register()
+
+        async def current_user_id() -> int:
+            return int(created["id"])
+
+        isolated_app = FastAPI()
+        isolated_app.include_router(create_user_router(current_user_id), prefix="/v1")
+        status, me, headers = await request("GET", "/v1/users/me", application=isolated_app)
+        self.assertEqual(status, 200)
+        self.assertEqual(me["id"], created["id"])
+        self.assertEqual(headers[b"cache-control"], b"no-store")
+        operation = isolated_app.openapi()["paths"]["/v1/users/me"]["get"]
+        self.assertNotIn("security", operation)
+        self.assertNotIn("parameters", operation)
 
     async def test_wrong_password_unknown_and_deleted_account(self):
         from datetime import datetime, timezone

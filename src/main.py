@@ -8,9 +8,10 @@ from shared.core.exception_handlers import register_exception_handlers
 from shared.core.logging_config import setup_logging
 
 from auth.infrastructure.token_codec import get_token_codec
+from auth.presentation.dependencies import get_current_user_id
 from auth.presentation.exception_handlers import register_auth_exception_handlers
 from auth.presentation.router import router as auth_router
-from users.presentation.router import router as users_router
+from users.presentation.router import create_user_router
 
 API_PREFIX = "/v1"
 
@@ -35,7 +36,7 @@ register_auth_exception_handlers(app)
 
 # 도메인 라우터는 /auth 등의 경로를 선언하고 앱에 직접 등록할 때 공통 버전을 적용한다.
 app.include_router(auth_router, prefix=API_PREFIX)
-app.include_router(users_router, prefix=API_PREFIX)
+app.include_router(create_user_router(get_current_user_id), prefix=API_PREFIX)
 
 
 @app.get("/health")

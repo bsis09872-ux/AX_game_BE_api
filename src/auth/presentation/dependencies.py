@@ -30,3 +30,9 @@ async def get_current_token(
 ) -> TokenClaims:
     # 서명, 만료, 폐기 여부와 현재 회원 상태를 모두 확인한다.
     return await service.authenticate(token)
+
+
+async def get_current_user_id(
+    claims: TokenClaims = Depends(get_current_token),
+) -> int:
+    return claims.user_id
