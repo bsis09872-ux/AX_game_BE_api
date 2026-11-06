@@ -290,7 +290,7 @@ class InventoryItemRepository:
                 .where(*conditions)
                 .order_by(*_ITEM_SORTS[sort])
                 .limit(size)
-                .offset((page-1)*size))
+                .offset((page-1)*size)
             )
         ).all()
-        return [_item_to_domain(item_row, )]
+        return [_item_to_domain(item_row, definition_row) for item_row, definition_row in rows], total
