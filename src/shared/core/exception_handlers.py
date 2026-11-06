@@ -2,13 +2,7 @@
 import logging
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from shared.core.exceptions import (
-    AppError,
-    BusinessRuleError,
-    ConflictError,
-    ForbiddenError,
-    NotFoundError,
-)
+from shared.core.exceptions import AppError, BusinessRuleError, ConflictError, NotFoundError
 
 # 모듈 logger를 얻는다. 출력 형식과 대상은 shared.core.logging_config에서 설정한다.
 logger = logging.getLogger(__name__)
@@ -39,8 +33,6 @@ def register_exception_handlers(app: FastAPI) -> None:
     async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
         if isinstance(exc, BusinessRuleError):
             status_code = 400
-        elif isinstance(exc, ForbiddenError):
-            status_code = 403
         elif isinstance(exc, NotFoundError):
             status_code = 404
         elif isinstance(exc, ConflictError):

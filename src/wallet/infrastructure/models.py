@@ -1,7 +1,8 @@
 """지갑 ORM 모델 (ERD Ver_4.0 wallets)
 
 지갑 도메인이 소유하는 테이블은 wallets 하나다.
-listings, trades, users 모델은 각 담당 도메인의 것을 import해서 쓴다.
+다른 도메인 테이블(listings, trades, users, item_definitions)은 external_tables.py에서
+조회용으로만 가볍게 참조한다.
 예약금 테이블(wallet_holds)과 잔액 원장(wallet_entries)은 Ver_4.0에서 삭제됐다.
 """
 from datetime import datetime
@@ -9,10 +10,10 @@ from datetime import datetime
 from sqlalchemy import BigInteger, CheckConstraint, DateTime, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column
 
-from shared.core.database import Base  # TODO: 공통 Base 위치에 맞추기
+from database import Base
 
 
-class Wallet(Base):
+class WalletModel(Base):
     __tablename__ = "wallets"
     __table_args__ = (
         CheckConstraint("balance >= 0", name="ck_wallets_balance_non_negative"),
@@ -33,4 +34,4 @@ class Wallet(Base):
     )
 
     def __repr__(self) -> str:
-        return f"Wallet(user_id={self.user_id}, balance={self.balance})"
+        return f"WalletModel(user_id={self.user_id}, balance={self.balance})"

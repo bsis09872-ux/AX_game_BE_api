@@ -7,6 +7,10 @@ from database import Base, engine
 from shared.core.exception_handlers import register_exception_handlers
 from shared.core.logging_config import setup_logging
 
+# create_all이 테이블을 만들도록 ORM 모델을 Base.metadata에 등록한다
+import users.infrastructure.models  # noqa: F401
+import wallet.infrastructure.models  # noqa: F401
+
 # auth의 가입 흐름 완성 후 아래 import와 include_router 예시를 활성화한다.
 # from auth.presentation.router import router as auth_router
 

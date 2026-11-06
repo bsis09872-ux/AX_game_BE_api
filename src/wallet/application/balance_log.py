@@ -18,7 +18,9 @@ from typing import Literal
 
 logger = logging.getLogger(__name__)
 
-BalanceEventType = Literal["INITIAL_GRANT", "PURCHASE_DEBIT", "SALE_CREDIT"]
+BalanceEventType = Literal[
+    "INITIAL_GRANT", "PURCHASE_DEBIT", "SALE_CREDIT", "BALANCE_CREDIT", "BALANCE_DEBIT"
+]
 
 
 @dataclass(frozen=True)
