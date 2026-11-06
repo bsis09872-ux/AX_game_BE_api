@@ -41,6 +41,11 @@ class DefinitionNotFoundError(NotFoundError):
     code: str = 'DEFINITION_NOT_FOUND'
     message: str = '아이템 카탈로그를 찾을 수 없습니다.'
 
+# 404: 아이템을 받을 사용자가 없거나 탈퇴한 경우
+class OwnerNotFoundError(NotFoundError):
+    code: str = 'OWNER_NOT_FOUND'
+    message: str = '아이템을 받을 사용자를 찾을 수 없습니다.'
+
 # 403: 소유자가 아닌 사람이 아이템 상태 변경을 시도하는 경우
 class NotOwnerError(ForbiddenError):
     code: str = 'NOT_OWNER'

@@ -8,6 +8,13 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from inventory.application.contracts import UserLookup
+from inventory.application.service import InventoryService
+
+from inventory.infrastructure.repositories import (
+    InventoryItemRepository,
+    ItemDefinitionRepository
+)
+from inventory.infrastructure.unit_of_work import SqlAlchemyUnitOfWork
 from inventory.infrastructure.user_lookup import UserLookupAdapter
 
 # 이걸 쓰면 users의 infrastructure를 몰라도 된다 
@@ -16,3 +23,12 @@ from users.wiring import build_user_service
 # 반환 타입은 계약에서 정한 바와 같다 
 def build_user_lookup(session: AsyncSession) -> UserLookup:
     return UserLookupAdapter(user_service=build_user_service(session=session))
+
+# 서비스 돌아가게 하기
+def build_inventory_service(session: AsyncSession) -> InventoryService:
+    return InventoryService(
+        items=InventoryItemRepository(session),
+        definitions=ItemDefinitionRepository(session),
+        user_lookup=build_user_lookup(session),
+        unit_of_work=SqlAlchemyUnitOfWork(session)
+    )
