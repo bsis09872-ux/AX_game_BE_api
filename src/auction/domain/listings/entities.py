@@ -176,8 +176,15 @@ class Listing:
     def remaining(self, now: datetime) -> timedelta | None:
         self._ensure_aware(now)
 
+        # 진행 중인 경매가 아니면 남은 시간이 없음
         if self.status != ListingStatus.BIDDING:
             return None
+
+        # 진행 중인 경매라면 종료 시각이 반드시 존재해야 함
+        if self.ends_at is None:
+            raise ValueError(
+                "경매 진행 중인 매물에는 종료 시각(ends_at)이 필수입니다."
+            )
 
         return max(self.ends_at - now, timedelta(0))
 
