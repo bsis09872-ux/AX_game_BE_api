@@ -26,8 +26,8 @@ class User:
             raise InvalidUserError("로그인 ID는 소문자, 숫자, 밑줄로 4~50자여야 합니다.")
 
         # 거래 기록의 이름 스냅샷 길이와 맞추며 공백뿐인 표시 이름은 허용하지 않는다.
-        if not display_name.strip() or len(display_name) > 50:
-            raise InvalidUserError("표시 이름은 공백이 아닌 문자를 포함한 1~50자여야 합니다.")
+        if not display_name.strip() or not 2 <= len(display_name) <= 50:
+            raise InvalidUserError("표시 이름은 공백이 아닌 문자를 포함한 2~50자여야 합니다.")
 
         # 해시의 누락만 검사하고 원본은 보존한다. 실제 해싱은 별도 구현이 담당한다.
         if not password_hash.strip():
