@@ -14,27 +14,35 @@
 from sqlalchemy import case, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from inventory.domain.enums import ItemRarity
-from inventory.domain.exceptions import DefinitionNotFoundError
+from inventory.domain.enums import ItemEventType, ItemOrigin, ItemRarity, ItemStatus
+from inventory.domain.exceptions import DefinitionNotFoundError, ItemNotFoundError
+from inventory.domain.inventory_item import InventoryItem
 from inventory.domain.item_definition import ItemDefinition
+from inventory.domain.item_event import ItemEvent
 # 테이블 모델은 이 파일 안에서만 쓰고 밖으로는 ItemDefinition(도메인 객체)만 내보낸다
-from inventory.infrastructure.models import InventoryItemModel, ItemDefinitionModel
+from inventory.infrastructure.models import (
+    InventoryItemModel,
+    ItemDefinitionModel,
+    ItemEventModel
+)
 
-# 희귀도를 글자 순서가 아니라 순위로 정렬
-# {'COMMON': 1, 'UNCOMMON': 2, 'RARE': 3, 'EPIC': 4, 'LEGENDARY': 5}가 생성됨
+
+# === 아이템 카탈로그 레포지토리 ===
+
+# [아이템 카탈로그 정렬] 희귀도를 글자 순서가 아니라 순위로 정렬
 _RARITY_RANK = case(
     {rarity.value: rank for rank, rarity in enumerate(ItemRarity, start=1)},
     value=ItemDefinitionModel.rarity
 )
 
-# 페이지마다 정렬이 엉키지 않도록 함
+# [아이템 카탈로그 정렬] 페이지마다 정렬이 엉키지 않도록 함
 _SORTS = {
     'rarity_desc': (_RARITY_RANK.desc(), ItemDefinitionModel.name, ItemDefinitionModel.id),
     'name_asc': (ItemDefinitionModel.name, ItemDefinitionModel.id)
 }
 
+# [아이템 카탈로그 객체] 레코드 하나가 아이템 카탈로그 도메인 객체
 def _to_domain(row: ItemDefinitionModel) -> ItemDefinition:
-    # 레코드 하나가 도메인 객체가 된다
     return ItemDefinition(
         code=row.code,
         name=row.name,
@@ -48,19 +56,22 @@ def _to_domain(row: ItemDefinitionModel) -> ItemDefinition:
         id=row.id
     )
 
+# [아이템 카탈로그] 저장소 CRUD 함수 정의
 class ItemDefinitionRepository:
 
-    # 세션은 레포지토리가 직접 만들지 않고 서비스가 만들어 넘겨준다
-    # 같은 세션으로 다른 저장소를 쓰면 하나의 트랜잭션으로 묶인다
+    # 세션은 서비스가 만들어 넘겨 준다 (같은 세션이면 한 트랜잭션으로 묶인다)
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    # 기본키(id)로 레코드를 찾는다
+
+    # [조회] 기본키(id)로 도메인 객체를 조회
     async def find_by_id(self, definition_id: int) -> ItemDefinition | None:
         row = await self._session.get(ItemDefinitionModel, definition_id)
         return None if row is None else _to_domain(row)
+    
 
-    # 코드(code)로 레코드를 찾는다 (기본키가 아니기 때문에 session.get 대신 select 사용)
+    # [조회] 코드(code)로 도메인 객체를 조회
+    # → 코드(code)는 기본키가 아니기 때문에 session.get 대신 select 사용
     async def find_by_code(self, code: str) -> ItemDefinition | None:
         result = await self._session.execute(
             select(ItemDefinitionModel).where(ItemDefinitionModel.code == code)
@@ -68,26 +79,28 @@ class ItemDefinitionRepository:
         row = result.scalar_one_or_none() # code는 unique이기 때문에 one_or_none
         return None if row is None else _to_domain(row)
 
-    # (해당 페이지의) 목록을 받는다 + 덤으로 받는 목록의 length 까지 (= total)
+
+    # [조회] 페이지 기준으로 목록 내역 및 total 조회
     async def find_all(
-            # 별표 역할: 별표 뒤의 인자는 이름을 붙여서만 넘길 수 있다 (값이 엉뚱하게 들어가지 않도록)
-            self, *, category=None, rarity=None, sort='rarity_desc', page=1, size=20
+        # 별표 뒤의 인자는 이름을 붙여야만 넘길 수 있다 (값이 엉뚱하게 들어가지 않도록)
+        self, *, category=None, rarity=None, sort='rarity_desc', page=1, size=20
     ) -> tuple[list[ItemDefinition], int]:
 
-        # 조건 초기화, 조건이 있으면 조건부 조회 + 조건이 없으면 전체 조회 
+        # 1. 조건 초기화, 조건이 있으면 조건부 조회 + 조건이 없으면 전체 조회 
         conditions = []
         if category is not None:
             conditions.append(ItemDefinitionModel.category == category)
         if rarity is not None:
             conditions.append(ItemDefinitionModel.rarity == rarity)
 
-        # 받는 목록의 length (프론트가 총 몇 페이지가 나올지 판단할 때 사용)
+        # 2. total 조회 (총 몇 페이지가 나올지 프론트가 판단할 때 사용할 수 있다)
         total = (
             await self._session.execute(
                 select(func.count()).select_from(ItemDefinitionModel).where(*conditions)
             )
         ).scalar_one()  # scalar_one(): 1행 1열의 값을 꺼낸다. total은 항상 1행이라서 맞다
-        
+
+        # 3. 목록 내역 조회
         rows = (
             await self._session.execute(
                 select(ItemDefinitionModel)
@@ -97,16 +110,14 @@ class ItemDefinitionRepository:
                 .limit(size) # 한 페이지에서 몇 개를 받을 건지
                 .offset((page-1) * size) # 앞 페이지에서 받은 만큼 건너뛴다
             )
-        ).scalars() 
-        # 여러 행에서 각 행의 첫 번째 열만 꺼내 순회할 수 있게 한다 / 행이 0개면 빈 목록 (오류 아님)
-        # .scalar로 쓰려면 인덱싱해야 조회할 수 있다
-        # 그리고 .scalar는 행이 2개 이상이어도 첫 행을 돌려주므로 실수를 숨긴다 
-        #   → 한 행을 뽑고 싶을 때는 혹시 모를 상황을 고려해 .scalar 대신 .scalar_one을 쓰자 
+        ).scalars() # 목록이니까 .scalars() 
         return [_to_domain(row) for row in rows], total
 
-    # 도메인 객체 레코드 추가와 업데이트
+
+    # [추가] 도메인 객체 추가
     async def save(self, definition: ItemDefinition) -> ItemDefinition:
-        # id가 없으면 아직 DB에 없는 아이템 카탈로그이기 때문에 행을 새로 만든다 (INSERT)
+
+        # (INSERT) id가 없으면 아직 DB에 없는 아이템 카탈로그이기 때문에 행을 새로 만든다 
         if definition.id is None:
             row = ItemDefinitionModel(
                 code=definition.code,
@@ -123,7 +134,8 @@ class ItemDefinitionRepository:
             await self._session.flush() # 세션에 저장한 것을 DB로 보낸다 
             definition.id = row.id # DB가 받을 때 지정한 id 값을 도메인 객체에도 넣어준다 
             return definition
-        # id가 있으면 이미 있는 아이템 카탈로그이기 때문에 행을 찾아 값만 바꾼다 (UPDATE)
+
+        # (UPDATE) id가 있으면 이미 있는 아이템 카탈로그이기 때문에 행을 찾아 값만 바꾼다 
         row = await self._session.get(ItemDefinitionModel, definition.id)
         if row is None:
             raise DefinitionNotFoundError() # id가 있는데 None이면 당연히 에러
@@ -137,7 +149,8 @@ class ItemDefinitionRepository:
         await self._session.flush()
         return definition
 
-    # 해당 아이템 카탈로그를 가진 아이템이 몇 개인지 카운트
+
+    # [조회] 특정 아이템 카탈로그를 가진 아이템 개수 
     async def count_items(self, definition_id: int) -> int:
         result = await self._session.execute(
             select(func.count())
@@ -145,12 +158,114 @@ class ItemDefinitionRepository:
             .where(InventoryItemModel.item_definition_id == definition_id)
         )
         return result.scalar_one() 
-        # scalar_one(): 1행 1열의 값을 꺼낸다. count_item은 항상 1행이라서 맞다
+        # scalar_one(): 1행 1열의 값을 꺼낸다. count_item은 항상 1행
 
-    # 도메인 객체 레코드 삭제
+
+    # [삭제] 도메인 객체 삭제
     async def delete(self, definition: ItemDefinition) -> None:
         result = await self._session.execute(
             delete(ItemDefinitionModel).where(ItemDefinitionModel.id == definition.id)
         )
-        if result.rowcount == 0: # 지워진 행 수가 0이면 지울 행이 없는 상황 = 지울 건 다 지운 상황
+        if result.rowcount == 0: # 지워진 행 수가 0 = 지울 행이 없다 = 지울 건 다 지웠다
             raise DefinitionNotFoundError()
+
+
+
+# === 개별 아이템 및 아이템 이력 레포지토리 ===
+
+# [개별 아이템 정렬] 각 항목의 마지막 id로 페이지 이동 시 정렬 규칙 유지
+_ITEM_SORTS = {
+    # 최신 획득
+    'acquired_desc': (InventoryItemModel.acquired_at.desc(), InventoryItemModel.id.desc()),
+    # 희귀도 순
+    'rarity_desc': (_RARITY_RANK.desc(), ItemDefinitionModel.name, InventoryItemModel.id),
+    # 카탈로그 기준
+    'name_asc': (ItemDefinitionModel.name, InventoryItemModel.id)
+}
+
+# [개별 아이템 정렬] 아이템과 카탈로그를 잇는 JOIN 조건
+_WITH_DEFINITION = InventoryItemModel.item_definition_id == ItemDefinitionModel.id
+
+# [개별 아이템 객체] 아이템 행 + 아이템 카탈로그 행 조합이 도메인 객체
+def _item_to_domain(item_row: InventoryItemModel, definition_row: ItemDefinitionModel) -> InventoryItemModel:
+    return InventoryItem(
+        definition=_to_domain(definition_row),
+        owner_id=item_row.owner_id,
+        status=ItemStatus(item_row.status),
+        origin=ItemOrigin(item_row.origin),
+        acquired_at=item_row.acquired_at,
+        resale_available_at=item_row.resale_available_at,
+        id=item_row.id
+    )
+
+# [아이템 이력 객체] 레코드 하나가 아이템 이력 도메인 객체
+def _event_to_domain(row: ItemEventModel) -> ItemEvent:
+    return ItemEvent(
+        event_type=ItemEventType(row.event_type),
+        from_owner_id=row.from_owner_id,
+        to_owner_id=row.to_owner_id,
+        created_at=row.created_at,
+        actor_id=row.actor_id,
+        listing_id=row.listing_id,
+        trade_id=row.trade_id
+    )
+
+# [개별 아이템 및 아이템 이력] 저장소 CRUD 함수 정의
+class InventoryItemRepository:
+
+    # 세션은 서비스가 만들어 넘겨 준다 (같은 세션이면 한 트랜잭션으로 묶인다)
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+
+    # 개별 아이템 도메인 객체를 가져오는 select문
+    def _select_items(self):
+        return select(InventoryItemModel, ItemDefinitionModel).join(
+            ItemDefinitionModel, _WITH_DEFINITION
+        )
+
+
+    # [조회] 개별 아이템 상태 조회
+    async def _find_one(self, item_id: int, for_update: bool) -> InventoryItem | None:
+        statement = self._select_items().where(InventoryItemModel.id == item_id)    
+
+        # 개별 아이템을 조회하는 동안에는 비관적 락 / 조회 중에 상태가 변경되면 안되니까 
+        if for_update:
+            statement = statement.with_for_update(of=InventoryItemModel)
+        # 개별 아이템은 unique이기 때문에 그 아이템의 상태도 one_or_none 
+        row = (await self._session.execute(statement)).one_or_none()
+        # 상태 값이 있으면 개별 아이템 도메인 객체 언팩
+        return None if row is None else _item_to_domain(*row)
+
+
+    # [조회] 개별 아이템 단순 조회
+    async def find_by_id(self, item_id: int) -> InventoryItem | None:
+        return await self._find_one(item_id, for_update=False)
+
+
+    # [조회] 개별 아이템 잠금 조회
+    # → 상태 변화가 일어날 것 같은 상황에서 조회 = 매물 도메인이 상태를 변경하기 위해 조회
+    async def find_by_for_update(self, item_id: int) -> InventoryItem | None:
+        return await self._find_one(item_id, for_update=True)
+
+
+    # [조회] 특정 소유자의 아이템 목록
+    async def find_by_owner(
+            self,
+            owner_id: int,
+            *,
+            status=None,
+            category=None,
+            rarity=None,
+            sort='acquired_desc',
+            page=1,
+            size=20,
+    ) -> tuple[list[InventoryItem], int]:
+
+        conditions = [InventoryItemModel.owner_id == owner_id]
+        if status is not None:
+            conditions.append(InventoryItemModel.status == status)
+        if category is not None:
+            conditions.append(ItemDefinitionModel.category == category)
+        if rarity is not None:
+            conditions.append(ItemDefinitionModel.rarity == rarity)
