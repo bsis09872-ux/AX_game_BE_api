@@ -16,11 +16,13 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
+# TODO: auth 담당 쪽에 get_current_user_id(HTTPBearer + 폐기 토큰·탈퇴 검사, int 반환)가 생기면 동작한다.
+#       그 전까지 main.py에 이 라우터를 등록하지 않는다.
+from auth.presentation.dependencies import get_current_user_id
 from shared.core.database import get_session
 from shared.core.schemas import PageParams, PageResponse
 from wallet.application import service
 
-from .dependencies import get_current_user_id  # 임시. auth 쪽이 생기면 교체
 from .schemas import TradeDetailResponse, TradeListItem, WalletResponse
 
 router = APIRouter(prefix="/v1", tags=["wallet"])
