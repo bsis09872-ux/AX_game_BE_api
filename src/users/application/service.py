@@ -54,5 +54,5 @@ class UserService:
         user = User(
             login_id=login_id, password_hash=password_hash, display_name=display_name
         )
-        # 회원 ID를 지갑 생성에 사용하므로, 최종 commit은 가입 절차를 조율하는 호출자가 맡는다.
+        # 저장소는 flush까지 수행하며, 최종 commit은 가입 절차를 조율하는 호출자가 맡는다.
         return await self.repository.create(user=user)

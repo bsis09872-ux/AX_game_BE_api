@@ -33,7 +33,7 @@ class User:
         if not password_hash.strip():
             raise InvalidUserError("비밀번호 해시가 필요합니다.")
 
-        # 관리자 역할은 회원 등급과 다르며 가입 요청에서 임의 지정하지 못하게 한다.
+        # 도메인은 역할의 허용 값을 검사한다. 가입 요청에서의 역할 지정은 입력 스키마가 막는다.
         if role not in ("USER", "ADMIN"):
             raise InvalidUserError("유효하지 않은 회원 역할입니다.")
 
