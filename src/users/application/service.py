@@ -2,7 +2,8 @@
 
 import logging
 
-from users.domain.repository import UserRepository, User
+from users.domain.repository import UserRepository
+from users.domain.user import User
 from users.domain.exceptions import UserNotFoundError, LoginIdAlreadyExistsError
 
 from users.application.dto import UserSummary
