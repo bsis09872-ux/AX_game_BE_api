@@ -13,8 +13,7 @@ auction 바운디드 컨텍스트(BC)의 domain 계층이다. 순수 Python으�
  │  ├─ entities.py       # 낙찰 확정 기록
  │  ├─ repositories.py   # 거래 기록 저장·조회 인터페이스
  │  └─ policies.py       # 낙찰 기록 기반 연속 낙찰 제한 판단
- ├─ README.md           # 도메인 경계 안내
- └─ AUC08_RULES.md      # 연속 낙찰 제한 확정 규칙 (구현 예정)
+ └─ README.md           # 도메인 경계 안내
 ```
 
 ## 애그리거트 경계
@@ -45,5 +44,4 @@ auction 바운디드 컨텍스트(BC)의 domain 계층이다. 순수 Python으�
 
 ## 연속 낙찰 제한
 
-- [B 방식 확정 규칙](AUC08_RULES.md)을 따른다. 현재 policies.py는 이전 방식이며 교체가 필요하다.
 - User는 횟수·종료 시각을 저장하고 Auction은 계산 규칙을 소유한다.
