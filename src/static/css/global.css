@@ -513,6 +513,11 @@ body {
     outline-offset: 3px;
 }
 
+/* 본문 바로가기의 포커스 대상에는 화면 전체를 두르는 테두리를 표시하지 않는다. */
+.main-content:focus-visible {
+    outline: none;
+}
+
 @media (max-width: 640px) {
     .brand-logo {
         height: 56px;
