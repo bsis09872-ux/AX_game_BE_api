@@ -7,7 +7,7 @@ class RegisterUserRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     # 로그인 ID 제약은 User 도메인의 생성 규칙과 일치시킨다.
     login_id: str = Field(min_length=4, max_length=50, pattern="^[a-z0-9_]+$")
-    display_name: str = Field(min_length=1, max_length=50, pattern=r"\S", description="게임에 표시할 이름")
+    display_name: str = Field(min_length=2, max_length=50, pattern=r"\S", description="게임에 표시할 이름")
     password: str = Field(min_length=1, max_length=1024, repr=False)
 
 
