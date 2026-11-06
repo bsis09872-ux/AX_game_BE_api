@@ -1,21 +1,12 @@
-# 거래 Repository의 SQLAlchemy 구현체다.
-# domain 인터페이스를 구현하며 ORM 모델과 불변 Trade 엔티티를 변환한다.
-# DB 세션은 외부에서 받으며 commit·rollback은 트랜잭션 담당자가 처리한다.
+# 거래 기록을 저장·조회하고 ORM 모델을 도메인 Trade로 변환한다.
+# 세션은 외부에서 받으며 commit·rollback은 트랜잭션 담당자가 처리한다.
+# save는 신규 거래만 저장하고 ID가 반영된 새 Trade를 반환한다.
 #
-# 사용 계약:
-# - save는 신규 거래만 저장하며 기존 거래의 수정은 제공하지 않는다.
-# - 저장 후 ID가 반영된 새 Trade를 반환하므로 반환값을 사용한다.
-# - 매물당 거래 1건은 DB의 listing_id UNIQUE 제약으로 보장한다.
-# - 정산·매물 상태 변경·거래 저장은 하나의 트랜잭션으로 처리한다.
-# - 조회 결과가 없어도 목록은 빈 리스트로 반환한다.
-#
-# 확인할 것:
-# [ ] 페이지 번호는 1부터, 내역은 체결 시각 최신순으로 팀과 합의
-# [ ] page_size를 외부 설정에서 전달
-# [ ] 중복 거래 저장 시 rollback과 업무 오류 변환 확인
-# [ ] 실제 PostgreSQL에서 저장·조회·정산 rollback 테스트
+# [TO DO] 정산·Trade 저장·User 제한 상태 갱신을 같은 트랜잭션으로 연결한다.
+# [TO DO] 같은 사용자의 낙찰 처리를 직렬화할 잠금 계약을 합의한다.
+# [TO DO] 페이지 크기와 응답 형식을 application·presentation과 맞춘다.
+# [TO DO] 기간 조회 경계·중복 거래·rollback을 실제 PostgreSQL에서 테스트한다.
 
-from abc import ABC
 from dataclasses import replace
 from datetime import datetime
 
@@ -24,10 +15,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auction.domain.trades.entities import Trade
 from auction.domain.trades.repositories import TradeRepository
-from auction.infrastructure.trades.models import TradeModel
+from auction.infrastructure.trades.models import TradeModel 
 
 
 class SqlAlchemyTradeRepository(TradeRepository):
+    # 같은 유스케이스에서 공유할 세션과 페이지당 조회 개수를 받는다.
     def __init__(self, session: AsyncSession, *, page_size: int):
         if page_size < 1:
             raise ValueError("페이지당 개수는 1 이상이어야 합니다.")
@@ -35,7 +27,8 @@ class SqlAlchemyTradeRepository(TradeRepository):
         self.session = session
         self.page_size = page_size
 
-    # [AUC-05] 정산 후 만든 신규 거래를 저장하고 ID가 반영된 기록을 반환한다.
+    # [AUC-05] 정산 후 신규 거래를 저장하고 ID가 채워진 새 Trade를 반환한다.
+    # flush는 DB 반영 단계이며 최종 commit은 아니다.
     async def save(self, trade: Trade) -> Trade:
         if trade.id is not None:
             raise ValueError("기존 거래 기록은 수정할 수 없습니다.")
@@ -56,39 +49,81 @@ class SqlAlchemyTradeRepository(TradeRepository):
 
         return replace(trade, id=model.id)
 
-    # 매물에 연결된 거래 기록이 필요할 때 조회한다.
+    # 매물에 연결된 거래 기록을 조회한다. 없으면 None을 반환한다.
+    # 동시 중복 저장 방지는 별도로 listing_id UNIQUE 제약이 담당한다.
     async def get_by_listing(self, listing_id: int) -> Trade | None:
         statement = select(TradeModel).where(
             TradeModel.listing_id == listing_id
         )
         model = await self.session.scalar(statement)
+
         return self._to_entity(model) if model is not None else None
 
     # [AUC-07] 내 낙찰 내역을 체결 시각 최신순으로 조회한다.
+    # 체결 시각이 같으면 ID 내림차순으로 정렬한다.
     async def list_by_buyer(self, buyer_id: int, page: int) -> list[Trade]:
         statement = (
             select(TradeModel)
             .where(TradeModel.buyer_id == buyer_id)
-            .order_by(TradeModel.completed_at.desc(), TradeModel.id.desc())
+            .order_by(
+                TradeModel.completed_at.desc(),
+                TradeModel.id.desc(),
+            )
             .offset(self._offset(page))
             .limit(self.page_size)
         )
         models = (await self.session.scalars(statement)).all()
+
         return [self._to_entity(model) for model in models]
 
     # [AUC-10] 내 판매 내역을 체결 시각 최신순으로 조회한다.
+    # 결과가 없으면 빈 리스트를 반환한다.
     async def list_by_seller(self, seller_id: int, page: int) -> list[Trade]:
         statement = (
             select(TradeModel)
             .where(TradeModel.seller_id == seller_id)
-            .order_by(TradeModel.completed_at.desc(), TradeModel.id.desc())
+            .order_by(
+                TradeModel.completed_at.desc(),
+                TradeModel.id.desc(),
+            )
             .offset(self._offset(page))
             .limit(self.page_size)
         )
         models = (await self.session.scalars(statement)).all()
+
         return [self._to_entity(model) for model in models]
 
-    # [AUC-08] 새 입찰 제한 판단에 필요한 최근 낙찰 시각만 조회한다.
+    # [AUC-08] 제한 정책 계산에 필요한 기간 내 낙찰 시각 전체를 조회한다.
+    # since·until은 UTC이며 양쪽 경계를 포함한다. 오래된 순으로 반환한다.
+    # 같은 시각의 여러 거래도 각각 포함하고, 결과가 없으면 빈 리스트다.
+    # 이번 Trade를 저장한 뒤 호출하며 반환 목록에 이번 시각을 다시 추가하지 않는다.
+    async def find_win_times_between(
+        self,
+        buyer_id: int,
+        since: datetime,
+        until: datetime,
+    ) -> list[datetime]:
+        if since > until:
+            raise ValueError("조회 시작 시각은 종료 시각보다 늦을 수 없습니다.")
+
+        statement = (
+            select(TradeModel.completed_at)
+            .where(
+                TradeModel.buyer_id == buyer_id,
+                TradeModel.completed_at >= since,
+                TradeModel.completed_at <= until,
+            )
+            .order_by(
+                TradeModel.completed_at,
+                TradeModel.id,
+            )
+        )
+
+        return list((await self.session.scalars(statement)).all())
+
+    # 기존 계약: 최근 낙찰 시각을 최신순으로 최대 limit개 조회한다.
+    # B 방식 집계에는 find_win_times_between을 사용한다.
+    # [TO DO] 사용처 확인 후 도메인 인터페이스와 함께 제거 여부를 결정한다.
     async def recent_win_times(
         self,
         buyer_id: int,
@@ -100,19 +135,23 @@ class SqlAlchemyTradeRepository(TradeRepository):
         statement = (
             select(TradeModel.completed_at)
             .where(TradeModel.buyer_id == buyer_id)
-            .order_by(TradeModel.completed_at.desc(), TradeModel.id.desc())
+            .order_by(
+                TradeModel.completed_at.desc(),
+                TradeModel.id.desc(),
+            )
             .limit(limit)
         )
+
         return list((await self.session.scalars(statement)).all())
 
-    # 페이지 조회를 시작할 위치를 계산한다.
+    # 1부터 시작하는 페이지 번호를 DB 조회 시작 위치로 변환한다.
     def _offset(self, page: int) -> int:
         if page < 1:
             raise ValueError("페이지 번호는 1 이상이어야 합니다.")
 
         return (page - 1) * self.page_size
 
-    # DB에서 읽은 거래 기록을 불변 도메인 객체로 복원한다.
+    # 저장된 값을 복원한다. 신규 거래 생성 규칙을 다시 실행하지 않는다.
     @staticmethod
     def _to_entity(model: TradeModel) -> Trade:
         return Trade(

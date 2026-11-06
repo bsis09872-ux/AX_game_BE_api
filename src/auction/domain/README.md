@@ -32,7 +32,7 @@ auction 바운디드 컨텍스트(BC)의 domain 계층이다. 순수 Python으�
 ## 경계 밖과의 연결
 
 - 다른 도메인은 ID 값만 저장한다(FK 없음). seller_id/buyer_id/bidder_id는 auction의 역할 이름이다.
-- [TO DO] 다른 도메인 연결 계약은 application/constructs.py에 정의한다. 아직 미구현이다.
+- [TO DO] 다른 도메인 연결 계약은 application/contract.py에 정의한다. (진행 전)
 - 재판매 제한은 inventory 담당이다. auction은 에러만 전달한다.
 - [TO DO] 정산·마감 조율은 application/auction_service.py에 구현한다. 아직 미구현이다.
 

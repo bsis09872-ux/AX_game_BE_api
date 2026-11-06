@@ -6,7 +6,7 @@
 
 - `listings/service.py`: 매물 등록·조회·입찰·취소.
 - `trades/service.py`: 내 낙찰·판매 내역과 참여 제한 상태 조회.
-- [TO DO] `constructs.py`: 외부 도메인 연결 인터페이스 정의.
+- [TO DO] `contract.py`: 외부 도메인 연결 인터페이스 정의.
 - [TO DO] `auction_service.py`: 마감·정산·Trade 생성·제한 상태 갱신·다음 매물 공개.
 
 ## 정산 순서
@@ -21,11 +21,12 @@
 
 ## 외부 계약 요청
 
-- [TO DO] User 담당자: `get_auction_state_for_update(user_id: int) -> AuctionState | None` 제공 협의. AuctionState는 횟수와 blocked_until을 전달하는 제안 DTO다.
-- [TO DO] User 담당자: `update_auction_state(user_id: int, purchase_count: int, blocked_until: datetime | None) -> None` 제공 협의.
+- [TO DO] User 담당자: `get_for_update_many(user_ids: list[int]) -> dict[int, AuctionUserState]` 제공 협의. 상세 양식은 contract.py 참고.
+- [TO DO] User 담당자: `update_limit(user_id: int, purchase_count: int, blocked_until: datetime | None) -> None` 제공 협의.
 - [TO DO] 두 메서드는 async이며 같은 주입 세션을 사용하고 내부 commit하지 않는 계약이 필요하다. 현재 User Repository에는 없다.
 - [TO DO] inventory 담당자: 예약·예약 해제·소유권 이전의 공개 인터페이스와 실패 예외 합의.
 - [TO DO] wallet 담당자: 잔액 조회·잠금·입출금 계약 합의. 현재 Auction은 최고 입찰액 합산 방식이다.
+- [TO DO][제공 → wallet] `ListingRepository.sum_leading_bids(user_id: int) -> int`: 최고 입찰자로 묶인 금액 합계. 출금·사용 가능 금액 계산에 쓰도록 공유한다.
 - [TO DO] 모든 담당자: 잠금 순서·세션 공유·commit 주체·동시 정산 방식을 합의한다.
 - [TO DO] 앱 담당자: 모델·라우터·마감 실행 등록 요청. Auction 밖 파일은 수정하지 않는다.
 
