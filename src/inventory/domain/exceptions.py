@@ -9,7 +9,7 @@
 - FastAPI, Pydantic, SQLAlchemy, logging을 import하지 않는다 (shared.core.exceptions는 순수 파이썬이라 import해도 된다)
 """
 
-from shared.core.exceptions import BusinessRuleError, ConflictError, NotFoundError, ForbiddenError
+from shared.core.exceptions import AppError, BusinessRuleError, ConflictError, NotFoundError, ForbiddenError
 
 # 400: 카탈로그를 만들거나 고칠 때 규칙을 어긴 경우
 class ItemRuleViolationError(BusinessRuleError):
@@ -60,3 +60,8 @@ class DefinitionCodeDuplicateError(BusinessRuleError):
 class DefinitionInUseError(BusinessRuleError):
     code: str = 'DEFINITION_IN_USE'
     message: str = '이 카탈로그의 아이템을 유저가 보유하고 있어 삭제할 수 없습니다. 추가 지급을 막으려면 fishable을 false로 바꾸세요.'
+
+# 503: 낚시로 나올 수 있는 카탈로그가 하나도 없는 경우
+class NoFishableDefinitionError(AppError):
+    code: str = 'FISHING_NO_REWARD'
+    message: str = '지금은 낚을 수 있는 아이템이 없습니다.'
