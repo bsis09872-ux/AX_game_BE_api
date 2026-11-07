@@ -1,6 +1,7 @@
 # 도메인 업무 오류와 예상 밖 서버 오류를 공통 HTTP 응답으로 변환한다.
 import logging
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from shared.core.exceptions import AppError, BusinessRuleError, ConflictError, NotFoundError, ForbiddenError
 
@@ -28,6 +29,19 @@ def _unexpected_error_response(request: Request, exc: Exception) -> JSONResponse
 
 
 def register_exception_handlers(app: FastAPI) -> None:
+    @app.exception_handler(RequestValidationError)
+    async def validation_error_handler(
+        request: Request, exc: RequestValidationError
+    ) -> JSONResponse:
+        # 기본 검증 오류의 input에는 입력 비밀번호가 포함될 수 있어 필드 위치와 이유만 반환한다.
+        return JSONResponse(
+            status_code=422,
+            content={"detail": [
+                {key: error[key] for key in ("type", "loc", "msg")}
+                for error in exc.errors()
+            ]},
+        )
+
     # 공통 부모에 등록하면 market 등 각 도메인의 자식 예외도 이 함수가 처리한다.
     @app.exception_handler(AppError)
     async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:

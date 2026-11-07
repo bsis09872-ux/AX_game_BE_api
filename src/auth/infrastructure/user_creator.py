@@ -1,5 +1,6 @@
 # auth의 회원 생성 계약을 users 서비스에 연결하고 결과를 CreatedUser로 변환한다.
-from auth.application.contracts import UserCreator, CreatedUser
+from auth.application.contracts import UserCreator
+from auth.application.dto import CreatedUser
 
 from users.application.service import UserService
 
