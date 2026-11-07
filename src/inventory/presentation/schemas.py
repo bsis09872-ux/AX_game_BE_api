@@ -7,13 +7,14 @@
 - 시각은 ISO 8601 UTC로 내보낸다
 - 응답에 다른 사용자의 정보나 내부 값을 싣지 않는다
 - 관리자용 요청 모델(DefinitionCreateRequest, DefinitionUpdateRequest)은 타입을 엄격히 보고 모르는 필드를 거절한다. 값 규칙은 도메인이 판정한다
+- 이력 응답(EventResponse)은 이력 번호 없이 아이템 번호, 종류, 소유자들, 시각을 싣는다. 없는 값은 null이고 ID는 문자열이다
 """
 
 from datetime import datetime, timezone
 from typing import Generic, TypeVar
 from pydantic import BaseModel, ConfigDict, StrictBool, StrictInt, StrictStr, model_validator
 
-from inventory.application.dto import DefinitionInfo, ItemInfo
+from inventory.application.dto import DefinitionInfo, EventInfo, ItemInfo
 
 # 어떤 항목이든 담을 수 있는 타입 자리표시자
 T = TypeVar('T')
@@ -100,6 +101,7 @@ class AdminDefinitionResponse(ItemDefinitionResponse):
     weight: int
     fishable: bool
 
+    # 서비스가 던진 DTO 응답 모델로 변환
     @classmethod
     def from_info(cls, info: DefinitionInfo) -> 'AdminDefinitionResponse':
         return cls(
@@ -146,3 +148,30 @@ class DefinitionUpdateRequest(BaseModel):
         if not self.model_fields_set:
             raise ValueError('바꿀 값이 하나도 없습니다.')
         return self
+
+
+# ID를 문자열로 바꾼다 (없는 값은 그대로 None)
+def _text(value: int | None) -> str | None:
+    return None if value is None else str(value)
+
+
+# 아이템 이력 한 줄
+class EventResponse(BaseModel):
+    item_id: str
+    event_type: str
+    from_owner_id: str | None
+    to_owner_id: str | None
+    actor_id: str | None
+    listing_id: str | None
+    trade_id: str | None
+    created_at: datetime
+
+    # 서비스가 던진 DTO 응답 모델로 변환
+    @classmethod
+    def from_info(cls, info: EventInfo) -> 'EventResponse':
+        return cls(
+            item_id=str(info.item_id), event_type=info.event_type,
+            from_owner_id=_text(info.from_owner_id), to_owner_id=_text(info.to_owner_id),
+            actor_id=_text(info.actor_id), listing_id=_text(info.listing_id), trade_id=_text(info.trade_id),
+            created_at=_utc(info.created_at),
+        )

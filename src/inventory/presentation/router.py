@@ -5,6 +5,7 @@
 - 라우터는 입력 검증, 서비스 호출, 응답 변환만 한다 (업무 판정, DB 갱신, commit을 하지 않는다)
 - 소유자 ID는 요청 값이 아니라 검증된 인증 정보에서 얻는다
 - 오류 응답은 팀 공통 핸들러가 만든다 (이 계층에서 예외를 HTTP 오류로 바꾸지 않는다)
+- GET /v1/inventory/{item_id}/events: 관리자용 아이템 이력 조회 (오래된 순, 페이지)
 """
 
 from typing import Literal
@@ -19,6 +20,7 @@ from inventory.presentation.schemas import (
     AdminDefinitionResponse,
     DefinitionCreateRequest,
     DefinitionUpdateRequest,
+    EventResponse,
     InventoryItemDetailResponse,
     InventoryItemResponse,
     ItemDefinitionResponse,
@@ -149,3 +151,23 @@ async def delete_definition(
     service: InventoryService = Depends(get_inventory_service)
 ) -> None:
     await service.delete_definition(definition_id)
+
+
+# ===== 관리자 아이템 이력 관리 (ADMIN만) =====
+
+# 아이템 이력 조회
+@router.get(
+    '/inventory/{item_id}/events',
+    response_model=PageResponse[EventResponse],
+    dependencies=[Depends(require_admin)]
+)
+async def list_item_events(
+    item_id: int = Path(ge=1),
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+    service: InventoryService = Depends(get_inventory_service)
+) -> PageResponse[EventResponse]:
+    events, total = await service.list_item_events(item_id, page=page, size=size)
+    return PageResponse(
+        items=[EventResponse.from_info(event) for event in events], page=page, size=size, total=total
+    )
