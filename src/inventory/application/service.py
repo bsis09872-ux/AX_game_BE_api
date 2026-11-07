@@ -12,6 +12,7 @@
 - reserve_for_listing, release_from_listing, transfer_to는 auction에게 공개하는 메서드이고 commit하지 않는다. commit과 rollback은 부른 쪽의 정산 트랜잭션이 한다
     - 이 메서드들은 아이템 행을 먼저 잠그고(잠근 뒤의 최신 상태로 판정) 규칙 위반은 도메인 예외를 그대로 올린다
 - get_item은 소유자를 확인하지 않는 내부용 읽기이고(3번의 거래 기록 스냅샷용), transfer_to의 from_owner_id는 값이 오면 현재 소유자와 다를 때 NotOwnerError로 거절한다
+- list_item_events는 소유자를 확인하지 않는 관리자용 읽기이고 commit하지 않는다. 아이템이 없으면 ItemNotFoundError다
 - 카탈로그 관리(create_definition, update_definition, delete_definition)는 저장 뒤에 commit하고, 값 규칙은 도메인에 맡긴다. 서비스는 중복 code, 사용 중 삭제, 없음만 판정한다
 - 오류 로그는 팀 공통 핸들러가 남기므로 여기서 중복해서 남기지 않는다. 토큰·비밀번호·요청 본문은 남기지 않는다
 - FastAPI와 SQLAlchemy의 세부 사항을 모른다
@@ -26,7 +27,7 @@ from inventory.application.contracts import (
     UnitOfWork, 
     UserLookup
 )
-from inventory.application.dto import DefinitionInfo, ItemInfo
+from inventory.application.dto import DefinitionInfo, ItemInfo, EventInfo
 from inventory.domain.enums import ItemOrigin
 
 from inventory.domain.exceptions import (
@@ -108,6 +109,30 @@ class InventoryService:
         if item is None:
             raise ItemNotFoundError()
         return _to_item_info(item)
+
+    # 아이템 이력 목록 (관리자용)
+    async def list_item_events(
+        self, item_id: int, *, page: int = 1, size: int = 20
+    ) -> tuple[list[EventInfo], int]:
+
+        # 없는 아이템과 단순히 이력이 비어 있는 것을 구분
+        if await self._items.find_by_id(item_id) is None:
+            raise ItemNotFoundError()
+
+        events, total = await self._items.find_events(item_id, page=page, size=size)
+        return [
+            EventInfo(
+                item_id=item_id,
+                event_type=event.event_type.value,
+                from_owner_id=event.from_owner_id,
+                to_owner_id=event.to_owner_id,
+                actor_id=event.actor_id,
+                listing_id=event.listing_id,
+                trade_id=event.trade_id,
+                created_at=event.created_at
+            )
+            for event in events
+        ], total
 
     # 카탈로그 목록
     async def list_definitions(

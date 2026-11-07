@@ -119,16 +119,22 @@ async def create_definition(
 # 카탈로그 수정
 @router.patch(
     '/item-catalogs/{definition_id}',
-    response_model=AdminDefinitionResponse,
-    dependencies=[Depends(require_admin)]
+    response_model=AdminDefinitionResponse, # 응답을 내보낼 형식
+    dependencies=[Depends(require_admin)]   # 관리자 여부 확인
 )
 async def update_definition(
-    body: DefinitionUpdateRequest,
-    definition_id: int = Path(ge=1),
-    service: InventoryService = Depends(get_inventory_service)
+    body: DefinitionUpdateRequest,   # 요청 본문 형식 / 이상하면 422
+    definition_id: int = Path(ge=1), # 요청을 위해 str → int
+    service: InventoryService = Depends(get_inventory_service) # 받을 서비스
 ) -> AdminDefinitionResponse:
+    # DTO를 응답 모양으로 바꾼다 
     return AdminDefinitionResponse.from_info(
-        await service.update_definition(definition_id, **body.model_dump(exclude_unset=True))
+
+        await service
+        # 서비스가 조회 → 도메인(규칙검사) → 저장 → 커밋 흐름으로 DTO 반환 
+        .update_definition(definition_id, 
+                           # 요청 객체를 딕셔너리로 바꾸는데 클라이언트가 실제로 보낸 필드만 넣는다
+                           **body.model_dump(exclude_unset=True))
     )
 
 

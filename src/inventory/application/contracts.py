@@ -13,6 +13,7 @@ from typing import Protocol
 
 from inventory.domain.inventory_item import InventoryItem
 from inventory.domain.item_definition import ItemDefinition
+from inventory.domain.item_event import ItemEvent
 
 
 # 쓰는 쪽은 이 모양만 알고 누가 어떻게 구현했는지는 모른다
@@ -42,6 +43,11 @@ class ItemRepository(Protocol):
         ...
 
     async def save(self, item: InventoryItem) -> InventoryItem:
+        ...
+
+    async def find_event(
+        self, item_id: int, *, page: int = 1, size: int = 20
+    ) -> tuple[list[ItemEvent], int]:
         ...
 
 
