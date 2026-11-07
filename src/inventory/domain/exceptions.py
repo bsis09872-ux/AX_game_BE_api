@@ -65,3 +65,12 @@ class DefinitionInUseError(BusinessRuleError):
 class NoFishableDefinitionError(AppError):
     code: str = 'FISHING_NO_REWARD'
     message: str = '지금은 낚을 수 있는 아이템이 없습니다.'
+
+# 429: 낚시 쿨다운 안에 다시 낚으려는 경우
+class FishingCooldownError(AppError):
+    code: str = 'FISHING_COOLDOWN'
+    message: str = '낚시는 잠시 후에 다시 할 수 있습니다.'
+    # 응답에 실을 수 있게 남은 초를 들고 있는다
+    def __init__(self, retry_after_seconds: int, message: str | None = None) -> None:
+        self.retry_after_seconds = retry_after_seconds
+        super().__init__(message)
