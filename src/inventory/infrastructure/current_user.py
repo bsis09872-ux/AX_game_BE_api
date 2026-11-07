@@ -11,6 +11,9 @@ from auth.application.service import AuthService
 from auth.domain.exceptions import AuthenticationError
 from inventory.application.contracts import CurrentUser
 
+# shortcut: 임시 관리자 번호. users의 role을 읽을 수 있게 되면(UserSummary.role) 이 상수를 지우고 그 값을 쓴다
+_TEMP_ADMIN_IDS = frozenset({1})
+
 class CurrentUserAdapter:
 
     def __init__(self, auth_service: AuthService) -> None:
@@ -23,4 +26,5 @@ class CurrentUserAdapter:
             # 틀렸거나 만료된 토큰
             return None
 
-        return CurrentUser(id=claims.user_id, role='USER')
+        role = 'ADMIN' if claims.user_id in _TEMP_ADMIN_IDS else 'USER'
+        return CurrentUser(id=claims.user_id, role=role)

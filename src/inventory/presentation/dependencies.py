@@ -15,6 +15,8 @@ from inventory.application.contracts import CurrentUserProvider, CurrentUser
 from inventory.application.service import InventoryService
 from inventory.wiring import build_current_user_provider, build_inventory_service
 
+from shared.core.exceptions import ForbiddenError
+
 # 헤더가 없어도 자동 오류를 내지 않고 None 반환 (팀 규칙)
 _bearer = HTTPBearer(auto_error=False)
 
@@ -48,4 +50,11 @@ async def get_current_user(
     # 토큰이 틀렸거나 만료
     if user is None:
         raise _unauthorized()
+    return user
+
+# 관리자 확인
+# 로그인은 get_current_user가 확인하고 여기서는 역할만 확인
+async def require_admin(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
+    if user.role != 'ADMIN':
+        raise ForbiddenError()
     return user
