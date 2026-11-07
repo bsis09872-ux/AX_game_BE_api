@@ -44,7 +44,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await engine.dispose()
 
 
-app = FastAPI(title="AX Game BE API", lifespan=lifespan)
+app = FastAPI(title="Catch&Bid", lifespan=lifespan)
 
 # 실행 폴더와 관계없이 src 아래의 공통 화면과 정적 파일을 찾는다.
 SRC_DIR = Path(__file__).resolve().parent
