@@ -2,10 +2,11 @@
 
 - 계약은 필요한 기능의 모양(Protocol)만 적는다. 구현은 어댑터가 하고 wiring이 연결한다
 - UserLookup: 주어진 사용자 번호 중 실제로 있고 탈퇴하지 않은(활성) 번호만 돌려준다
-- FishingCooldown: 같은 사용자의 낚시 간격을 확인하는 기능의 모양이다
 - ItemRepository, DefinitionRepository, UnitOfWork: 서비스가 저장소와 commit에게 요구하는 모양이다 (테스트에서는 가짜를 끼운다)
 - 다른 도메인의 모델이나 infrastructure를 import하지 않는다
 - CurrentUser, CurrentUserProvider: 액세스 토큰으로 요청한 사람(번호, 역할)을 확인하는 기능의 모양이다 (인증 담당이 제공하는 기능을 어댑터가 연결한다)
+- FishingCooldown: 같은 사용자의 낚시 간격을 확인하는 기능의 모양이다
+- DefinitionRepository.find_fishable은 낚시 후보(fishable이고 weight가 0보다 큰 카탈로그)를 id 순으로 돌려준다
 """
 
 from datetime import datetime
@@ -69,6 +70,9 @@ class DefinitionRepository(Protocol):
     async def find_by_code(self, code: str) -> ItemDefinition | None:
         ...
 
+    async def find_fishable(self) -> list[ItemDefinition]:
+            ...
+
     async def save(self, definition: ItemDefinition) -> ItemDefinition:
         ...
 
@@ -77,7 +81,6 @@ class DefinitionRepository(Protocol):
 
     async def delete(self, definition: ItemDefinition) -> None:
         ...
-
 
 
 # 서비스가 확정 요청하는 모양 (커밋 부탁)
