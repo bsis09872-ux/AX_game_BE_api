@@ -14,8 +14,10 @@ from typing import Protocol
 from inventory.domain.inventory_item import InventoryItem
 from inventory.domain.item_definition import ItemDefinition
 
+
 # 쓰는 쪽은 이 모양만 알고 누가 어떻게 구현했는지는 모른다
 class UserLookup(Protocol):
+
     # user_ids 중 활성인 번호만 set으로 돌려준다 (없거나 탈퇴한 번호는 제외)
     async def find_active_user_ids(self, user_ids: Iterable[int]) -> set[int]:
         ...
@@ -45,6 +47,7 @@ class ItemRepository(Protocol):
 
 # 서비스가 저장소에 요청하는 모양
 class DefinitionRepository(Protocol):
+
     async def find_by_id(self, definition_id: int) -> ItemDefinition | None:
         ...
 
@@ -54,9 +57,22 @@ class DefinitionRepository(Protocol):
     ) -> tuple[list[ItemDefinition], int]:
         ...
 
+    async def find_by_code(self, code: str) -> ItemDefinition | None:
+        ...
+
+    async def save(self, definition: ItemDefinition) -> ItemDefinition:
+        ...
+
+    async def count_items(self, definition_id: int) -> int:
+        ...
+
+    async def delete(self, definition: ItemDefinition) -> None:
+        ...
+
 
 # 서비스가 확정 요청하는 모양 (커밋 부탁)
 class UnitOfWork(Protocol):
+
     async def commit(self) -> None:
         ...
 
@@ -69,5 +85,6 @@ class CurrentUser:
 
 # 액세스 토큰으로 요청한 사람을 확인하는 기능의 모양
 class CurrentUserProvider(Protocol):
+
     async def authenticate(self, access_token: str) -> CurrentUser | None:
         ...

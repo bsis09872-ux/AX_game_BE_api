@@ -12,6 +12,7 @@
 - reserve_for_listing, release_from_listing, transfer_to는 auction에게 공개하는 메서드이고 commit하지 않는다. commit과 rollback은 부른 쪽의 정산 트랜잭션이 한다
     - 이 메서드들은 아이템 행을 먼저 잠그고(잠근 뒤의 최신 상태로 판정) 규칙 위반은 도메인 예외를 그대로 올린다
 - get_item은 소유자를 확인하지 않는 내부용 읽기이고(3번의 거래 기록 스냅샷용), transfer_to의 from_owner_id는 값이 오면 현재 소유자와 다를 때 NotOwnerError로 거절한다
+- 카탈로그 관리(create_definition, update_definition, delete_definition)는 저장 뒤에 commit하고, 값 규칙은 도메인에 맡긴다. 서비스는 중복 code, 사용 중 삭제, 없음만 판정한다
 - 오류 로그는 팀 공통 핸들러가 남기므로 여기서 중복해서 남기지 않는다. 토큰·비밀번호·요청 본문은 남기지 않는다
 - FastAPI와 SQLAlchemy의 세부 사항을 모른다
 """
@@ -27,8 +28,11 @@ from inventory.application.contracts import (
 )
 from inventory.application.dto import DefinitionInfo, ItemInfo
 from inventory.domain.enums import ItemOrigin
+
 from inventory.domain.exceptions import (
     DefinitionNotFoundError,
+    DefinitionCodeDuplicateError,
+    DefinitionInUseError,
     ItemNotFoundError,
     NotOwnerError,
     OwnerNotFoundError
@@ -120,6 +124,53 @@ class InventoryService:
         if definition is None:
             raise DefinitionNotFoundError()
         return _to_definition_info(definition)
+
+    # 관리자 카탈로그 관리 (commit 대상)
+
+    # 카탈로그 생성
+    # shortcut: 동시에 같은 code로 만들면 둘 다 중복 확인을 통과해 DB 유일 제약 오류(500)가 발생
+    async def create_definition(
+            self, *, code:str, name: str, category: str, rarity: str, start_price: int, description: str = '', icon: str = 'default', weight: int = 10, fishable: bool = True
+    ) -> DefinitionInfo:
+        definition = ItemDefinition(
+            code=code, name=name, category=category, rarity=rarity, start_price=start_price, description=description, icon=icon, weight=weight, fishable=fishable
+        )
+
+        if await self._definitions.find_by_code(definition.code) is not None:
+            raise DefinitionCodeDuplicateError()
+
+        await self._definitions.save(definition)
+        await self._unit_of_work.commit()
+        logger.info('definition_created definition_id=%s', definition.id)
+        return _to_definition_info(definition)
+
+    # 카탈로그 수정
+    async def update_definition(
+        self, definition_id: int, *, name=None, category=None, weight=None, fishable=None, icon=None, description=None, start_price=None
+    ) -> DefinitionInfo:
+        definition = await self._definitions.find_by_id(definition_id)
+        if definition is None:
+            raise DefinitionNotFoundError()
+
+        definition.update(
+            name=name, category=category, weight=weight, fishable=fishable, icon=icon, description=description, start_price=start_price
+        )
+        await self._definitions.save(definition)
+        await self._unit_of_work.commit()
+        logger.info('definition_updated definition_id=%s', definition.id)
+        return _to_definition_info(definition)
+
+    # 카탈로그 삭제
+    async def delete_definition(self, definition_id: int) -> None:
+        definition = await self._definitions.find_by_id(definition_id)
+        if definition is None:
+            raise DefinitionNotFoundError()
+        if await self._definitions.count_items(definition_id) > 0:
+            raise DefinitionInUseError()
+
+        await self._definitions.delete(definition)
+        await self._unit_of_work.commit()
+        logger.info('definition_deleted definition_id=%s', definition_id)
 
     # 아이템 지급 (저장 후 flush가 아닌 commit) 
     async def grant_item(
