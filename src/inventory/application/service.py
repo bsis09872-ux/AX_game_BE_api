@@ -9,8 +9,9 @@
 - 로그는 logging.getLogger(__name__)로 남긴다 (설정은 팀 공통 shared.core.logging_config가 한다)
 - 저장 성공 로그는 commit 성공 후에 남긴다
 - 읽기 메서드는 commit하지 않는다. 지급(grant_item)만 저장 뒤에 commit한다
-- reserve_for_listing, release_from_listing, transfer_to는 3번(auction)에게 공개하는 메서드이고 commit하지 않는다. commit과 rollback은 부른 쪽의 정산 트랜잭션이 한다
-- 이 메서드들은 아이템 행을 먼저 잠그고(잠근 뒤의 최신 상태로 판정) 규칙 위반은 도메인 예외를 그대로 올린다
+- reserve_for_listing, release_from_listing, transfer_to는 auction에게 공개하는 메서드이고 commit하지 않는다. commit과 rollback은 부른 쪽의 정산 트랜잭션이 한다
+    - 이 메서드들은 아이템 행을 먼저 잠그고(잠근 뒤의 최신 상태로 판정) 규칙 위반은 도메인 예외를 그대로 올린다
+- get_item은 소유자를 확인하지 않는 내부용 읽기이고(3번의 거래 기록 스냅샷용), transfer_to의 from_owner_id는 값이 오면 현재 소유자와 다를 때 NotOwnerError로 거절한다
 - 오류 로그는 팀 공통 핸들러가 남기므로 여기서 중복해서 남기지 않는다. 토큰·비밀번호·요청 본문은 남기지 않는다
 - FastAPI와 SQLAlchemy의 세부 사항을 모른다
 """
@@ -29,6 +30,7 @@ from inventory.domain.enums import ItemOrigin
 from inventory.domain.exceptions import (
     DefinitionNotFoundError,
     ItemNotFoundError,
+    NotOwnerError,
     OwnerNotFoundError
 )
 from inventory.domain.inventory_item import InventoryItem
@@ -95,6 +97,14 @@ class InventoryService:
             raise ItemNotFoundError()
         return _to_item_info(item)
 
+    # 아이템 상세 (소유자 확인 없이 시스템(내부)이 읽는 용도)
+    # 거래 정산 후 소유자가 구매자로 바뀌어서 get_my_item 사용이 불가하므로 필요한 함수이고 API로는 열지 않는다 (읽기만)
+    async def get_item(self, item_id: int) -> ItemInfo:
+        item = await self._items.find_by_id(item_id)
+        if item is None:
+            raise ItemNotFoundError()
+        return _to_item_info(item)
+
     # 카탈로그 목록
     async def list_definitions(
         self, *, category=None, rarity=None, sort: str = 'rarity_desc',
@@ -125,7 +135,7 @@ class InventoryService:
         if owner_id not in await self._user_lookup.find_active_user_ids([owner_id]):
             raise OwnerNotFoundError()
 
-        # 3. 규칙에 따라 아이탬 지급
+        # 3. 규칙에 따라 아이템 지급
         item = InventoryItem.grant(definition, owner_id, origin, now, actor_id=actor_id)
 
         # 4. 저장
@@ -175,9 +185,15 @@ class InventoryService:
 
     # 소유권 이전 (LISTED -> OWNED, 낙찰자) : 지급 출처 = TRADE, 재판매 제한 적용
     async def transfer_to(
-        self, item_id: int, new_owner_id: int, now: datetime, listing_id: int | None=None, trade_id: int | None=None
+        self, item_id: int, new_owner_id: int, now: datetime, listing_id: int | None=None, trade_id: int | None=None,
+        from_owner_id: int | None=None,
     ) -> ItemInfo:
         item = await self._lock(item_id)
+
+        # 현재 소유자(판매자)가 맞는지 확인
+        # 판매자가 아닌 사람의 아이템을 잘못 넘기는 것을 방지
+        if from_owner_id is not None and item.owner_id != from_owner_id:
+            raise NotOwnerError()
 
         if new_owner_id not in await self._user_lookup.find_active_user_ids([new_owner_id]):
             raise OwnerNotFoundError()

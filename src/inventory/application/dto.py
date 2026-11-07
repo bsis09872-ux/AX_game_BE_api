@@ -15,7 +15,7 @@ class DefinitionInfo:
     id: int
     code: str
     name: str
-    category: str # 'Fish', 'MISC", ...
+    category: str # 'FISH', 'MISC", ...
     rarity: str
     icon: str
     start_price: int

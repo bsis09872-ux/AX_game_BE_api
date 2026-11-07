@@ -7,7 +7,7 @@
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from inventory.application.contracts import UserLookup
+from inventory.application.contracts import UserLookup, CurrentUserProvider
 from inventory.application.service import InventoryService
 
 from inventory.infrastructure.repositories import (
@@ -32,3 +32,7 @@ def build_inventory_service(session: AsyncSession) -> InventoryService:
         user_lookup=build_user_lookup(session),
         unit_of_work=SqlAlchemyUnitOfWork(session)
     )
+
+# auth가 토큰으로 요청한 사람을 확인하는 기능
+def build_current_user_provider(session: AsyncSession) -> CurrentUserProvider:
+    raise NotImplementedError('auth의 토큰 확인 기능이 제공되면 어댑터 연결')

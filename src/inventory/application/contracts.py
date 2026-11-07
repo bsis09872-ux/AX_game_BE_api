@@ -4,9 +4,11 @@
 - UserLookup: 주어진 사용자 번호 중 실제로 있고 탈퇴하지 않은(활성) 번호만 돌려준다
 - ItemRepository, DefinitionRepository, UnitOfWork: 서비스가 저장소와 commit에게 요구하는 모양이다 (테스트에서는 가짜를 끼운다)
 - 다른 도메인의 모델이나 infrastructure를 import하지 않는다
+- CurrentUser, CurrentUserProvider: 액세스 토큰으로 요청한 사람(번호, 역할)을 확인하는 기능의 모양이다 (인증 담당이 제공하는 기능을 어댑터가 연결한다)
 """
 
 from collections.abc import Iterable
+from dataclasses import dataclass
 from typing import Protocol
 
 from inventory.domain.inventory_item import InventoryItem
@@ -33,7 +35,7 @@ class ItemRepository(Protocol):
     # 키워드 전용 인자: 이름을 붙여서 넣고 싶을 때
     async def find_by_owner(
             self, owner_id: int, *, status=None, category=None, rarity=None,
-            sort: str = 'acquired_desc', page: int = 1, size = 20,
+            sort: str = 'acquired_desc', page: int = 1, size: int = 20,
     ) -> tuple[list[InventoryItem], int]:
         ...
 
@@ -56,4 +58,16 @@ class DefinitionRepository(Protocol):
 # 서비스가 확정 요청하는 모양 (커밋 부탁)
 class UnitOfWork(Protocol):
     async def commit(self) -> None:
+        ...
+
+# 인증 담당이 확인해 주는 값을 인벤토리가 쓰는 모양
+@dataclass(frozen=True)
+class CurrentUser:
+    id: int
+    role: str  # 'USER' 또는 'ADMIN'
+
+
+# 액세스 토큰으로 요청한 사람을 확인하는 기능의 모양
+class CurrentUserProvider(Protocol):
+    async def authenticate(self, access_token: str) -> CurrentUser | None:
         ...
