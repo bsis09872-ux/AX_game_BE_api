@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}내 인벤토리 | Catch &amp; Bid{% endblock %}
+
+{% block navigation %}
+<nav class="nav" aria-label="주 메뉴">
+  <a class="on" href="/inventory" aria-current="page">내 인벤토리</a>
+  <a href="/me">내 정보</a>
+</nav>
+{% endblock %}
+
+{% block content %}
+<section aria-labelledby="inventory-title">
+  <h1 id="inventory-title" class="title-tab">내 인벤토리</h1>
+
+  <div class="panel">
+    {# 응답 모델이 골라낸 공개 값만 표시한다. 글자는 Jinja2가 자동으로 이스케이프한다 #}
+    {% if items %}
+    <table>
+      <thead>
+        <tr>
+          <th>이름</th>
+          <th>분류</th>
+          <th>희귀도</th>
+          <th>시작가</th>
+          <th>상태</th>
+          <th>획득시각</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.definition.name }}</td>
+          <td>{{ item.definition.category }}</td>
+          <td>{{ item.definition.rarity }}</td>
+          <td>{{ item.definition.start_price }}</td>
+          <td>{{ '경매중' if item.status == 'LISTED' else '보관중' }}</td>
+          <td>{{ item.acquired_at }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p>아직 보유한 아이템이 없습니다.</p>
+    {% endif %}
+
+    {% if has_previous or has_next %}
+    <nav aria-label="페이지 이동">
+      {% if has_previous %}<a href="?page={{ page-1 }}">이전</a>{% endif %}
+      {% if has_next %}<a href="?page={{ page+1 }}">다음</a>{% endif %}
+    </nav>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
