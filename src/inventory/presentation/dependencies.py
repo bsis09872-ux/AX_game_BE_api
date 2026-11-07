@@ -9,24 +9,34 @@
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
-
 from database import get_db
+
 from inventory.application.contracts import CurrentUserProvider, CurrentUser
 from inventory.application.service import InventoryService
-from inventory.wiring import build_current_user_provider, build_inventory_service
+from inventory.application.fishing_service import FishingService
+
+from inventory.wiring import (
+    build_current_user_provider,
+    build_fishing_service,
+    build_inventory_service,
+)
 
 from shared.core.exceptions import ForbiddenError
 
+
 # 헤더가 없어도 자동 오류를 내지 않고 None 반환 (팀 규칙)
 _bearer = HTTPBearer(auto_error=False)
+
 
 # 서비스 조립
 def get_inventory_service(session: AsyncSession = Depends(get_db)) -> InventoryService:
     return build_inventory_service(session)
 
-# 토근 확인
+
+# 토큰 확인
 def get_current_user_provider(session: AsyncSession = Depends(get_db)) -> CurrentUserProvider:
     return build_current_user_provider(session)
+
 
 # 401 응답 
 def _unauthorized() -> HTTPException:
@@ -35,6 +45,7 @@ def _unauthorized() -> HTTPException:
         detail={'code': 'UNAUTHORIZED', 'message': '로그인이 필요하거나 토큰이 유효하지 않습니다.'},
         headers={'WWW-Authenticate': 'Bearer'}
     )
+
 
 # 요청자 확인
 async def get_current_user(
@@ -52,9 +63,15 @@ async def get_current_user(
         raise _unauthorized()
     return user
 
+
 # 관리자 확인
 # 로그인은 get_current_user가 확인하고 여기서는 역할만 확인
 async def require_admin(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
     if user.role != 'ADMIN':
         raise ForbiddenError()
     return user
+
+
+# 낚시 서비스
+def get_fishing_service(session: AsyncSession = Depends(get_db)) -> FishingService:
+    return build_fishing_service(session)

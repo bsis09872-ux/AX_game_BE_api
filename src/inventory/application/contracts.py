@@ -5,7 +5,11 @@
 - ItemRepository, DefinitionRepository, UnitOfWork: 서비스가 저장소와 commit에게 요구하는 모양이다 (테스트에서는 가짜를 끼운다)
 - 다른 도메인의 모델이나 infrastructure를 import하지 않는다
 - CurrentUser, CurrentUserProvider: 액세스 토큰으로 요청한 사람(번호, 역할)을 확인하는 기능의 모양이다 (인증 담당이 제공하는 기능을 어댑터가 연결한다)
+- FishingCooldown: 같은 사용자의 낚시 간격을 확인하는 기능의 모양이다
+- DefinitionRepository.find_fishable은 낚시 후보(fishable이고 weight가 0보다 큰 카탈로그)를 id 순으로 돌려준다
 """
+
+from datetime import datetime
 
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -66,6 +70,9 @@ class DefinitionRepository(Protocol):
     async def find_by_code(self, code: str) -> ItemDefinition | None:
         ...
 
+    async def find_fishable(self) -> list[ItemDefinition]:
+            ...
+
     async def save(self, definition: ItemDefinition) -> ItemDefinition:
         ...
 
@@ -81,6 +88,15 @@ class UnitOfWork(Protocol):
 
     async def commit(self) -> None:
         ...
+
+
+# 서비스가 낚시 쿨다운에게 요청하는 모양
+class FishingCooldown(Protocol):
+    # 쿨다운 중이 아니면 지금 시각을 기록하고 0을 돌려준다
+    # 쿨다운 중이면 남은 초(올림)를 돌려주고 기록은 바꾸지 않는다
+    async def try_start(sefl, user_id: int, now: datetime) -> int:
+        ...
+
 
 # 인증 담당이 확인해 주는 값을 인벤토리가 쓰는 모양
 @dataclass(frozen=True)
