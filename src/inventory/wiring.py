@@ -2,8 +2,13 @@
 
 - 다른 도메인의 wiring을 이용해 어댑터를 조립한다 (다른 도메인의 infrastructure를 직접 import하지 않는다)
 - 세션은 호출자가 만들고 닫는다 (같은 세션이면 한 트랜잭션으로 묶인다)
+- 낚시 쿨다운과 난수 발생기는 하나만 만들어 계속 쓴다 (쿨다운을 요청마다 새로 만들면 기록이 사라진다)
 - 업무 규칙을 두지 않는다
 """
+
+import os
+import random
+from functools import lru_cache
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,12 +23,17 @@ from inventory.infrastructure.unit_of_work import SqlAlchemyUnitOfWork
 from inventory.infrastructure.user_lookup import UserLookupAdapter
 from inventory.infrastructure.current_user import CurrentUserAdapter
 
+from inventory.application.fishing_service import FishingService
+from inventory.infrastructure.fishing_cooldown import InMemoryFishingCooldown
+
 from auth.wiring import build_auth_service
 from users.wiring import build_user_service
+
 
 # 반환 타입은 계약에서 정한 바와 같다 
 def build_user_lookup(session: AsyncSession) -> UserLookup:
     return UserLookupAdapter(user_service=build_user_service(session=session))
+
 
 # 서비스 돌아가게 하기
 def build_inventory_service(session: AsyncSession) -> InventoryService:
@@ -34,6 +44,35 @@ def build_inventory_service(session: AsyncSession) -> InventoryService:
         unit_of_work=SqlAlchemyUnitOfWork(session)
     )
 
+
 # auth가 토큰으로 요청한 사람을 확인하는 기능
 def build_current_user_provider(session: AsyncSession) -> CurrentUserProvider:
     return CurrentUserAdapter(build_auth_service(session))
+
+
+# 낚시 쿨다운
+@lru_cache
+def get_fishing_cooldown() -> InMemoryFishingCooldown:
+    return InMemoryFishingCooldown()
+
+
+# 난수 발생기
+@lru_cache
+def get_fishing_rng() -> random.SystemRandom:
+    return random.SystemRandom()
+
+
+# 낚시 서비스는 요청마다 생성
+def build_fishing_service(session: AsyncSession) -> FishingService:
+    return FishingService(
+        definitions=ItemDefinitionRepository(session),
+        cooldown=get_fishing_cooldown(),
+        inventory=build_inventory_service(session),
+        rng=get_fishing_rng()
+    )
+
+
+# 낚시 API 온오프 (기본값: 꺼짐)
+def is_fishing_enabled() -> bool:
+    value = os.environ.get('DEMO_FISHING_ENABLED', 'false')
+    return value.strip().lower() in ('1', 'true', 'yes', 'on')
