@@ -13,8 +13,12 @@ from fastapi import APIRouter, Depends, Path, Query
 
 from inventory.application.contracts import CurrentUser
 from inventory.application.service import InventoryService
-from inventory.presentation.dependencies import get_current_user, get_inventory_service
+from inventory.presentation.dependencies import get_current_user, get_inventory_service, require_admin
+
 from inventory.presentation.schemas import (
+    AdminDefinitionResponse,
+    DefinitionCreateRequest,
+    DefinitionUpdateRequest,
     InventoryItemDetailResponse,
     InventoryItemResponse,
     ItemDefinitionResponse,
@@ -95,3 +99,47 @@ async def get_definition(
     service: InventoryService = Depends(get_inventory_service),
 ) -> ItemDefinitionResponse:
     return ItemDefinitionResponse.from_info(await service.get_definition(definition_id))
+
+# ===== 관리자 카탈로그 관리 (ADMIN만) =====
+
+# 카탈로그 생성
+@router.post(
+    '/item-catalogs',
+    status_code=201,
+    response_model=AdminDefinitionResponse,
+    dependencies=[Depends(require_admin)]
+)
+async def create_definition(
+    body: DefinitionCreateRequest,
+    service: InventoryService = Depends(get_inventory_service)
+) -> AdminDefinitionResponse:
+    return AdminDefinitionResponse.from_info(await service.create_definition(**body.model_dump()))
+
+
+# 카탈로그 수정
+@router.patch(
+    '/item-catalogs/{definition_id}',
+    response_model=AdminDefinitionResponse,
+    dependencies=[Depends(require_admin)]
+)
+async def update_definition(
+    body: DefinitionUpdateRequest,
+    definition_id: int = Path(ge=1),
+    service: InventoryService = Depends(get_inventory_service)
+) -> AdminDefinitionResponse:
+    return AdminDefinitionResponse.from_info(
+        await service.update_definition(definition_id, **body.model_dump(exclude_unset=True))
+    )
+
+
+# 카탈로그 삭제
+@router.delete(
+    '/item-catalogs/{definition_id}',
+    status_code=204,
+    dependencies=[Depends(require_admin)]
+)
+async def delete_definition(
+    definition_id: int = Path(ge=1),
+    service: InventoryService = Depends(get_inventory_service)
+) -> None:
+    await service.delete_definition(definition_id)

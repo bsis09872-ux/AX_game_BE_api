@@ -6,11 +6,12 @@
 - 밖으로 나가는 ID는 문자열이고 안쪽 ID는 int다 (변환은 이 경계에서만 한다)
 - 시각은 ISO 8601 UTC로 내보낸다
 - 응답에 다른 사용자의 정보나 내부 값을 싣지 않는다
+- 관리자용 요청 모델(DefinitionCreateRequest, DefinitionUpdateRequest)은 타입을 엄격히 보고 모르는 필드를 거절한다. 값 규칙은 도메인이 판정한다
 """
 
 from datetime import datetime, timezone
 from typing import Generic, TypeVar
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, StrictBool, StrictInt, StrictStr, model_validator
 
 from inventory.application.dto import DefinitionInfo, ItemInfo
 
@@ -92,3 +93,56 @@ class PageResponse(BaseModel, Generic[T]):
     page: int
     size: int
     total: int
+
+
+# 관리자용 카탈로그 응답: 전체 + 낚시 가중치와 낚시 가능 여부
+class AdminDefinitionResponse(ItemDefinitionResponse):
+    weight: int
+    fishable: bool
+
+    @classmethod
+    def from_info(cls, info: DefinitionInfo) -> 'AdminDefinitionResponse':
+        return cls(
+            id=str(info.id), code=info.code, name=info.name, category=info.category, rarity=info.rarity,
+            icon=info.icon, start_price=info.start_price, description=info.description,
+            weight=info.weight, fishable=info.fishable,
+        )
+
+
+# 카탈로그 생성 요청
+# bool값이 숫자로 통과하지 않게 타입 검사를 엄격히 한다
+class DefinitionCreateRequest(BaseModel):
+
+    model_config = ConfigDict(extra='forbid')
+
+    code: StrictStr
+    name: StrictStr
+    category: StrictStr
+    rarity: StrictStr
+    start_price: StrictInt
+    description: StrictStr = ''
+    icon: StrictStr = 'default'
+    weight: StrictInt = 10
+    fishable: StrictBool = True
+
+
+# 카탈로그 수정 요청
+# name·category도 일단 받고 거절하게 한다
+class DefinitionUpdateRequest(BaseModel):
+
+    model_config = ConfigDict(extra='forbid')
+
+    name: StrictStr | None = None
+    category: StrictStr | None = None
+    weight: StrictInt | None = None
+    fishable: StrictBool | None = None
+    icon: StrictStr | None = None
+    description: StrictStr | None = None
+    start_price: StrictInt | None = None
+
+    # 보낸 값이 하나도 없으면 422
+    @model_validator(mode='after')
+    def _at_least_one(self):
+        if not self.model_fields_set:
+            raise ValueError('바꿀 값이 하나도 없습니다.')
+        return self

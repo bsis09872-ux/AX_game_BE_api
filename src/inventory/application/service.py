@@ -128,7 +128,7 @@ class InventoryService:
     # 관리자 카탈로그 관리 (commit 대상)
 
     # 카탈로그 생성
-    # shortcut: 동시에 같은 code로 만들면 둘 다 중복 확인을 통과해 DB 유일 제약 오류(500)가 발생
+    # 동시에 같은 code로 만들면 둘 다 중복 확인을 통과해 DB 유일 제약 오류(500)가 발생
     async def create_definition(
             self, *, code:str, name: str, category: str, rarity: str, start_price: int, description: str = '', icon: str = 'default', weight: int = 10, fishable: bool = True
     ) -> DefinitionInfo:
@@ -145,6 +145,9 @@ class InventoryService:
         return _to_definition_info(definition)
 
     # 카탈로그 수정
+    # name·category는 만든 뒤 바꿀 수 없다. 
+    # 따라서 name·category key에 value가 있으면 무조건 거절한다
+    # e.g. 가중치를 바꾸고 싶으면 weight 만 보내야 한다
     async def update_definition(
         self, definition_id: int, *, name=None, category=None, weight=None, fishable=None, icon=None, description=None, start_price=None
     ) -> DefinitionInfo:
