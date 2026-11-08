@@ -58,11 +58,16 @@ inventory/
 ├── presentation/      HTTP 입출력
 │   ├── router.py            조회·관리 API
 │   ├── fishing_router.py    낚시 API
-│   ├── web_router.py        인벤토리 화면(Jinja2)
+│   ├── web_router.py        화면 라우터(Jinja2): 내 인벤토리 목록, 아이템 상세, 도감
+│   ├── web_filters.py       내 인벤토리 목록의 필터 줄과 주소 만들기
 │   ├── schemas.py           요청·응답 모델
 │   └── dependencies.py      현재 사용자, 관리자 확인, 서비스 주입
 └── wiring.py          부품 조립 (다른 도메인의 wiring을 이용)
 ```
+
+화면 파일은 `src/` 아래 공통 폴더에 있습니다.
+- `src/templates/inventory/`: `index.html`(목록), `detail.html`(상세), `not_found.html`(404), `catalogs.html`(도감), `_macros.html`(금액·시각·필터 줄 조각)
+- `src/static/css/inventory.css`: 인벤토리 화면 전용 스타일 (팀 공통 `global.css`는 수정하지 않았습니다)
 
 계층 규칙
 - 바깥 계층이 안쪽 계층을 부릅니다: `presentation → application → domain`, `infrastructure`는 계약을 구현합니다.
@@ -85,10 +90,23 @@ inventory/
 | DELETE | `/item-catalogs/{definition_id}` | 관리자 | 카탈로그 삭제 (204, 사용 중이면 거절) |
 | GET | `/inventory/{item_id}/events` | 관리자 | 아이템 이력 (오래된 순, 페이지) |
 | POST | `/fishing-results` | 로그인 | 낚시 (201, 설정이 켜진 경우만 등록) |
-| GET | `/inventory` (접두어 없음) | 로그인(쿠키) | 인벤토리 화면 (20개씩) |
 
 - 응답의 ID는 문자열이고, 일반 사용자 응답에는 낚시 가중치(`weight`, `fishable`)와 소유자 번호가 없습니다.
 - 소유자는 요청 값이 아니라 인증 정보에서 얻습니다.
+
+### 화면 (Jinja2)
+화면 경로는 `/v1` 접두어 없이 등록하고, 쿠키 로그인을 씁니다. 로그인 확인은 `main`이 함수를 넘겨주는 방식입니다(`create_inventory_web_router(current_user_id)`).
+
+| 경로 | 권한 | 설명 |
+|---|---|---|
+| `/inventory` | 로그인 | 내 인벤토리 목록(20개씩). 상태·분류·희귀도 필터와 정렬(최근 획득순, 희귀도 높은 순, 이름 오름차순). 이름을 누르면 상세로, '아이템 도감 보기'로 도감으로 이동 |
+| `/inventory/{item_id}` | 로그인(본인) | 내 아이템 상세. 없는 아이템이나 남의 아이템은 JSON이 아니라 '찾을 수 없습니다' 화면(404)으로 응답(존재 여부를 알려 주지 않음). '전체 도감 보기'는 도감의 해당 아이템 줄(`#item-번호`)로 이동 |
+| `/item-catalogs` | 로그인 | 도감(카탈로그 목록). 분류·희귀도 필터, 한 페이지에 모두 표시(최대 100개), 줄마다 `id="item-번호"` |
+
+- 시작가는 천 단위 콤마와 `GOLD` 단위로, 시각은 초 단위까지 `UTC`로 표시합니다.
+- 필터 링크는 나머지 필터를 유지하고 1쪽으로 돌아가며, 기본 정렬은 주소에 넣지 않습니다. 값이 틀리면 서비스를 부르지 않고 422입니다.
+- 개인 화면이라 `Cache-Control: no-store`를 보냅니다.
+- 도감은 필터가 두 개라 템플릿이 주소를 만들고, 인벤토리 목록은 값이 네 개이고 쪽이 있어 `web_filters.py`가 만듭니다.
 
 ## 5. 다른 도메인에 공개하는 기능
 `InventoryService` (경매 매물·정산 쪽에서 사용합니다)
@@ -132,13 +150,15 @@ inventory/
 | `CACHE_TTL_SECONDS` | 15 | 카탈로그 캐시 만료 시간(초). 0 이하나 숫자가 아니면 시작할 때 오류 |
 
 ## 8. 구현 현황과 아직 연결되지 않은 것
-구현 완료: 조회 API, 관리자 카탈로그 API, 이력 API, 낚시, 인벤토리 화면, 캐시, 접근 로그
+구현 완료: 조회 API, 관리자 카탈로그 API, 이력 API, 낚시, 화면(내 인벤토리 목록·필터·정렬, 아이템 상세, 도감), 캐시, 접근 로그
 
 아직 연결되지 않은 것 (협의·확인 후 진행)
-- `main.py` 등록: 인벤토리 라우터, 화면 라우터(`create_inventory_web_router(get_current_web_user_id)`), 낚시 라우터(설정이 켜졌을 때)
+- `main.py` 등록: 인벤토리 라우터, 화면 라우터(`create_inventory_web_router(get_current_web_user_id)`: 목록·상세·도감), 낚시 라우터(설정이 켜졌을 때)
 - 관리자 확인: 현재는 **임시 관리자 번호**(`_TEMP_ADMIN_IDS`)로 판정합니다. users가 `UserSummary.role`을 제공하면 교체합니다.
 - 회원 탈퇴 시 아이템 처리: 보류
-- 인벤토리 화면의 메뉴·로그인 이동: 화면 담당과 협의
+- 인벤토리 화면의 메뉴·로그인 이동, 화면 소유: 화면 담당과 협의
+- 아이템 아이콘 이미지: 이미지가 준비되면 추가합니다(`icon` 값은 이미지 이름과 같은 문자열, 예: `fish_carp`)
+- 도감은 항목이 100개를 넘으면 한 페이지 방식과 줄 이동 링크가 맞지 않을 수 있습니다
 
 ## 9. 캐시와 백그라운드
 캐시(`infrastructure/cache.py`)
