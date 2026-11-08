@@ -48,6 +48,7 @@ router = APIRouter(tags=['inventory'])
 Status = Literal['OWNED', 'LISTED']
 Category = Literal['FISH', 'GEM', 'MISC']
 Rarity = Literal['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY']
+InventorySort = Literal['acquired_desc', 'rarity_desc', 'name_asc']
 
 
 # 내 인벤토리 조회
@@ -59,7 +60,7 @@ async def list_my_items(
     status: Status | None=None,
     category: Category | None=None,
     rarity: Rarity | None=None,
-    sort: Literal['acquired_desc', 'rarity_desc', 'name_asc'] = 'acquired_desc',
+    sort: InventorySort = 'acquired_desc',
     page: int = Query(1, ge=1),            # 1 이상
     size: int = Query(20, ge=1, le=100),   # 1 이상 100 이하
     user: CurrentUser = Depends(get_current_user),

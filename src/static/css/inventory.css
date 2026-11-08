@@ -6,7 +6,7 @@ tr:target {
     background: rgba(255, 220, 120, 0.25);
 }
 
-/* 표: 열 너비를 고정한다 (거르기를 바꿔 내용이 달라져도 열 위치가 흔들리지 않는다) */
+/* 표: 열 너비를 고정한다 (필터를 바꿔 내용이 달라져도 열 위치가 흔들리지 않는다) */
 .table-fixed {
     table-layout: fixed;
 }
@@ -28,7 +28,7 @@ tr:target {
     margin-left: auto;
 }
 
-/* 거르기: 항목 묶음(분류, 희귀도)마다 줄을 나누고 값은 버튼 모양으로 보여 준다 */
+/* 필터: 항목 묶음(분류, 희귀도)마다 줄을 나누고 값은 버튼 모양으로 보여 준다 */
 .filters {
     display: flex;
     flex-direction: column;
@@ -55,9 +55,13 @@ tr:target {
 .filter-group a {
     position: relative;
     display: inline-block;
-    min-width: 132px;
-    /* 양쪽 여백을 넓혀서 왼쪽의 체크 표시가 긴 글자(LEGENDARY)와 겹치지 않게 한다 */
-    padding: 4px 22px;
+    /* 글자 길이와 상관없이 너비를 똑같이 고정한다 (min-width는 글자가 길면 혼자 넓어진다) */
+    /* flex: none은 한 줄이 비좁아도 버튼이 줄어들지 않게 한다 */
+    flex: none;
+    width: 148px;
+    white-space: nowrap;
+    /* 왼쪽의 체크 표시가 글자와 겹치지 않을 만큼만 여백을 둔다 */
+    padding: 4px 14px;
     text-align: center;
     color: var(--muted);
     background: var(--wood-dark);
