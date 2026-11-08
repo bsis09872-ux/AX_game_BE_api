@@ -15,7 +15,7 @@ class DefinitionInfo:
     id: int
     code: str
     name: str
-    category: str # 'Fish', 'MISC", ...
+    category: str # 'FISH', 'MISC", ...
     rarity: str
     icon: str
     start_price: int
@@ -64,3 +64,15 @@ class ItemInfo:
     origin: str # 'SEED', 'ADMIN_GRANT', 'REWARD', 'TRADE'
     acquired_at: datetime
     resale_available_at: datetime | None 
+
+# 아이템 이력 한 줄 (관리자 이력 조회에서 내보냄)
+@dataclass(frozen=True)
+class EventInfo:
+    item_id: int
+    event_type: str  # 'GRANTED', 'LISTED', 'UNLISTED', 'TRANSFERRED'
+    from_owner_id: int | None
+    to_owner_id: int | None
+    actor_id: int | None
+    listing_id: int | None
+    trade_id: int | None
+    created_at: datetime

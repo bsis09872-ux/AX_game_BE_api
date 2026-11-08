@@ -7,7 +7,7 @@
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from inventory.application.contracts import UserLookup
+from inventory.application.contracts import UserLookup, CurrentUserProvider
 from inventory.application.service import InventoryService
 
 from inventory.infrastructure.repositories import (
@@ -16,8 +16,9 @@ from inventory.infrastructure.repositories import (
 )
 from inventory.infrastructure.unit_of_work import SqlAlchemyUnitOfWork
 from inventory.infrastructure.user_lookup import UserLookupAdapter
+from inventory.infrastructure.current_user import CurrentUserAdapter
 
-# 이걸 쓰면 users의 infrastructure를 몰라도 된다 
+from auth.wiring import build_auth_service
 from users.wiring import build_user_service
 
 # 반환 타입은 계약에서 정한 바와 같다 
@@ -32,3 +33,7 @@ def build_inventory_service(session: AsyncSession) -> InventoryService:
         user_lookup=build_user_lookup(session),
         unit_of_work=SqlAlchemyUnitOfWork(session)
     )
+
+# auth가 토큰으로 요청한 사람을 확인하는 기능
+def build_current_user_provider(session: AsyncSession) -> CurrentUserProvider:
+    return CurrentUserAdapter(build_auth_service(session))
