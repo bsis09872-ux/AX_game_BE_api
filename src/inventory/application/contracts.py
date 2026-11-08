@@ -49,7 +49,7 @@ class ItemRepository(Protocol):
     async def save(self, item: InventoryItem) -> InventoryItem:
         ...
 
-    async def find_event(
+    async def find_events(
         self, item_id: int, *, page: int = 1, size: int = 20
     ) -> tuple[list[ItemEvent], int]:
         ...
