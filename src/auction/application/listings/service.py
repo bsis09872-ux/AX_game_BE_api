@@ -25,20 +25,23 @@ class ListingService:
 
         return listing
 
-    # 판매 요청을 받으면 아이템을 예약하고 매물을 만들어 저장한다.
+    # 판매자·아이템 ID, 시작가, 처리 시각을 받아 매물을 등록한다.
+    # 구현 예정: 아이템 예약 → 매물 생성·공개 판단 → 저장.
+    # 반환 예정: 저장된 Listing. 현재는 미구현임을 예외로 알린다.
     async def register(
-            self,
-            seller_id: int,
-            inventory_item_id: int,
-            start_price: int,
-            now: datetime,
+        self,
+        seller_id: int,
+        inventory_item_id: int,
+        start_price: int,
+        now: datetime,
     ) -> Listing:
-        raise NotImplementedError("아이템 예약과 공개 조율 계약 연결이 필요합니다.") # 이부분은 계약 완료 후 지워도 됨. (하단의 bid와 cancel도 동일)
-
-        # [TO DO] 시작가 입력 주체를 합의한다. 현재 시그니처는 제안이다. - 아마 승주님께서 작성을 해주셔서 넘겨주실듯.
-        # [TO DO] inventory에서 종류 ID를 받고 소유권·재판매 조건에 따라 예약한다.
-        # [TO DO] 종류별 공개 작업을 조율하고 Listing.create/start/save를 연결한다.
-        # [TO DO] 예약과 매물 저장을 하나의 트랜잭션으로 확정한다.
+        # [TO DO] 시작가 입력 주체와 아이템 예약 계약을 확정한다.
+        # [TO DO] inventory에서 아이템 종류 ID를 받고 예약을 요청한다.
+        # [TO DO] Listing.create와 공개 여부 판단, 저장을 연결한다.
+        # [TO DO] 아이템 예약과 매물 저장을 같은 트랜잭션으로 처리한다.
+        raise NotImplementedError(
+            "매물 등록은 아이템 예약·공개 조율·트랜잭션 연결 후 구현합니다."
+        )
 
     # 입찰 요청을 받으면 사용자 제한과 잔액을 확인하고 매물에 입찰을 전달한다.
     async def bid(

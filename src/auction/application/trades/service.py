@@ -1,15 +1,19 @@
 # Service: 사용자의 거래 내역과 현재 입찰 제한 상태를 조회한다.
 # Trade는 확정 기록이므로 수정·삭제하는 기능을 제공하지 않는다.
+# [TO DO] 다음 PR에서 AuctionUserGateway 구현체를 연결한다.
+# [TO DO] 조립부에서 같은 요청의 Repository와 사용자 조회 구현체를 주입한다.
+# 현재 조회 로직은 작성되어 있지만 실제 User 연동은 완료되지 않았다.
 
 from datetime import datetime
 
-from auction.domain.trades.entities import Trade
-from auction.domain.trades.policies import AuctionLimitState, WIN_LIMIT_WINDOW, get_limit_state
-from auction.domain.trades.repositories import TradeRepository
-
-#추후 받을 기능 임의로 정의해두고 불러옴 (수정예정)
 from auction.application.contract import AuctionUserGateway
-
+from auction.domain.trades.entities import Trade
+from auction.domain.trades.policies import (
+    AuctionLimitState,
+    WIN_LIMIT_WINDOW,
+    get_limit_state,
+)
+from auction.domain.trades.repositories import TradeRepository
 from shared.core.exceptions import NotFoundError
 
 class TradeService:
@@ -38,7 +42,8 @@ class TradeService:
     ) -> list[Trade]:
         return await self.trades.list_by_seller(seller_id, page)
 
-        # 경매 참여 화면에서 현재 낙찰 횟수와 입찰 제한 시간을 확인한다.
+    # 사용자 ID와 기준 시각으로 사용자 제한 정보와 낙찰 기록을 조회한다.
+    # 도메인 정책으로 현재 상태를 계산해 반환하며, 저장은 하지 않는다.
     async def get_bid_limit_status(
         self,
         user_id: int,
