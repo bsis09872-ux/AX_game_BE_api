@@ -58,6 +58,9 @@ class AuctionUserGateway(Protocol):
 
 
 # 경매에서 필요한 잔액 확인·재화 이전 기능의 계약이다.
+# [TO DO] Wallet의 check_bid_funds·settle_sale 기준으로 이름·인자를 Wallet 담당자와 맞춘다. (진행 전)
+# 입찰 확인에는 매물의 현재 최고 입찰자·입찰액도 넘겨야 한다.
+
 class WalletGateway(Protocol):
     # 사용자 ID와 필요한 금액으로 잔액이 충분한지 확인한다.
     # 반환: 충분하면 True, 부족하면 False.
