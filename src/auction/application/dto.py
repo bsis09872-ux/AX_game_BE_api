@@ -12,3 +12,23 @@
 # [TO DO] AuctionUserState는 frozen dataclass로 정의하고 조회 시점의 값을 전달한다.
 # Adapter 변환: User.id → user_id, auction_purchase_count → purchase_count, auction_blocked_until → blocked_until.
 # TradeService는 get_state로 이 DTO를 받은 뒤 정책에 Trade 시각 목록과 blocked_until을 전달한다.
+
+from dataclasses import dataclass
+from datetime import datetime
+
+# 사용자 영역에서 경매에 전달하는 제한 상태다.
+# 사용자 ID·낙찰 횟수·제한 종료 시각을 받아 조회 시점의 값으로 보관한다.
+# 횟수 계산과 제한 판단은 이 DTO가 아닌 경매 정책에서 수행한다.
+@dataclass(frozen=True)
+class AuctionUserState:
+    user_id: int
+    purchase_count: int
+    blocked_until: datetime | None
+
+# 인벤토리 영역에서 경매에 전달하는 아이템 정보다.
+# 아이템 ID·종류 ID·이름을 받아 거래 기록 생성에 필요한 값으로 보관한다.
+@dataclass(frozen=True)
+class ItemSummary:
+    inventory_item_id: int
+    item_definition_id: int
+    name: str
