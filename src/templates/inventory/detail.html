@@ -1,6 +1,11 @@
 {% extends "base.html" %}
+{% from "inventory/_macros.html" import gold, moment %}
 
 {% block title %}{{ item.definition.name }} | Catch &amp; Bid{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', path='/css/inventory.css') }}">
+{% endblock %}
 
 {% block navigation %}
 <nav class="nav" aria-label="주 메뉴">
@@ -36,7 +41,7 @@
                 </tr>
                 <tr>
                     <th>획득시각</th>
-                    <td>{{ item.acquired_at }}</td>
+                    <td>{{ moment(item.acquired_at) }}</td>
                 </tr>
                 <tr>
                     <th>거래상태</th>
@@ -44,16 +49,19 @@
                 </tr>
                 <tr>
                     <th>거래시작가</th>
-                    <td>{{ item.definition.start_price }}</td>
+                    <td>{{ gold(item.definition.start_price) }}</td>
                 </tr>
                 <tr>
                     <th>재판매가능시각</th>
-                    <td>{{ item.resale_available_at if item.resale_available_at else '제한 없음'}}</td>
+                    <td>{{ moment(item.resale_available_at) if item.resale_available_at else '제한 없음' }}</td>
                 </tr>
             </tbody>
         </table>
 
-        <p><a href="/inventory">← 내 인벤토리</a></p>
+        <div class="page-links">
+            <a href="/inventory">← 내 인벤토리</a>
+            <a class="to-right" href="/item-catalogs#item-{{ item.definition.id }}">전체 도감 보기</a>
+        </div>
     </div>
 </section>
 {% endblock %}

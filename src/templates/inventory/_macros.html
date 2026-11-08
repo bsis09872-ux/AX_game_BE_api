@@ -1,0 +1,11 @@
+{# 인벤토리 화면들이 같이 쓰는 조각 #}
+
+{# 금액 표시: 천 단위 콤마 + 화폐 단위(GOLD). 단위를 바꾸려면 여기만 고친다 #}
+{% macro gold(amount) -%}
+{{ '{:,}'.format(amount) }} GOLD
+{%- endmacro %}
+
+{# 시각 표시: 초 단위까지만 보여 주고(마이크로초는 숨김), 저장된 값이 UTC라서 뒤에 UTC를 붙인다 #}
+{% macro moment(value) -%}
+{{ value.strftime('%Y-%m-%d %H:%M:%S') }} UTC
+{%- endmacro %}

@@ -6,9 +6,11 @@
 - 라우터는 서비스 호출과 화면 데이터 준비만 한다 (업무 판정, DB 갱신, commit을 하지 않는다)
 - GET /inventory/{item_id}: 내 아이템 상세 화면. 없는 아이템이거나 남의 아이템이면 JSON이 아니라 '찾을 수 없습니다' 화면을 404로 보여 준다 (존재 여부를 알려 주지 않는다). 그 밖의 오류는 404 화면으로 바꾸지 않는다
 - 번호 형식이 틀리면(0, 음수, 숫자 아님) 서비스를 부르지 않고 422(JSON)로 응답한다
+- GET /item-catalogs: 도감(아이템 카탈로그 목록) 화면. 로그인한 사용자만 보고, 한 페이지에 모두 보여 준다(page=1, size=100). 분류·희귀도로 거를 수 있고 값이 틀리면 422다. 줄마다 id="item-{번호}"가 있어 내 아이템 상세에서 해당 줄로 바로 이동한다
 """
 
 from collections.abc import Awaitable, Callable
+from typing import get_args
 
 from fastapi import APIRouter, Depends, Path, Query, Request
 from fastapi.responses import HTMLResponse
@@ -16,11 +18,19 @@ from fastapi.responses import HTMLResponse
 from inventory.application.service import InventoryService
 from inventory.domain.exceptions import ItemNotFoundError
 from inventory.presentation.dependencies import get_inventory_service
-from inventory.presentation.schemas import InventoryItemDetailResponse, InventoryItemResponse
+from inventory.presentation.router import Category, Rarity
+from inventory.presentation.schemas import (
+    InventoryItemDetailResponse,
+    InventoryItemResponse,
+    ItemDefinitionResponse,
+)
 
 
 # 한 화면에 보여주는 아이템 수
 PAGE_SIZE = 20
+
+# 도감은 한 화면으로 보여준다 (지금 수준에서 페이지 만들면 꼬일 수 있음)
+CATALOG_PAGE_SIZE = 100
 
 def create_inventory_web_router(
     current_user_id: Callable[..., Awaitable[int]],
@@ -86,6 +96,38 @@ def create_inventory_web_router(
             )
 
         # 개인 화면을 브라우저에 저장하지 않게 함
+        response.headers['Cache-Control'] = 'no-store'
+        return response
+
+    @router.get('/item-catalogs', response_class=HTMLResponse, dependencies=[Depends(current_user_id)])
+    async def get_catalog_page(
+        request: Request,
+        category: Category | None=None,
+        rarity: Rarity | None=None,
+        service: InventoryService = Depends(get_inventory_service)
+    ) -> HTMLResponse:
+        definitions, _ = await service.list_definitions(
+            category=category,
+            rarity=rarity,
+            sort='rarity_desc',
+            page=1,
+            size=CATALOG_PAGE_SIZE
+        )
+
+        response = request.app.state.templates.TemplateResponse(
+            request=request,
+            name='inventory/catalogs.html',
+            context={
+                # 화면에는 응답 모델의 공개값만
+                'definitions': [ItemDefinitionResponse.from_info(d) for d in definitions],
+                'category': category,
+                'rarity': rarity,
+                # 거르기 링크에 쓸 허용값
+                'categories': get_args(Category),
+                'rarities': get_args(Rarity)
+            }
+        )
+
         response.headers['Cache-Control'] = 'no-store'
         return response
 
