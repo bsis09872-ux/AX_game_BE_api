@@ -13,6 +13,8 @@ tr:target {
 
 .table-fixed td,
 .table-fixed th {
+    /* 한글은 띄어쓰기에서만 줄을 바꾸고('거/의'처럼 글자 중간에서 끊지 않음), 너무 긴 낱말만 억지로 끊는다 */
+    word-break: keep-all;
     overflow-wrap: anywhere;
 }
 
