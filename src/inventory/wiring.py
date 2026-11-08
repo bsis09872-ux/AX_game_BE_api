@@ -3,6 +3,7 @@
 - 다른 도메인의 wiring을 이용해 어댑터를 조립한다 (다른 도메인의 infrastructure를 직접 import하지 않는다)
 - 세션은 호출자가 만들고 닫는다 (같은 세션이면 한 트랜잭션으로 묶인다)
 - 낚시 쿨다운과 난수 발생기는 하나만 만들어 계속 쓴다 (쿨다운을 요청마다 새로 만들면 기록이 사라진다)
+- 카탈로그 캐시는 하나만 만들어 계속 쓴다 (요청마다 새로 만들면 항상 비어 있다). 만료 시간은 CACHE_TTL_SECONDS 설정 적용
 - 업무 규칙을 두지 않는다
 """
 
@@ -25,6 +26,7 @@ from inventory.infrastructure.current_user import CurrentUserAdapter
 
 from inventory.application.fishing_service import FishingService
 from inventory.infrastructure.fishing_cooldown import InMemoryFishingCooldown
+from inventory.infrastructure.cache import TtlCache
 
 from auth.wiring import build_auth_service
 from users.wiring import build_user_service
@@ -35,13 +37,22 @@ def build_user_lookup(session: AsyncSession) -> UserLookup:
     return UserLookupAdapter(user_service=build_user_service(session=session))
 
 
+# 요청마다 새로 만들면 항상 비어있기 때문에 카탈로그 캐시는 하나를 계속 사용
+# CACHE_TTL_SECONDS: 만료 시간은 설정값으로 고정
+# 한계: commit과 clear 사이에 시작된 조회가 옛 값을 채움
+@lru_cache
+def get_definition_cache() -> TtlCache:
+    return TtlCache(ttl_seconds=float(os.environ.get('CACHE_TTL_SECONDS', '15')))
+
+
 # 서비스 돌아가게 하기
 def build_inventory_service(session: AsyncSession) -> InventoryService:
     return InventoryService(
         items=InventoryItemRepository(session),
         definitions=ItemDefinitionRepository(session),
         user_lookup=build_user_lookup(session),
-        unit_of_work=SqlAlchemyUnitOfWork(session)
+        unit_of_work=SqlAlchemyUnitOfWork(session),
+        definition_cache=get_definition_cache()
     )
 
 

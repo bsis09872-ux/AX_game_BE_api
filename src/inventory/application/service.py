@@ -14,6 +14,7 @@
 - get_item은 소유자를 확인하지 않는 내부용 읽기이고(3번의 거래 기록 스냅샷용), transfer_to의 from_owner_id는 값이 오면 현재 소유자와 다를 때 NotOwnerError로 거절한다
 - list_item_events는 소유자를 확인하지 않는 관리자용 읽기이고 commit하지 않는다. 아이템이 없으면 ItemNotFoundError다
 - 카탈로그 관리(create_definition, update_definition, delete_definition)는 저장 뒤에 commit하고, 값 규칙은 도메인에 맡긴다. 서비스는 중복 code, 사용 중 삭제, 없음만 판정한다
+- 카탈로그 조회(list_definitions, get_definition)는 캐시가 있으면 먼저 쓴다. 생성·수정·삭제는 commit 뒤에 캐시 전체를 지운다. 지급 등 판정에 쓰는 읽기는 캐시를 쓰지 않는다
 - 오류 로그는 팀 공통 핸들러가 남기므로 여기서 중복해서 남기지 않는다. 토큰·비밀번호·요청 본문은 남기지 않는다
 - FastAPI와 SQLAlchemy의 세부 사항을 모른다
 """
@@ -25,7 +26,8 @@ from inventory.application.contracts import (
     DefinitionRepository,
     ItemRepository, 
     UnitOfWork, 
-    UserLookup
+    UserLookup,
+    DefinitionCache
 )
 from inventory.application.dto import DefinitionInfo, ItemInfo, EventInfo
 from inventory.domain.enums import ItemOrigin
@@ -79,12 +81,15 @@ class InventoryService:
         items: ItemRepository,
         definitions: DefinitionRepository,
         user_lookup: UserLookup,
-        unit_of_work: UnitOfWork
+        unit_of_work: UnitOfWork,
+        definition_cache: DefinitionCache | None=None
     ) -> None:
         self._items = items
         self._definitions = definitions
         self._user_lookup = user_lookup
         self._unit_of_work = unit_of_work
+        self._definition_cache = definition_cache
+
 
     # 내 아이템 목록
     async def list_my_items(
@@ -95,12 +100,14 @@ class InventoryService:
         )
         return [_to_item_info(item) for item in items], total
 
+
     # 내 아이템 상세
     async def get_my_item(self, owner_id: int, item_id: int) -> ItemInfo:
         item = await self._items.find_by_id(item_id)
         if item is None or item.owner_id != owner_id:
             raise ItemNotFoundError()
         return _to_item_info(item)
+
 
     # 아이템 상세 (소유자 확인 없이 시스템(내부)이 읽는 용도)
     # 거래 정산 후 소유자가 구매자로 바뀌어서 get_my_item 사용이 불가하므로 필요한 함수이고 API로는 열지 않는다 (읽기만)
@@ -109,6 +116,7 @@ class InventoryService:
         if item is None:
             raise ItemNotFoundError()
         return _to_item_info(item)
+
 
     # 아이템 이력 목록 (관리자용)
     async def list_item_events(
@@ -134,23 +142,74 @@ class InventoryService:
             for event in events
         ], total
 
-    # 카탈로그 목록
+
+    # 카탈로그 목록 (캐시가 있으면 먼저 쓴다)
     async def list_definitions(
         self, *, category=None, rarity=None, sort: str = 'rarity_desc',
         page: int = 1, size: int = 20,
     ) -> tuple[list[DefinitionInfo], int]:
+        
+        # 조건이 같으면 같은 키가 되고, 조건이 하나라도 다르면 다른 키가 된다
+        key = f'defs: {category}:{rarity}:{sort}:{page}:{size}'
+        
+        # 1. 캐시에 있으면 저장소를 읽지 않고 바로 돌려준다
+        if self._definition_cache is not None:
+            cached = self._definition_cache.get(key)
+            if cached is not None:
+                infos, total = cached
+                
+                # 돌려 줄 때는 새로운 list를 만든다
+                return list(infos), total
+
+        # 2. 캐시에 없으면 저장소에서 읽는다
         definitions, total = await self._definitions.find_all(
             category=category, rarity=rarity, sort=sort, page=page, size=size
         )
-        return [_to_definition_info(definition) for definition in definitions], total
 
+        # 3. DTO로 바꿔 tuple로 캐시에 넣는다 (캐시 수정 불가하게 하려고)
+        infos = tuple(_to_definition_info(definition) for definition in definitions)
+        if self._definition_cache is not None:
+            self._definition_cache.set(key, (infos, total))
+
+        # 4. 캐시 유무에 상관없이 return 
+        return list(infos), total
+        # 캐시 도입 전 return 
+        # return [_to_definition_info(definition) for definition in definitions], total
+
+
+    # 카탈로그 상세 (캐시가 있으면 먼저 쓴다)
     async def get_definition(self, definition_id: int) -> DefinitionInfo:
+        
+        # 1. 캐시에 있으면 저장소를 읽지 않고 바로 돌려준다
+        key = f'def: {definition_id}'
+        if self._definition_cache is not None:
+            cached = self._definition_cache.get(key)
+            if cached is not None:
+                return cached
+
         definition = await self._definitions.find_by_id(definition_id)
+
+        # 없는 카탈로그는 오류로 끝나서 캐시에 들어가지 않는다
         if definition is None:
             raise DefinitionNotFoundError()
-        return _to_definition_info(definition)
+        
+        info = _to_definition_info(definition)
+        if self._definition_cache is not None:
+            self._definition_cache.set(key, info)
 
-    # 관리자 카탈로그 관리 (commit 대상)
+        return info
+        # 캐시 도입 전 return 
+        # return _to_definition_info(definition)
+
+
+    # 카탈로그 변경 뒤 호출 시, 목록과 상세 캐시를 전부 정리
+    # 부분 삭제는 목록 캐시를 놓치기 쉽기 때문에 전체를 지움
+    def _clear_definition_cache(self) -> None:
+        if self._definition_cache is not None:
+            self._definition_cache.clear()
+
+
+    # === 관리자 카탈로그 관리 (commit 대상) ===
 
     # 카탈로그 생성
     # 동시에 같은 code로 만들면 둘 다 중복 확인을 통과해 DB 유일 제약 오류(500)가 발생
@@ -166,7 +225,10 @@ class InventoryService:
 
         await self._definitions.save(definition)
         await self._unit_of_work.commit()
+
+        self._clear_definition_cache()
         logger.info('definition_created definition_id=%s', definition.id)
+
         return _to_definition_info(definition)
 
     # 카탈로그 수정
@@ -185,6 +247,7 @@ class InventoryService:
         )
         await self._definitions.save(definition)
         await self._unit_of_work.commit()
+        self._clear_definition_cache()
         logger.info('definition_updated definition_id=%s', definition.id)
         return _to_definition_info(definition)
 
@@ -198,6 +261,8 @@ class InventoryService:
 
         await self._definitions.delete(definition)
         await self._unit_of_work.commit()
+
+        self._clear_definition_cache()
         logger.info('definition_deleted definition_id=%s', definition_id)
 
     # 아이템 지급 (저장 후 flush가 아닌 commit) 

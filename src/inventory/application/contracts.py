@@ -7,6 +7,7 @@
 - CurrentUser, CurrentUserProvider: 액세스 토큰으로 요청한 사람(번호, 역할)을 확인하는 기능의 모양이다 (인증 담당이 제공하는 기능을 어댑터가 연결한다)
 - FishingCooldown: 같은 사용자의 낚시 간격을 확인하는 기능의 모양이다
 - DefinitionRepository.find_fishable은 낚시 후보(fishable이고 weight가 0보다 큰 카탈로그)를 id 순으로 돌려준다
+- DefinitionCache: 카탈로그 조회 결과를 잠깐 들고 있는 기능의 모양이다 (없어도 서비스는 동작한다)
 """
 
 from datetime import datetime
@@ -109,4 +110,20 @@ class CurrentUser:
 class CurrentUserProvider(Protocol):
 
     async def authenticate(self, access_token: str) -> CurrentUser | None:
+        ...
+
+
+# 서비스가 카탈로그 캐시에게 요청하는 모양
+class DefinitionCache(Protocol):
+
+    # 값이 없거나 만료되었으면 None
+    def get(self, key: str) -> object | None:
+        ...
+
+    # 같은 키가 있으면 값을 덮어쓴다
+    def set(self, key: str, value: object) -> None:
+        ...
+
+    # 모든 키를 한 번에 지운다 (카탈로그가 바뀔 때)
+    def clear(self) -> None:
         ...
