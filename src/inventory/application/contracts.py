@@ -94,7 +94,7 @@ class UnitOfWork(Protocol):
 class FishingCooldown(Protocol):
     # 쿨다운 중이 아니면 지금 시각을 기록하고 0을 돌려준다
     # 쿨다운 중이면 남은 초(올림)를 돌려주고 기록은 바꾸지 않는다
-    async def try_start(sefl, user_id: int, now: datetime) -> int:
+    async def try_start(self, user_id: int, now: datetime) -> int:
         ...
 
 
