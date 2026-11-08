@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item.definition.name }} | Catch &amp; Bid{% endblock %}
+
+{% block navigation %}
+<nav class="nav" aria-label="주 메뉴">
+    <a class="on" href="/inventory" aria-current="page">내 인벤토리</a>
+    <a href="/me">내 정보</a>
+</nav>
+{% endblock %}
+
+{% block content %}
+<section aria-labelledby="item-title">
+    <h1 id="item-title" class="title-tab">{{ item.definition.name }}</h1>
+
+    <div class="panel">
+        {# 응답 모델이 골라낸 공개 값만 표시한다. 글자는 Jinja2가 자동으로 이스케이프한다 #}
+        <table>
+            <tbody>
+                <tr>
+                    <th>분류</th>
+                    <td>{{ item.definition.category }}</td>
+                </tr>
+                <tr>
+                    <th>희귀도</th>
+                    <td>{{ item.definition.rarity }}</td>
+                </tr>
+                <tr>
+                    <th>설명</th>
+                    <td>{{ item.definition.description }}</td>
+                </tr>
+                <tr>
+                    <th>획득경로</th>
+                    <td>{{ {'SEED':'기본 지급', 'ADMIN_GRANT':'관리자 지급', 'REWARD':'보상', 'TRADE':'거래'}.get(item.origin,
+                        item.origin) }}</td>
+                </tr>
+                <tr>
+                    <th>획득시각</th>
+                    <td>{{ item.acquired_at }}</td>
+                </tr>
+                <tr>
+                    <th>거래상태</th>
+                    <td>{{ '경매중' if item.status == 'LISTED' else '보관중' }}</td>
+                </tr>
+                <tr>
+                    <th>거래시작가</th>
+                    <td>{{ item.definition.start_price }}</td>
+                </tr>
+                <tr>
+                    <th>재판매가능시각</th>
+                    <td>{{ item.resale_available_at if item.resale_available_at else '제한 없음'}}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p><a href="/inventory">← 내 인벤토리</a></p>
+    </div>
+</section>
+{% endblock %}

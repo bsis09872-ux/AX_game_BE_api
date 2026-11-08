@@ -61,12 +61,12 @@ class DefinitionInUseError(BusinessRuleError):
     code: str = 'DEFINITION_IN_USE'
     message: str = '이 카탈로그의 아이템을 유저가 보유하고 있어 삭제할 수 없습니다. 추가 지급을 막으려면 fishable을 false로 바꾸세요.'
 
-# 503: 낚시로 나올 수 있는 카탈로그가 하나도 없는 경우
+# 낚시로 나올 수 있는 카탈로그가 하나도 없는 경우 (분류되지 않은 AppError라 500으로 응답)
 class NoFishableDefinitionError(AppError):
     code: str = 'FISHING_NO_REWARD'
     message: str = '지금은 낚을 수 있는 아이템이 없습니다.'
 
-# 429: 낚시 쿨다운 안에 다시 낚으려는 경우
+# 낚시 쿨다운 안에 다시 낚으려는 경우 (분류되지 않은 AppError라 500으로 응답)
 class FishingCooldownError(AppError):
     code: str = 'FISHING_COOLDOWN'
     message: str = '낚시는 잠시 후에 다시 할 수 있습니다.'
