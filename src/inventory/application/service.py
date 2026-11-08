@@ -149,8 +149,9 @@ class InventoryService:
         page: int = 1, size: int = 20,
     ) -> tuple[list[DefinitionInfo], int]:
         
-        # 조건이 같으면 같은 키가 되고, 조건이 하나라도 다르면 다른 키가 된다
-        key = f'defs: {category}:{rarity}:{sort}:{page}:{size}'
+        # 조건이 같으면 같은 키가 되고, 조건이 하나라도 다르면 다른 키가 된다 
+        # 키는 공백을 인식하므로 키의 안쪽 구분까지도 형식이 정확히 일치해야 한다
+        key = f'defs:{category}:{rarity}:{sort}:{page}:{size}'
         
         # 1. 캐시에 있으면 저장소를 읽지 않고 바로 돌려준다
         if self._definition_cache is not None:
@@ -180,8 +181,8 @@ class InventoryService:
     # 카탈로그 상세 (캐시가 있으면 먼저 쓴다)
     async def get_definition(self, definition_id: int) -> DefinitionInfo:
         
-        # 1. 캐시에 있으면 저장소를 읽지 않고 바로 돌려준다
-        key = f'def: {definition_id}'
+        # 캐시에 있으면 저장소를 읽지 않고 바로 돌려준다
+        key = f'def:{definition_id}'
         if self._definition_cache is not None:
             cached = self._definition_cache.get(key)
             if cached is not None:
@@ -226,6 +227,8 @@ class InventoryService:
         await self._definitions.save(definition)
         await self._unit_of_work.commit()
 
+        # commit 뒤에 캐시 정리
+        # → commit 전에 지우면 그 사이에 옛 값이 다시 채워질 수 있다
         self._clear_definition_cache()
         logger.info('definition_created definition_id=%s', definition.id)
 
@@ -247,8 +250,12 @@ class InventoryService:
         )
         await self._definitions.save(definition)
         await self._unit_of_work.commit()
+
+        # commit 뒤에 캐시 정리
+        # → commit 전에 지우면 그 사이에 옛 값이 다시 채워질 수 있다
         self._clear_definition_cache()
         logger.info('definition_updated definition_id=%s', definition.id)
+
         return _to_definition_info(definition)
 
     # 카탈로그 삭제
@@ -262,6 +269,8 @@ class InventoryService:
         await self._definitions.delete(definition)
         await self._unit_of_work.commit()
 
+        # commit 뒤에 캐시 정리
+        # → commit 전에 지우면 그 사이에 옛 값이 다시 채워질 수 있다
         self._clear_definition_cache()
         logger.info('definition_deleted definition_id=%s', definition_id)
 
