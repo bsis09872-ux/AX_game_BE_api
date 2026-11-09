@@ -30,6 +30,7 @@ wallet_service = build_wallet_service(session)  # 호출자의 세션을 그대�
 - `current_bidder_id`, `current_bid_amount`는 매물의 현재 값이다. 둘 다 None이거나 둘 다 값이어야 한다.
   - 경매 규칙상 현재 최고 입찰자는 재입찰할 수 없으므로, 입찰자는 항상 "새 입찰자"다. 묶일 금액 = 입찰액 전액.
   - 따라서 `current_bidder_id=None, current_bid_amount=None`으로 넘겨도 결과가 같다.
+  - `current_bidder_id == bidder_id`(재입찰)로 넘어오면 경매 검사 누락으로 보고 `ValueError`.
 - 입찰자 지갑만 잠근다(FOR UPDATE). 밀려나는 이전 입찰자 지갑은 잠그지 않는다(사용 가능 금액이 늘기만 하므로).
 
 ### WALL-08 `settle_sale`

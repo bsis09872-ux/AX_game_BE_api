@@ -144,14 +144,22 @@ class WalletService:
             raise InsufficientAuthorityError()
 
         await self.ensure_wallet(user_id)  # 없는 회원이면 여기서 WalletNotFoundError(404)
-        wallet = await self.get_wallet(user_id)
+        wallet = await self._lock_one(user_id)
         wallet.add_balance(amount, self.logger)
         await self.wallet_repo.save(user_id, wallet.balance.value)
 
     async def subtract_balance(self, user_id: int, amount: int):
-        wallet = await self.get_wallet(user_id)
+        wallet = await self._lock_one(user_id)
         wallet.subtract_balance(amount, self.logger)
         await self.wallet_repo.save(user_id, wallet.balance.value)
+
+    async def _lock_one(self, user_id: int) -> Wallet:
+        # 읽고 → 계산하고 → 덮어쓰는 변경은 반드시 잠금 조회로 읽는다.
+        # 잠금 없이 읽으면 동시에 커밋된 정산(settle_sale)의 변경을 덮어써 잃어버린다.
+        wallet = (await self.wallet_repo.lock([user_id])).get(user_id)
+        if wallet is None:
+            raise WalletNotFoundError()
+        return wallet
 
 
 

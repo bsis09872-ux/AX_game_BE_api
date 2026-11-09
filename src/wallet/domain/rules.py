@@ -32,9 +32,11 @@ def required_extra(
 ) -> int:
     """이번 입찰로 새로 묶이는 금액 (WALL-07)
 
-    - 첫 입찰이거나 다른 사람의 최고가를 갱신: 입찰액 전액
-    - 내가 이미 최고 입찰자인데 증액: 이미 묶인 내 금액을 뺀 차액
-    최고가보다 높은지, 최소 인상폭을 넘는지는 경매 쪽(AUCT-01)이 먼저 검사한다.
+    경매 정책상 현재 최고 입찰자는 재입찰할 수 없다(AUCT-01이 막는다).
+    그래서 입찰자는 항상 새 입찰자이고, 묶이는 금액은 입찰액 전액이다.
+    최고가보다 높은지, 최소 인상폭을 넘는지, 재입찰인지는 경매 쪽(AUCT-01)이 먼저 검사한다.
+    재입찰이 여기까지 오면 경매 검사 누락이므로 예외로 막는다.
+    (정책이 바뀌어 증액을 허용하면 그때 '차액만 묶기' 계산을 추가한다)
     """
     if amount <= 0:
         raise ValueError("입찰액은 0보다 커야 합니다.")
@@ -42,10 +44,7 @@ def required_extra(
         # ERD 일관성 조건: 입찰자와 금액은 둘 다 NULL이거나 둘 다 값이 있다
         raise ValueError("current_bidder_id와 current_bid_amount가 함께 있어야 합니다.")
     if current_bidder_id == bidder_id:
-        extra = amount - current_bid_amount
-        if extra <= 0:
-            raise ValueError("증액은 현재 내 입찰액보다 커야 합니다.")
-        return extra
+        raise ValueError("현재 최고 입찰자는 재입찰할 수 없습니다.")
     return amount
 
 
@@ -59,8 +58,7 @@ class BidFundsCheck:
 def check_bid_funds(*, balance: int, held_amount: int, extra: int) -> BidFundsCheck:
     """새로 묶일 금액이 사용 가능 금액 안인지 확인 (WALL-07)
 
-    held_amount는 이번 매물의 기존 내 입찰액을 이미 포함한 값이다.
-    그래서 증액이면 extra(차액)만 비교하면 된다.
+    held_amount는 내가 최고 입찰자인 다른 매물들의 입찰액 합계다.
     """
     before = available_balance(balance, held_amount)
     if extra > before:
