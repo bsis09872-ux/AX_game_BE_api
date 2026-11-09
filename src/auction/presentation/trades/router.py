@@ -2,7 +2,6 @@
 # [TO DO] 인증 사용자 ID를 서비스에 전달한다. 다른 사용자의 상태를 임의 조회하지 않는다.
 # [TO DO] 내역 조회와 제한 상태 조회 URI를 팀과 합의하고 공통 응답을 적용한다.
 # [TO DO] 제한 중에도 조회를 허용한다. 새 입찰 거절은 매물 입찰 흐름에서 처리한다.
-# [TO DO] 인증·서비스 의존성을 연결하고 앱 담당자에게 라우터 등록을 요청한다.
 
 from datetime import datetime, timezone
 from typing import Annotated
