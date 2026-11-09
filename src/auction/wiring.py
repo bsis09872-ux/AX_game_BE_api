@@ -5,15 +5,15 @@
 #
 # [TO DO] page_size를 외부 설정에서 받는다. (진행 전)
 
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
+from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastapi import Depends, FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auction.presentation import dependencies as deps
-from database import get_db
-
+from database import AsyncSessionLocal, get_db
 
 from auction.application.auction_service import AuctionService
 from auction.application.listings.service import ListingService
@@ -71,6 +71,13 @@ def build_auction_service(session: AsyncSession) -> AuctionService:
         tx=SqlAlchemyTransactionManager(session),
     )
 
+
+# 스케줄러용: 요청 밖에서 세션을 열고 정산 서비스를 제공한다. 블록이 끝나면 세션을 닫는다.
+# commit은 서비스가 한다. commit하지 않은 변경은 세션을 닫을 때 버려진다.
+@asynccontextmanager
+async def open_auction_service() -> AsyncIterator[AuctionService]:
+    async with AsyncSessionLocal() as session:
+        yield build_auction_service(session)
 
 
 # ===== FastAPI 의존성 연결 =====
