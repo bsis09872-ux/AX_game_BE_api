@@ -62,9 +62,11 @@ def create_wallet_router(current_user_id: Callable[..., Awaitable[int]]) -> APIR
     ) -> WalletResponse:
         # 관리자 여부는 서비스(RoleCheck)가 판단한다. 라우터는 요청자 ID만 넘긴다.
         await service.add_balance(actor_id, user_id, body.amount)
+        # 응답까지 만든 뒤 commit한다. 응답 조회가 실패하면 충전도 함께 rollback된다.
+        view = await service.get_my_wallet(user_id)
         # 잔액 변경 로그는 commit 성공 시 세션 이벤트로 자동으로 남는다 (balance_recoder.py)
         await session.commit()
-        return WalletResponse.model_validate(await service.get_my_wallet(user_id))
+        return WalletResponse.model_validate(view)
 
     return router
 

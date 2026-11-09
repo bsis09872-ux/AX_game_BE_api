@@ -55,9 +55,15 @@ class WalletService:
 
     async def get_my_wallet(self, user_id: int) -> WalletView:
         """WALL-01 내 지갑 조회: 총잔액 + 예약 합계 + 사용 가능 금액
-        처음 조회면 지갑을 만들므로 호출자(라우터)가 commit한다."""
+        처음 조회면 지갑을 만들므로 호출자(라우터)가 commit한다.
+
+        잔액과 예약금은 같은 시점 값이어야 한다. 지갑을 먼저 잠그고(FOR UPDATE) 예약금을 읽는다.
+        - 정산(settle_sale)은 같은 지갑을 잠그고 잔액과 매물 상태를 한 트랜잭션에서 바꾼다.
+          그래서 정산 중이면 commit까지 기다렸다가 둘 다 정산 후 값으로 읽는다.
+        - 다른 사람이 내 입찰을 밀어내면 예약금만 줄고 잔액은 그대로라 어긋나지 않는다.
+        """
         await self.ensure_wallet(user_id)
-        wallet = await self.get_wallet(user_id)
+        wallet = await self._lock_one(user_id)
         held = await self.held_reader.held_amount(user_id)
         return WalletView(
             user_id=wallet.user_id,

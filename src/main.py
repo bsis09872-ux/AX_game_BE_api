@@ -18,6 +18,7 @@ from shared.core.logging_config import setup_logging
 # create_all이 테이블을 만들도록 ORM 모델을 Base.metadata에 등록한다
 import users.infrastructure.models  # noqa: F401
 import wallet.infrastructure.models  # noqa: F401
+import auction.infrastructure.listings.models  # noqa: F401  (지갑 예약금 조회가 listings를 읽는다)
 
 from auth.wiring import initialize_auth
 from auth.presentation.dependencies import get_current_user_id
