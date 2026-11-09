@@ -1,6 +1,7 @@
 # 회원 조회와 생성을 담당한다.
 
 import logging
+from datetime import datetime
 
 from users.domain.repository import UserRepository
 from users.domain.user import User
@@ -32,6 +33,11 @@ class UserService:
     async def get_user_summary(self, user_id: int) -> UserSummary:
         user = await self.get_user(user_id=user_id)
 
+        return self._summary(user)
+
+    @staticmethod
+    def _summary(user: User) -> UserSummary:
+
         # 저장된 회원의 ID 누락은 내부 조회 결과 오류다.
         if user.id is None:
             raise RuntimeError("회원 조회 결과에 ID가 없습니다.")
@@ -41,7 +47,25 @@ class UserService:
             display_name=user.display_name,
             is_active=user.is_active(),
             auction_blocked_until=user.auction_blocked_until,
+            role=user.role,
+            auction_purchase_count=user.auction_purchase_count,
         )
+
+    async def get_for_update_many(self, user_ids: list[int]) -> dict[int, UserSummary]:
+        users = await self.repository.find_for_update_many(user_ids)
+        # 없는 ID는 생략한다. 탈퇴 여부는 호출자가 is_active로 구분한다.
+        return {user_id: self._summary(user) for user_id, user in users.items()}
+
+    async def update_auction_limit(
+        self, user_id: int, purchase_count: int, blocked_until: datetime | None,
+    ) -> None:
+        users = await self.repository.find_for_update_many([user_id])
+        user = users.get(user_id)
+        if user is None or not user.is_active():
+            raise UserNotFoundError()
+        user.update_auction_limit(purchase_count, blocked_until)
+        # 여러 회원을 변경할 때는 호출자가 먼저 ID 오름차순으로 일괄 잠근다.
+        await self.repository.save_auction_limit(user)
 
 
     async def create_user(

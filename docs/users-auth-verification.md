@@ -214,3 +214,17 @@ Swagger에서 회원가입 후 `/v1/auth/token`의 `username`에 로그인 ID를
 
 ### Access token 30분 / 세션 30초: 만료 후
 ![30초 세션 만료 후 로그인 화면](screenshots/users-auth/10-short-session-expired.jpg)
+
+## 9. 관리자 권한과 인벤토리 연결
+
+`UserService.get_user_summary(user_id)`는 기존 회원 요약에 `role`을 추가해 반환한다. 역할은 `users.role`의 현재 값이며 JWT에 역할을 추가하지 않는다. `UserSummary`를 직접 생성하는 호출자는 `role`도 전달해야 한다.
+
+인벤토리의 `CurrentUserAdapter`는 `AuthService`와 `UserService`를 주입받는다. 토큰을 검증한 뒤 해당 회원 요약의 역할을 사용하며, 회원 번호 1을 관리자로 취급하던 임시 규칙은 제거했다. 없는 회원, 탈퇴한 회원, 만료되거나 폐기된 세션은 거절한다. 역할 변경은 다음 요청에서 반영되며 이미 처리 중인 요청을 취소하지 않는다.
+
+`main.py`에 인벤토리 라우터를 `/v1`로 등록했다. 목록과 상세 조회는 로그인한 회원이 사용할 수 있고, 카탈로그 생성/수정/삭제와 아이템 이력 조회는 ADMIN만 사용할 수 있다. API는 기존처럼 Authorization의 Bearer 토큰을 요구하며 웹 로그인 쿠키만으로 호출할 수 없다.
+
+관리자 웹 라우터에는 `auth.presentation.web_dependencies.get_current_web_admin_id`를 인증 의존성으로 사용할 수 있다. 이 함수는 access 쿠키를 검증하고 현재 DB 역할이 ADMIN인 회원 ID를 반환한다. 미로그인과 유효하지 않은 세션은 `/login`으로 이동하고 일반 회원은 403을 받는다. GET/HEAD/OPTIONS 이외의 요청은 `WEB_ORIGIN`과 Origin 헤더가 일치해야 한다. 인증 의존성이 반환하는 회원 ID는 정수다.
+
+관리자 화면, 관리자 계정 자동 생성과 역할 변경 API는 포함하지 않는다. 기존 계정의 역할을 임의로 변경하지 않으며 가입 요청의 역할 지정도 계속 거절한다. 실제 관리 대상으로 승인된 계정의 DB 역할이 ADMIN이어야 한다.
+
+2026-11-09 임시 PostgreSQL 18과 직접 ASGI 요청으로 36개 검증을 통과했다. 새 DB의 테이블 생성, OpenAPI 경로 등록, 일반 회원 1번의 관리자 작업 거절, 다른 번호 관리자의 카탈로그 작업, 아이템 소유권, 이력 조회, 쿠키 관리자 의존성, Origin 검사, 동일 토큰의 권한 강등/승격 반영, 탈퇴와 로그아웃 차단을 확인했다. 웹 의존성은 로컬 검증 전용 경로로 확인했으며 실제 브라우저 UI나 운영 배포 검증은 아니다. 테스트 코드는 `.private/`에만 보관하고 커밋하지 않는다.

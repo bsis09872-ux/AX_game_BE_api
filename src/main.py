@@ -8,10 +8,6 @@ from fastapi.templating import Jinja2Templates
 
 from database import Base, engine
 
-# 모델 등록 대비 주석 / 공통 모듈 생성 시 삭제하고 메인에서 사용 시 활성화한다.
-# import users.infrastructure.models
-# import inventory.infrastructure.models
-
 from shared.core.exception_handlers import register_exception_handlers
 from shared.core.logging_config import setup_logging
 
@@ -22,6 +18,9 @@ from auth.presentation.router import router as auth_router
 from users.presentation.router import create_user_router
 from users.presentation.web_router import create_user_web_router
 from auth.presentation.web_router import router as auth_web_router
+from inventory.presentation.router import router as inventory_router
+from inventory.presentation.dependencies import get_inventory_service
+from auth.presentation.admin_router import create_admin_router
 from auth.presentation.web_dependencies import (
     get_current_web_user_id, get_web_settings, register_web_auth_handlers,
 )
@@ -58,7 +57,9 @@ register_web_auth_handlers(app)
 # 도메인 라우터는 /auth 등의 경로를 선언하고 앱에 직접 등록할 때 공통 버전을 적용한다.
 app.include_router(auth_router, prefix=API_PREFIX)
 app.include_router(create_user_router(get_current_user_id), prefix=API_PREFIX)
+app.include_router(inventory_router, prefix=API_PREFIX)
 app.include_router(auth_web_router)
+app.include_router(create_admin_router(get_inventory_service))
 app.include_router(create_user_web_router(get_current_web_user_id))
 
 

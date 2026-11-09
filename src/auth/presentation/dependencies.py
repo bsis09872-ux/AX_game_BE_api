@@ -8,6 +8,11 @@ from auth.application.service import AuthService
 from auth.wiring import build_auth_service
 from auth.application.dto import TokenClaims
 from auth.domain.exceptions import AuthenticationError
+from shared.core.exceptions import ForbiddenError
+from users.application.dto import UserSummary
+from users.application.service import UserService
+from users.presentation.dependencies import get_user_service
+from users.domain.exceptions import UserNotFoundError
 
 
 # 애플리케이션 기준 상대 URL로 Swagger의 토큰 발급 경로를 지정한다.
@@ -36,3 +41,22 @@ async def get_current_user_id(
     claims: TokenClaims = Depends(get_current_token),
 ) -> int:
     return claims.user_id
+
+
+async def get_current_user(
+    user_id: int = Depends(get_current_user_id),
+    users: UserService = Depends(get_user_service),
+) -> UserSummary:
+    try:
+        user = await users.get_user_summary(user_id)
+    except UserNotFoundError as exc:
+        raise AuthenticationError() from exc
+    if not user.is_active:
+        raise AuthenticationError()
+    return user
+
+
+async def require_admin(user: UserSummary = Depends(get_current_user)) -> UserSummary:
+    if user.role != "ADMIN":
+        raise ForbiddenError()
+    return user

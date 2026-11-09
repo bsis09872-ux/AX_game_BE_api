@@ -6,13 +6,32 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from users.domain.repository import UserRepository
 from users.domain.user import User
 from users.infrastructure.models import UserModel
-from users.domain.exceptions import InvalidUserError, LoginIdAlreadyExistsError
+from users.domain.exceptions import InvalidUserError, LoginIdAlreadyExistsError, UserNotFoundError
 
 
 class SqlAlchemyUserRepository(UserRepository):
     # 주입받은 세션을 공유한다. 세션 생성과 트랜잭션 확정은 호출 측에서 담당한다.
     def __init__(self, session: AsyncSession):
         self.session = session
+
+    async def find_for_update_many(self, user_ids: list[int]) -> dict[int, User]:
+        if not user_ids:
+            return {}
+        statement = (
+            select(UserModel).where(UserModel.id.in_(sorted(set(user_ids))))
+            .order_by(UserModel.id).with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        rows = (await self.session.scalars(statement)).all()
+        return {row.id: self._to_domain(row) for row in rows}
+
+    async def save_auction_limit(self, user: User) -> None:
+        row = await self.session.get(UserModel, user.id)
+        if row is None:
+            raise UserNotFoundError()
+        row.auction_purchase_count = user.auction_purchase_count
+        row.auction_blocked_until = user.auction_blocked_until
+        await self.session.flush()
 
     # DB에서 읽은 ID, 역할, 탈퇴 상태를 보존한다. 이 변환 자체에는 DB 통신이 없다.
     # 가입 시각과 수정 시각도 User에 전달한다.

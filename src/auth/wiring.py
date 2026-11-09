@@ -12,6 +12,12 @@ from auth.infrastructure.user_reader import UserReaderAdapter
 from users.wiring import build_user_service
 from auth.infrastructure.refresh_token_codec import OpaqueRefreshTokenCodec
 from auth.infrastructure.session_repository import SqlAlchemySessionRepository
+from auth.infrastructure.revoked_session_cache import RevokedSessionCache
+
+
+@lru_cache
+def get_revoked_session_cache() -> RevokedSessionCache:
+    return RevokedSessionCache()
 
 
 def initialize_auth() -> None:
@@ -42,4 +48,5 @@ def build_auth_service(session: AsyncSession) -> AuthService:
         sessions=SqlAlchemySessionRepository(session),
         refresh_codec=OpaqueRefreshTokenCodec(),
         refresh_ttl_seconds=get_refresh_ttl_seconds(),
+        revoked_sessions=get_revoked_session_cache(),
     )

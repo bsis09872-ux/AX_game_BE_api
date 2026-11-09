@@ -4,9 +4,10 @@
     "use strict";
 
     const page = document.body.dataset.authPage;
+    const protectedPage = page === "me" || page === "admin";
 
     // 일반 로그인 화면에서는 실행하지 않는다. 복구할 쿠키가 있거나 /me일 때만 확인한다.
-    if (page !== "me" && document.body.dataset.resume !== "true") {
+    if (!protectedPage && document.body.dataset.resume !== "true") {
         return;
     }
 
@@ -21,7 +22,7 @@
         clearTimeout(timer);
         clearTimeout(expiryTimer);
 
-        if (page === "me") {
+        if (protectedPage) {
             location.replace("/login?expired=1");
         } else {
             document.getElementById("session-message").textContent = "다시 로그인해 주세요.";
