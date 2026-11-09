@@ -30,7 +30,9 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 
-from shared.core.exceptions import BusinessRuleError, ConflictError
+from auction.domain.exceptions import AuctionEndedError, BidNotHigherError
+from shared.core.exceptions import BusinessRuleError, ConflictError, ForbiddenError
+
 
 # 매물 상태 정의 클래스
 class ListingStatus(str, Enum):
@@ -111,11 +113,11 @@ class Listing:
 
     # [AUC-11] 판매자가 공개 전 본인 매물을 취소할 때 취소 상태로 바꾼다.
     def cancel(self, requester_id: int, now: datetime) -> None:
+        if requester_id != self.seller_id:
+            raise ForbiddenError("본인의 매물만 취소할 수 있습니다.")
+
         self._require_status(ListingStatus.QUEUED)
         self._ensure_aware(now)
-
-        if requester_id != self.seller_id:
-            raise BusinessRuleError("본인의 매물만 취소할 수 있습니다.")
 
         self._transition_to(ListingStatus.CANCELLED, now)
         self.closed_at = now
@@ -125,7 +127,7 @@ class Listing:
         self._require_status(ListingStatus.BIDDING)
 
         if self.is_expired(now):
-            raise ConflictError("입찰 시간이 종료되었습니다.")
+            raise AuctionEndedError()
         if bidder_id == self.seller_id:
             raise BusinessRuleError("자기 매물에는 입찰할 수 없습니다.")
         if bidder_id == self.current_bidder_id:
@@ -135,7 +137,7 @@ class Listing:
             if amount <= self.start_price:
                 raise BusinessRuleError("입찰가는 시작가보다 커야 합니다.")
         elif amount <= self.current_bid_amount:
-            raise ConflictError("현재 최고 입찰가보다 높게 입찰해야 합니다.")
+            raise BidNotHigherError()
 
         self.current_bidder_id = bidder_id
         self.current_bid_amount = amount

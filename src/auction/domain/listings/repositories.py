@@ -18,7 +18,7 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from auction.domain.listings.entities import Listing
+from auction.domain.listings.entities import Listing, ListingStatus
 
 
 class ListingRepository(ABC):
@@ -35,6 +35,22 @@ class ListingRepository(ABC):
     # [AUC-02] 경매장 목록에 표시할 BIDDING 매물을 페이지별로 조회한다.
     @abstractmethod
     async def list_bidding(self, page: int) -> list[Listing]:
+        ...
+
+    # 상태와 아이템 ID로 매물을 필터링해 페이지별로 조회한다.
+    # None인 조건은 적용하지 않으며, 조건이 여러 개면 모두 만족해야 한다.
+    # 등록 시각 최신순, 같은 시각이면 ID 내림차순으로 반환한다.
+    # 권한은 서비스에서 검사한다. 결과가 없으면 빈 목록을 반환한다.
+    @abstractmethod
+    async def list_filtered(
+        self,
+        page: int,
+        *,
+        listing_id: int | None = None,
+        item_definition_id: int | None = None,
+        inventory_item_id: int | None = None,
+        status: ListingStatus | None = None,
+    ) -> list[Listing]:
         ...
 
     # [AUC-01, AUC-06] 대기 매물을 공개하기 전에 같은 종류의 진행 매물이 있는지 확인한다.

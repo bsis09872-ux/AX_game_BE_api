@@ -5,6 +5,7 @@
   <h2>{{ member.display_name }} <small>#{{ member.id }}</small></h2>
   <dl class="member-details"><dt>로그인 아이디</dt><dd>{{ member.login_id }}</dd><dt>권한</dt><dd>{{ member.role }}</dd><dt>회원 상태</dt><dd>{{ '정상' if member.is_active else '탈퇴' }}</dd><dt>가입 시각 (UTC)</dt><dd>{{ member.created_at.strftime('%Y-%m-%d %H:%M') }}</dd><dt>낙찰 횟수</dt><dd>{{ member.auction_purchase_count }}</dd></dl>
   <a href="/admin/members">← 회원 목록</a>
+  <a class="btn wood" href="/admin/members/{{ member.id }}/inventory">보유 아이템</a>
   <p>로그인: <strong>{{ '정지됨' if member.login_suspended_at else '허용' }}</strong>{% if member.login_suspended_at %} / 정지 시각 {{ member.login_suspended_at.strftime('%Y-%m-%d %H:%M') }} UTC{% endif %}</p>
 </section>
 {% if member.is_active %}
