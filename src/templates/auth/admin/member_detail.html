@@ -33,4 +33,3 @@
 </section>
 {% else %}<p>탈퇴한 회원은 관리 설정을 변경할 수 없습니다.</p>{% endif %}
 {% endblock %}
-{% block scripts %}{{ super() }}<script src="{{ url_for('static', path='/admin-members.js') }}" defer></script>{% endblock %}

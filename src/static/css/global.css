@@ -46,6 +46,15 @@ html, body {
     margin: 0;
 }
 
+html {
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+}
+
+@supports (scrollbar-gutter: stable) {
+    html { overflow-y: auto; }
+}
+
 body {
     isolation: isolate;
     background: var(--night);

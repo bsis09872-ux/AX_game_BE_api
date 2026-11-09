@@ -1,6 +1,95 @@
-(() => {
+import { initAdminMembers } from "./admin-members.js";
+
+let viewController;
+let navigationController;
+const adminPath = /^\/admin(?:\/(?:catalogs(?:\/(?:new|[1-9]\d*\/edit))?|members(?:\/(?:new|[1-9]\d*))?|history))?$/;
+
+function isAdminPage(url) {
+    return url.origin === location.origin && adminPath.test(url.pathname);
+}
+
+function initializeView() {
+    viewController = new AbortController();
+    const root = document.getElementById("admin-view");
+    initAdminItems(root, viewController.signal, navigate);
+    initAdminMembers(root, viewController.signal, navigate);
+}
+
+async function navigate(path, { fromHistory = false } = {}) {
+    const url = new URL(path, location.href);
+    if (!isAdminPage(url)) { location.assign(url.href); return; }
+    navigationController?.abort();
+    const controller = navigationController = new AbortController();
+    const current = document.getElementById("admin-view");
+    current.setAttribute("aria-busy", "true");
+    try {
+        const response = await fetch(url, {credentials: "same-origin", cache: "no-store", signal: controller.signal});
+        controller.signal.throwIfAborted();
+        if (response.redirected || response.status === 401 || response.status === 403) {
+            location.assign(response.redirected ? response.url : url.href);
+            return;
+        }
+        if (!response.ok) throw new Error("화면을 불러오지 못했습니다. 다시 눌러 주세요.");
+        const html = await response.text();
+        controller.signal.throwIfAborted();
+        const page = new DOMParser().parseFromString(html, "text/html");
+        const next = page.getElementById("admin-view");
+        const title = page.getElementById("admin-title");
+        if (!next || !title) throw new Error("화면을 불러오지 못했습니다. 다시 눌러 주세요.");
+
+        // 공통 배경과 메뉴 DOM은 유지하고 이전 본문의 조회만 중단한다.
+        if (!fromHistory && url.href !== location.href) history.pushState(null, "", url);
+        viewController.abort();
+        current.replaceWith(next);
+        document.title = page.title;
+        document.getElementById("admin-title").textContent = title.textContent;
+        for (const tab of document.querySelectorAll("[data-admin-tab]")) {
+            const updated = page.querySelector(`[data-admin-tab="${tab.dataset.adminTab}"]`);
+            tab.href = updated.href;
+            tab.textContent = updated.textContent;
+            if (updated.hasAttribute("aria-current")) tab.setAttribute("aria-current", "page");
+            else tab.removeAttribute("aria-current");
+        }
+        initializeView();
+        next.focus({preventScroll: true});
+        window.scrollTo(0, 0);
+    } catch (error) {
+        if (controller.signal.aborted) return;
+        if (fromHistory) { location.replace(url.href); return; }
+        const message = current.querySelector("#admin-message");
+        message.textContent = error.message;
+        message.dataset.error = "true";
+    } finally {
+        if (navigationController === controller) current.removeAttribute("aria-busy");
+    }
+}
+
+document.addEventListener("click", event => {
+    if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    const link = event.target.closest("a[href]");
+    if (!link || link.hasAttribute("download") || (link.target && link.target !== "_self")) return;
+    const url = new URL(link.href);
+    if (!isAdminPage(url) || url.hash) return;
+    event.preventDefault();
+    void navigate(url);
+});
+
+document.addEventListener("submit", event => {
+    const form = event.target;
+    if (event.defaultPrevented || !form.matches('#admin-view form[method="get"]')) return;
+    const url = new URL(form.action);
+    if (!isAdminPage(url)) return;
+    event.preventDefault();
+    url.search = new URLSearchParams(new FormData(form)).toString();
+    void navigate(url);
+});
+
+window.addEventListener("popstate", () => { void navigate(location.href, {fromHistory: true}); });
+initializeView();
+
+function initAdminItems(root, signal, navigate) {
     "use strict";
-    const $ = id => document.getElementById(id);
+    const $ = id => root.querySelector(`#${id}`);
     const editor = $("catalog-editor");
     let editingId = editor?.dataset.editId || null, catalogPage = 1, eventPage = 1, eventItem = null;
     let catalogRequest = 0, eventRequest = 0;
@@ -11,13 +100,16 @@
     }
 
     async function request(path, options = {}) {
-        const response = await fetch(path, {credentials:"same-origin", cache:"no-store", ...options});
+        const response = await fetch(path, {credentials:"same-origin", cache:"no-store",
+            signal: options.method && options.method !== "GET" ? undefined : signal, ...options});
+        signal.throwIfAborted();
         if (response.redirected || response.status === 401) {
             location.replace("/login?expired=1");
             throw new Error("다시 로그인해 주세요.");
         }
         if (response.status === 204) return null;
         const data = await response.json();
+        signal.throwIfAborted();
         if (!response.ok) {
             const detail = data.detail;
             throw new Error(Array.isArray(detail) ? "입력 형식과 값을 확인해 주세요." :
@@ -110,7 +202,7 @@
             cell(row, `${Number(item.start_price).toLocaleString("ko-KR")} GOLD`);
             cell(row, `${item.fishable ? "가능" : "불가"} / ${item.weight}`);
             const actions = cell(row, "");
-            for (const [label, action] of [["수정", () => { location.href = `/admin/catalogs/${item.id}/edit`; }], ["삭제", async () => {
+            for (const [label, action] of [["수정", () => navigate(`/admin/catalogs/${item.id}/edit`)], ["삭제", async () => {
                 if (!confirm(`${item.name} 카탈로그를 삭제할까요?`)) return;
                 await request(`/admin/item-catalogs/${item.id}`, {method:"DELETE"});
                 message("카탈로그를 삭제했습니다.");
@@ -155,7 +247,7 @@
 
     async function run(action, button) {
         if (button) button.disabled = true;
-        try { await action(); } catch (error) { message(error.message, true); }
+        try { await action(); } catch (error) { if (!signal.aborted) message(error.message, true); }
         finally { if (button) button.disabled = false; }
     }
 
@@ -191,7 +283,7 @@
                 await request("/admin/item-catalogs" + (editingId ? `/${editingId}` : ""), {
                     method:editingId ? "PATCH" : "POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload),
                 });
-                location.href = "/admin/catalogs?saved=1";
+                await navigate("/admin/catalogs?saved=1");
             }, $("save-catalog"));
         });
     }
@@ -207,4 +299,4 @@
         $("event-prev").addEventListener("click", () => { eventPage--; run(loadEvents); });
         $("event-next").addEventListener("click", () => { eventPage++; run(loadEvents); });
     }
-})();
+}

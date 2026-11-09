@@ -1,6 +1,7 @@
-(() => {
+export function initAdminMembers(root, signal, navigate) {
     "use strict";
-    const message = document.getElementById("admin-message");
+    const $ = id => root.querySelector(`#${id}`);
+    const message = $("admin-message");
     async function submit(form, path, method, body) {
         const button = form.querySelector('button[type="submit"], button:not([type])');
         button.disabled = true;
@@ -9,21 +10,23 @@
         try {
             const response = await fetch(path, {method, credentials:"same-origin", cache:"no-store",
                 headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
+            signal.throwIfAborted();
             if (response.redirected || response.status === 401) { location.replace("/login?expired=1"); return; }
             const data = await response.json();
+            signal.throwIfAborted();
             if (!response.ok) {
                 const detail = data.detail;
                 throw new Error(Array.isArray(detail) ? "입력 형식과 값을 확인해 주세요." : detail?.message || detail || "저장하지 못했습니다.");
             }
             form.reset();
-            location.href = `/admin/members/${data.id}?saved=1`;
-        } catch (error) { message.textContent = error.message; message.dataset.error = "true"; }
+            await navigate(`/admin/members/${data.id}?saved=1`);
+        } catch (error) { if (!signal.aborted) { message.textContent = error.message; message.dataset.error = "true"; } }
         finally { button.disabled = false; }
     }
-    const create = document.getElementById("member-create");
-    const bid = document.getElementById("member-bid");
+    const create = $("member-create");
+    const bid = $("member-bid");
     if (bid) {
-        document.getElementById("bid-timezone").textContent = `(${Intl.DateTimeFormat().resolvedOptions().timeZone})`;
+        $("bid-timezone").textContent = `(${Intl.DateTimeFormat().resolvedOptions().timeZone})`;
         if (bid.dataset.until) {
             const date = new Date(bid.dataset.until);
             const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
@@ -37,19 +40,19 @@
             }
             submit(bid, `/admin/member-accounts/${bid.dataset.memberId}/bid-restriction`, "PATCH", {until:date.toISOString()});
         });
-        document.getElementById("clear-bid").addEventListener("click", () => {
+        $("clear-bid").addEventListener("click", () => {
             if (!confirm("관리자가 설정한 입찰 제한을 해제할까요? 경매 자동 제한은 유지됩니다.")) return;
             submit(bid, `/admin/member-accounts/${bid.dataset.memberId}/bid-restriction`, "PATCH", {until:null});
         });
     }
-    const login = document.getElementById("member-login");
+    const login = $("member-login");
     login?.addEventListener("submit", event => {
         event.preventDefault();
         const suspended = login.dataset.suspend === "true";
         if (!confirm(suspended ? "이 회원의 로그인을 정지하고 기존 세션을 종료할까요?" : "로그인 정지를 해제할까요?")) return;
         submit(login, `/admin/member-accounts/${login.dataset.memberId}/login-suspension`, "PATCH", {suspended});
     });
-    const role = document.getElementById("member-role");
+    const role = $("member-role");
     role?.addEventListener("submit", event => {
         event.preventDefault();
         if (!confirm(`이 회원의 권한을 ${role.elements.role.value}로 변경할까요?`)) return;
@@ -64,5 +67,5 @@
         delete body.password_confirm;
         submit(create, "/admin/member-accounts", "POST", body);
     });
-    if (new URLSearchParams(location.search).has("saved")) message.textContent = "회원 정보를 저장했습니다.";
-})();
+    if (location.pathname.startsWith("/admin/members/") && new URLSearchParams(location.search).has("saved")) message.textContent = "회원 정보를 저장했습니다.";
+}

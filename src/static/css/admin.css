@@ -66,3 +66,4 @@
 @media(max-width:760px) { .admin-section { padding:16px; } }
 @media(max-width:440px) { .admin-filters label { width:100%; } }
 @media(max-width:440px) { .admin-fields { grid-template-columns:1fr; } .admin-workbench fieldset { padding:12px; } .admin-tabs a { padding:8px; font-size:12px; } }
+#admin-view:focus { outline: none; }
