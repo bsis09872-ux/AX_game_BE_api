@@ -16,6 +16,10 @@ class UserService:
     def __init__(self, repository: UserRepository):
         self.repository = repository
 
+    async def is_admin(self, user_id: int) -> bool:
+        user = await self.repository.find_by_id(user_id)
+        return user is not None and user.can_login() and user.role == 'ADMIN'
+
     async def list_members(self, query: str = '', role: str | None = None, page: int = 1, size: int = 20):
         return await self.repository.list_members(query, role, page, size)
 

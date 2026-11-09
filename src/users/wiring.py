@@ -1,6 +1,7 @@
 # 회원 서비스와 SQLAlchemy 저장소를 연결한다.
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from users.application.contracts import AdminRoleChecker
 from users.application.service import UserService
 from users.infrastructure.repositories import SqlAlchemyUserRepository
 
@@ -13,3 +14,8 @@ def build_user_service(session: AsyncSession) -> UserService:
     # 요청의 세션을 공유하며, 세션 종료는 호출자가 담당한다.
     repository = SqlAlchemyUserRepository(session=session)
     return UserService(repository=repository)
+
+
+def build_admin_role_checker(session: AsyncSession) -> AdminRoleChecker:
+    # 호출 도메인의 요청 세션을 공유한다. 인증된 회원 ID는 auth에서 전달받는다.
+    return build_user_service(session)

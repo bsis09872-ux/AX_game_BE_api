@@ -4,6 +4,14 @@ from typing import Protocol
 from users.application.dto import UserSummary
 
 
+class AdminRoleChecker(Protocol):
+    """인증된 회원 ID로 관리자 기능 사용 가능 여부를 조회한다."""
+
+    # 없는 회원, USER, 탈퇴 또는 로그인 정지 회원은 False. 조회 실패는 예외로 전파한다.
+    # 토큰과 로그인 세션 검증은 호출 전에 auth에서 수행한다.
+    async def is_admin(self, user_id: int) -> bool: ...
+
+
 class MemberWalletProvisioner(Protocol):
     """회원 생성 트랜잭션에서 지갑 담당 구현에 요청할 계약."""
 
