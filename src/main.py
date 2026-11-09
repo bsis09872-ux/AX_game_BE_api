@@ -19,6 +19,8 @@ from users.presentation.router import create_user_router
 from users.presentation.web_router import create_user_web_router
 from auth.presentation.web_router import router as auth_web_router
 from inventory.presentation.router import router as inventory_router
+from inventory.presentation.dependencies import get_inventory_service
+from auth.presentation.admin_router import create_admin_router
 from auth.presentation.web_dependencies import (
     get_current_web_user_id, get_web_settings, register_web_auth_handlers,
 )
@@ -57,6 +59,7 @@ app.include_router(auth_router, prefix=API_PREFIX)
 app.include_router(create_user_router(get_current_user_id), prefix=API_PREFIX)
 app.include_router(inventory_router, prefix=API_PREFIX)
 app.include_router(auth_web_router)
+app.include_router(create_admin_router(get_inventory_service))
 app.include_router(create_user_web_router(get_current_web_user_id))
 
 

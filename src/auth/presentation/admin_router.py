@@ -1,0 +1,91 @@
+from typing import Literal
+
+from fastapi import APIRouter, Depends, Path, Query, Request, Response
+from fastapi.responses import HTMLResponse
+
+from auth.presentation.web_dependencies import get_current_web_admin_id
+from inventory.application.service import InventoryService
+from inventory.presentation.schemas import (
+    AdminDefinitionResponse, DefinitionCreateRequest, DefinitionUpdateRequest,
+    EventResponse, PageResponse,
+)
+from users.application.service import UserService
+from users.presentation.dependencies import get_user_service
+from users.presentation.schemas import UserMeResponse
+
+def create_admin_router(inventory_dependency) -> APIRouter:
+    """관리자 웹의 표현 계층. 카탈로그 업무는 기존 공개 서비스에 위임한다."""
+    router = APIRouter(prefix="/admin", tags=["admin-web"])
+
+    @router.get("", response_class=HTMLResponse)
+    async def dashboard(
+        request: Request,
+        user_id: int = Depends(get_current_web_admin_id),
+        users: UserService = Depends(get_user_service),
+    ):
+        user = UserMeResponse.from_user(await users.get_user(user_id))
+        return request.app.state.templates.TemplateResponse(
+            request=request, name="auth/admin.html", context={"user": user},
+            headers={"Cache-Control": "no-store"},
+        )
+
+    @router.get("/item-catalogs", response_model=PageResponse[AdminDefinitionResponse])
+    async def catalogs(
+        response: Response,
+        category: Literal["FISH", "GEM", "MISC"] | None = None,
+        rarity: Literal["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY"] | None = None,
+        sort: Literal["rarity_desc", "name_asc"] = "rarity_desc",
+        page: int = Query(1, ge=1), size: int = Query(20, ge=1, le=100),
+        user_id: int = Depends(get_current_web_admin_id),
+        inventory: InventoryService = Depends(inventory_dependency),
+    ):
+        rows, total = await inventory.list_definitions(
+            category=category, rarity=rarity, sort=sort, page=page, size=size,
+        )
+        response.headers["Cache-Control"] = "no-store"
+        return PageResponse(items=[AdminDefinitionResponse.from_info(row) for row in rows],
+                            total=total, page=page, size=size)
+
+    @router.post("/item-catalogs", response_model=AdminDefinitionResponse, status_code=201)
+    async def create_catalog(
+        body: DefinitionCreateRequest, response: Response,
+        user_id: int = Depends(get_current_web_admin_id),
+        inventory: InventoryService = Depends(inventory_dependency),
+    ):
+        result = await inventory.create_definition(**body.model_dump())
+        response.headers["Cache-Control"] = "no-store"
+        return AdminDefinitionResponse.from_info(result)
+
+    @router.patch("/item-catalogs/{definition_id}", response_model=AdminDefinitionResponse)
+    async def update_catalog(
+        body: DefinitionUpdateRequest, response: Response,
+        definition_id: int = Path(ge=1),
+        user_id: int = Depends(get_current_web_admin_id),
+        inventory: InventoryService = Depends(inventory_dependency),
+    ):
+        result = await inventory.update_definition(definition_id, **body.model_dump(exclude_unset=True))
+        response.headers["Cache-Control"] = "no-store"
+        return AdminDefinitionResponse.from_info(result)
+
+    @router.delete("/item-catalogs/{definition_id}", status_code=204)
+    async def delete_catalog(
+        definition_id: int = Path(ge=1),
+        user_id: int = Depends(get_current_web_admin_id),
+        inventory: InventoryService = Depends(inventory_dependency),
+    ):
+        await inventory.delete_definition(definition_id)
+        return Response(status_code=204, headers={"Cache-Control": "no-store"})
+
+    @router.get("/inventory/{item_id}/events", response_model=PageResponse[EventResponse])
+    async def item_events(
+        response: Response, item_id: int = Path(ge=1),
+        page: int = Query(1, ge=1), size: int = Query(20, ge=1, le=100),
+        user_id: int = Depends(get_current_web_admin_id),
+        inventory: InventoryService = Depends(inventory_dependency),
+    ):
+        rows, total = await inventory.list_item_events(item_id, page=page, size=size)
+        response.headers["Cache-Control"] = "no-store"
+        return PageResponse(items=[EventResponse.from_info(row) for row in rows],
+                            total=total, page=page, size=size)
+
+    return router

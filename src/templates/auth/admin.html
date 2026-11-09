@@ -1,0 +1,47 @@
+{% extends "auth/base.html" %}
+{% block title %}관리자 | Catch &amp; Bid{% endblock %}
+{% block page %}admin{% endblock %}
+{% block styles %}<link rel="stylesheet" href="{{ url_for('static', path='/css/admin.css') }}">{% endblock %}
+{% block content %}
+<div class="admin-heading">
+  <div><p class="admin-eyebrow">CATCH &amp; BID / 운영 관리</p><h1>아이템 관리</h1></div>
+  <form method="post" action="/logout"><button class="btn wood">로그아웃</button></form>
+</div>
+<p id="session-message" role="status"></p>
+<p id="admin-message" role="status" aria-live="polite"></p>
+<section class="panel admin-section" aria-labelledby="catalog-title">
+  <div class="admin-heading"><h2 id="catalog-title">아이템 카탈로그</h2></div>
+  <form id="catalog-filters" class="admin-filters">
+    <label>분류<select name="category"><option value="">전체</option><option>FISH</option><option>GEM</option><option>MISC</option></select></label>
+    <label>등급<select name="rarity"><option value="">전체</option>{% for value in ['COMMON','UNCOMMON','RARE','EPIC','LEGENDARY'] %}<option>{{ value }}</option>{% endfor %}</select></label>
+    <label>정렬<select name="sort"><option value="rarity_desc">등급순</option><option value="name_asc">이름순</option></select></label>
+    <button class="btn wood">조회</button>
+  </form>
+  <div class="admin-table-scroll"><table><thead><tr><th>ID</th><th>이름 / 코드</th><th>분류 / 등급</th><th>시작가</th><th>낚시 / 가중치</th><th>관리</th></tr></thead><tbody id="catalog-rows"></tbody></table></div>
+  <div class="admin-pagination"><button id="catalog-prev" class="btn wood" type="button">이전</button><span id="catalog-page"></span><button id="catalog-next" class="btn wood" type="button">다음</button></div>
+</section>
+<section class="panel admin-section" aria-labelledby="editor-title">
+  <h2 id="editor-title">카탈로그 추가</h2>
+  <form id="catalog-editor" class="admin-editor">
+    <label>코드<input name="code" required pattern="[a-z][a-z0-9_]{2,49}" maxlength="50"></label>
+    <label>이름<input name="name" required maxlength="100"></label>
+    <label>분류<select name="category"><option>FISH</option><option>GEM</option><option>MISC</option></select></label>
+    <label>등급<select name="rarity">{% for value in ['COMMON','UNCOMMON','RARE','EPIC','LEGENDARY'] %}<option>{{ value }}</option>{% endfor %}</select></label>
+    <label>시작가<input name="start_price" type="number" min="1" step="1" value="100" required></label>
+    <label>낚시 가중치<input name="weight" type="number" min="0" step="1" value="10" required></label>
+    <label>아이콘<input name="icon" maxlength="50" value="default" required></label>
+    <label class="admin-checkbox"><input name="fishable" type="checkbox" checked>낚시로 획득 가능</label>
+    <label class="admin-wide">설명<textarea name="description" rows="2"></textarea></label>
+    <p id="editor-hint" class="admin-wide">생성 후 코드, 이름, 분류, 등급은 이 화면에서 변경할 수 없습니다.</p>
+    <div class="admin-wide"><button class="btn" id="save-catalog">추가</button> <button class="btn wood" id="reset-editor" type="button">새 항목</button></div>
+  </form>
+</section>
+<section class="panel admin-section" aria-labelledby="events-title">
+  <h2 id="events-title">개별 아이템 이력</h2>
+  <form id="event-search" class="admin-filters"><label>보유 아이템 ID<input name="item_id" inputmode="numeric" pattern="[1-9][0-9]*" required></label><button class="btn wood">조회</button></form>
+  <p>카탈로그 ID가 아닌 개별 보유 아이템 ID를 입력하세요.</p>
+  <div class="admin-table-scroll"><table><thead><tr><th>발생 시각</th><th>변경 종류</th><th>이전 소유자</th><th>새 소유자</th><th>처리자</th><th>매물 / 거래</th></tr></thead><tbody id="event-rows"></tbody></table></div>
+  <div class="admin-pagination"><button id="event-prev" type="button" class="btn wood" disabled>이전</button><span id="event-page">아이템을 조회해 주세요.</span><button id="event-next" type="button" class="btn wood" disabled>다음</button></div>
+</section>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', path='/admin.js') }}" defer></script>{% endblock %}
