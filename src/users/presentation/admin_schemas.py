@@ -1,8 +1,15 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 from users.domain.user import User
+
+
+class AdminMemberCreateRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    login_id: str = Field(min_length=4, max_length=50, pattern='^[a-z0-9_]+$')
+    display_name: str = Field(min_length=2, max_length=50, pattern=r'\S')
+    password: str = Field(min_length=1, max_length=1024, repr=False)
 
 
 class AdminMemberResponse(BaseModel):

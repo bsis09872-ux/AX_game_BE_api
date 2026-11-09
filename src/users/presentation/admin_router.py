@@ -1,15 +1,17 @@
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Path, Query, Request
+from fastapi import APIRouter, Depends, Path, Query, Request, Response
 from fastapi.responses import HTMLResponse
 
 from users.application.service import UserService
 from users.presentation.dependencies import get_user_service
 from users.presentation.schemas import UserMeResponse
 from users.presentation.admin_schemas import AdminMemberResponse
+from users.presentation.admin_schemas import AdminMemberCreateRequest
+from users.application.admin_service import MemberAdminService
 
 
-def create_member_admin_router(current_admin_id) -> APIRouter:
+def create_member_admin_router(current_admin_id, management_dependency) -> APIRouter:
     router = APIRouter(prefix='/admin', tags=['admin-members'])
 
     async def render(request, users, actor_id, template, **context):
@@ -30,6 +32,19 @@ def create_member_admin_router(current_admin_id) -> APIRouter:
         return await render(request, users, actor_id, 'members',
                             members=[AdminMemberResponse.from_user(row) for row in rows],
                             q=q, role=role, page=page, total=total, pages=max(1, (total + 19) // 20))
+
+    @router.get('/members/new', response_class=HTMLResponse)
+    async def new_member(request: Request, actor_id: int = Depends(current_admin_id),
+                         users: UserService = Depends(get_user_service)):
+        return await render(request, users, actor_id, 'member_create')
+
+    @router.post('/member-accounts', response_model=AdminMemberResponse, status_code=201)
+    async def create_member(body: AdminMemberCreateRequest, response: Response,
+                            actor_id: int = Depends(current_admin_id),
+                            management: MemberAdminService = Depends(management_dependency)):
+        member = await management.create_account(actor_id, **body.model_dump())
+        response.headers['Cache-Control'] = 'no-store'
+        return AdminMemberResponse.from_user(member)
 
     @router.get('/members/{member_id}', response_class=HTMLResponse)
     async def member_detail(request: Request, member_id: int = Path(ge=1),

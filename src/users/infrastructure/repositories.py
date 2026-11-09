@@ -1,5 +1,5 @@
 # SQLAlchemy로 회원을 조회하거나 저장하고 결과를 도메인 User로 변환한다.
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func, or_, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,6 +13,10 @@ class SqlAlchemyUserRepository(UserRepository):
     # 주입받은 세션을 공유한다. 세션 생성과 트랜잭션 확정은 호출 측에서 담당한다.
     def __init__(self, session: AsyncSession):
         self.session = session
+
+    async def lock_administration(self) -> None:
+        # 서로를 동시에 강등하는 관리자 요청을 한 트랜잭션씩 처리한다.
+        await self.session.execute(text('SELECT pg_advisory_xact_lock(731401, 1)'))
 
     async def list_members(self, query: str, role: str | None, page: int, size: int) -> tuple[list[User], int]:
         conditions = []

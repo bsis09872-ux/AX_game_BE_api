@@ -13,6 +13,11 @@ from users.wiring import build_user_service
 from auth.infrastructure.refresh_token_codec import OpaqueRefreshTokenCodec
 from auth.infrastructure.session_repository import SqlAlchemySessionRepository
 from auth.infrastructure.revoked_session_cache import RevokedSessionCache
+from users.application.admin_service import MemberAdminService
+
+
+def build_member_admin_service(session: AsyncSession) -> MemberAdminService:
+    return MemberAdminService(build_user_service(session), get_password_hasher(), session)
 
 
 @lru_cache

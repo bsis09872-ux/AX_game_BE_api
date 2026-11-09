@@ -6,6 +6,8 @@ from database import get_db
 
 from auth.application.service import AuthService
 from auth.wiring import build_auth_service
+from auth.wiring import build_member_admin_service
+from users.application.admin_service import MemberAdminService
 from auth.application.dto import TokenClaims
 from auth.domain.exceptions import AuthenticationError
 from shared.core.exceptions import ForbiddenError
@@ -21,6 +23,10 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="v1/auth/token", auto_error=False)
 def get_auth_service(session: AsyncSession = Depends(get_db)) -> AuthService:
     # 세션 수명과 예외 발생 시 rollback은 get_db가 담당한다.
     return build_auth_service(session=session)
+
+
+def get_member_admin_service(session: AsyncSession = Depends(get_db)) -> MemberAdminService:
+    return build_member_admin_service(session)
 
 
 def get_bearer_token(token: str | None = Depends(oauth2_scheme)) -> str:
