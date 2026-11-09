@@ -74,31 +74,37 @@ class ListingService:
             status=status,
         )
 
-    # [AUC-01] 아이템 종류 확인 → 매물 생성·공개 판단 → 저장 → 아이템 예약 → 확정.
-    # 매물을 먼저 저장해 ID를 받고, 아이템 이력에 매물 ID를 남긴다.
-    # 소유권·아이템 상태·재판매 제한은 reserve에서 인벤토리가 검사한다.
-    # [TO DO] 같은 종류를 동시에 등록하면 둘 다 공개될 수 있으므로 종류별 잠금을 정한다. (진행 전)
+    # 아이템의 카탈로그 시작가로 매물을 생성한다.
+    # 매물 저장으로 ID 확보 → 아이템 예약 이력에 ID 전달 → 전체 확정.
+    # 예약 실패 시 예외를 전달하고 호출 측에서 전체 rollback한다.
+    # [TO DO] 같은 아이템 종류의 동시 등록·공개를 직렬화한다.
     async def register(
         self,
         seller_id: int,
         inventory_item_id: int,
-        start_price: int,
         now: datetime,
     ) -> Listing:
         item = await self.inventory.get_summary(inventory_item_id)
 
         listing = Listing.create(
             seller_id=seller_id,
-            inventory_item_id=inventory_item_id,
+            inventory_item_id=item.inventory_item_id,
             item_definition_id=item.item_definition_id,
-            start_price=start_price,
+            start_price=item.start_price,
             now=now,
         )
+
         if not await self.listings.exists_bidding(item.item_definition_id):
             listing.start(now)
 
         saved = await self.listings.save(listing)
-        await self.inventory.reserve(inventory_item_id, seller_id, saved.id, now)
+        await self.inventory.reserve(
+            inventory_item_id=item.inventory_item_id,
+            owner_id=seller_id,
+            listing_id=saved.id,
+            now=now,
+        )
+
         await self.tx.commit()
         return saved
 

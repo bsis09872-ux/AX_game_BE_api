@@ -66,27 +66,31 @@ class AuctionUserGateway(Protocol):
         ...
 
 
-# 경매에서 필요한 잔액 확인·재화 이전 기능의 계약이다.
-# [TO DO] Wallet의 check_bid_funds·settle_sale 기준으로 이름·인자를 Wallet 담당자와 맞춘다. (진행 전)
-# 입찰 확인에는 매물의 현재 최고 입찰자·입찰액도 넘겨야 한다.
-
+# 입찰 가능 금액 확인과 낙찰 재화 이전을 Wallet에 요청한다.
+# 실패는 예외로 전달받고, commit·rollback은 Auction에서 조율한다.
 class WalletGateway(Protocol):
-    # 사용자 ID와 필요한 금액으로 잔액이 충분한지 확인한다.
-    # 반환: 충분하면 True, 부족하면 False.
-    async def has_balance(
+    # 입찰자·입찰액과 변경 전 최고 입찰 정보를 받아 자금 검사를 요청한다.
+    # Wallet이 지갑을 잠그고 예약 금액을 조회한다. 부족하면 예외가 발생한다.
+    # 정상 종료하면 검사 통과이며, 실제 잔액은 차감하지 않는다.
+    async def check_bid_funds(
         self,
-        user_id: int,
+        *,
+        bidder_id: int,
         amount: int,
-    ) -> bool:
+        current_bidder_id: int | None,
+        current_bid_amount: int | None,
+    ) -> None:
         ...
 
-    # 보내는 사용자·받는 사용자·금액을 받아 재화를 이전한다.
-    # 반환값 없음. commit은 트랜잭션 담당자가 수행한다.
-    async def transfer(
+    # 구매자·판매자·낙찰가를 받아 구매자 차감과 판매자 지급을 요청한다.
+    # 수수료 없이 낙찰가 전액을 이전한다. 거래 기록과 아이템 이전은 포함하지 않는다.
+    # 정상 종료하면 DB 변경이 반영된 상태이며, 최종 확정은 호출자가 한다.
+    async def settle_sale(
         self,
-        from_user_id: int,
-        to_user_id: int,
-        amount: int,
+        *,
+        buyer_id: int,
+        seller_id: int,
+        price: int,
     ) -> None:
         ...
 

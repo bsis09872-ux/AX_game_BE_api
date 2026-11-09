@@ -90,7 +90,6 @@ async def register_listing(
     listing = await service.register(
         seller_id=user_id,
         inventory_item_id=body.inventory_item_id,
-        start_price=body.start_price,
         now=datetime.now(timezone.utc),
     )
     return ListingResponse.from_listing(listing)
