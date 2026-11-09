@@ -1,0 +1,103 @@
+/* 내 지갑 화면 (templates/wallet/index.html)
+   인벤토리 상세 화면과 같은 배치(왼쪽 그림 + 오른쪽 표). 색은 global.css 변수만 쓴다. */
+
+.wallet-detail-panel {
+  padding: 32px;
+}
+
+.wallet-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+.wallet-detail-info {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.wallet-detail-info th {
+  font-size: 14px;
+  width: 40%;
+}
+
+.wallet-row--main td {
+  color: var(--gold);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.wallet-note {
+  margin: 14px 0 0;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.wallet-links {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-top: 20px;
+}
+
+/* ---------- 임시 금화 그림 (CSS) ----------
+   인벤토리 아이템 그림 칸(160px, 테두리)과 같은 크기의 틀 안에 픽셀 느낌의 금화를 그린다.
+   금화 아이콘(png)이 생기면 .wallet-coin 대신 <img>를 넣고 이 블록은 지운다. */
+
+.wallet-coin-frame {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 160px;
+  height: 160px;
+  background: var(--wood-dark);
+  border: 3px solid var(--water);
+}
+
+.wallet-coin {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--gold);
+  /* 바깥 테두리(어두운 금색) + 왼쪽 위 빛 + 오른쪽 아래 그늘 + 바닥 그림자 */
+  border: 6px solid #b9862a;
+  box-shadow:
+    inset 6px 6px 0 #ffe58a,
+    inset -6px -6px 0 #d9a53a,
+    0 0 0 var(--px) var(--outline),
+    6px 6px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* 안쪽 테두리 고리 */
+.wallet-coin::before {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border-radius: 50%;
+  border: 3px solid #d9a53a;
+}
+
+.wallet-coin__mark {
+  position: relative;
+  color: #b9862a;
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 2px 2px 0 #ffe58a;
+}
+
+/* 반짝임: 왼쪽 위 작은 사각 픽셀 두 개 */
+.wallet-coin::after {
+  content: "";
+  position: absolute;
+  top: 14px;
+  left: 20px;
+  width: 8px;
+  height: 8px;
+  background: #fffbe6;
+  box-shadow: 8px -6px 0 -2px #fffbe6;
+}
