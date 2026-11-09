@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, AwareDatetime
 from users.domain.user import User
 
 
@@ -22,6 +22,11 @@ class AdminLoginSuspensionRequest(BaseModel):
     suspended: StrictBool
 
 
+class AdminBidRestrictionRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    until: AwareDatetime | None
+
+
 class AdminMemberResponse(BaseModel):
     id: str
     login_id: str
@@ -32,6 +37,8 @@ class AdminMemberResponse(BaseModel):
     created_at: datetime
     auction_purchase_count: int
     auction_blocked_until: datetime | None
+    manual_auction_blocked_until: datetime | None
+    effective_auction_blocked_until: datetime | None
 
     @classmethod
     def from_user(cls, user: User):
@@ -39,4 +46,6 @@ class AdminMemberResponse(BaseModel):
                    role=user.role, is_active=user.is_active(), login_suspended_at=user.login_suspended_at,
                    created_at=user.created_at,
                    auction_purchase_count=user.auction_purchase_count,
-                   auction_blocked_until=user.auction_blocked_until)
+                   auction_blocked_until=user.auction_blocked_until,
+                   manual_auction_blocked_until=user.manual_auction_blocked_until,
+                   effective_auction_blocked_until=user.effective_auction_blocked_until)

@@ -13,3 +13,5 @@ class UserSummary:
     auction_blocked_until: datetime | None
     role: str
     auction_purchase_count: int = 0
+    manual_auction_blocked_until: datetime | None = None
+    effective_auction_blocked_until: datetime | None = None

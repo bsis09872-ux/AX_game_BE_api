@@ -67,3 +67,14 @@ class MemberAdminService:
         await self.transaction.commit()
         logger.info('admin_member_login_status actor_id=%s target_id=%s suspended=%s', actor_id, target_id, suspended)
         return target
+
+    async def set_bid_restriction(self, actor_id: int, target_id: int, until: datetime | None):
+        members = await self._lock_and_authorize(actor_id, target_id)
+        target = members.get(target_id)
+        if target is None or not target.is_active():
+            raise UserNotFoundError()
+        target.restrict_bidding(until, datetime.now(timezone.utc))
+        await self.repository.save_admin_settings(target)
+        await self.transaction.commit()
+        logger.info('admin_member_bid_restriction actor_id=%s target_id=%s', actor_id, target_id)
+        return target

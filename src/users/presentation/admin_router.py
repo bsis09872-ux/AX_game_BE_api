@@ -9,6 +9,7 @@ from users.presentation.schemas import UserMeResponse
 from users.presentation.admin_schemas import AdminMemberResponse
 from users.presentation.admin_schemas import AdminMemberCreateRequest, AdminMemberRoleRequest
 from users.presentation.admin_schemas import AdminLoginSuspensionRequest
+from users.presentation.admin_schemas import AdminBidRestrictionRequest
 from users.application.admin_service import MemberAdminService
 
 
@@ -60,6 +61,14 @@ def create_member_admin_router(current_admin_id, management_dependency) -> APIRo
                             actor_id: int = Depends(current_admin_id),
                             management: MemberAdminService = Depends(management_dependency)):
         member = await management.set_login_suspension(actor_id, member_id, body.suspended)
+        response.headers['Cache-Control'] = 'no-store'
+        return AdminMemberResponse.from_user(member)
+
+    @router.patch('/member-accounts/{member_id}/bid-restriction', response_model=AdminMemberResponse)
+    async def restrict_bidding(body: AdminBidRestrictionRequest, response: Response, member_id: int = Path(ge=1),
+                               actor_id: int = Depends(current_admin_id),
+                               management: MemberAdminService = Depends(management_dependency)):
+        member = await management.set_bid_restriction(actor_id, member_id, body.until)
         response.headers['Cache-Control'] = 'no-store'
         return AdminMemberResponse.from_user(member)
 

@@ -28,6 +28,7 @@ class SqlAlchemyUserRepository(UserRepository):
             raise UserNotFoundError()
         row.role = user.role
         row.login_suspended_at = user.login_suspended_at
+        row.manual_auction_blocked_until = user.manual_auction_blocked_until
         await self.session.flush()
 
     async def list_members(self, query: str, role: str | None, page: int, size: int) -> tuple[list[User], int]:
@@ -71,6 +72,7 @@ class SqlAlchemyUserRepository(UserRepository):
             user_id=model.id,
             auction_purchase_count=model.auction_purchase_count,
             auction_blocked_until=model.auction_blocked_until,
+            manual_auction_blocked_until=model.manual_auction_blocked_until,
             login_suspended_at=model.login_suspended_at,
             created_at=model.created_at,
             updated_at=model.updated_at,

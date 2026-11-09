@@ -53,6 +53,8 @@ class UserService:
             display_name=user.display_name,
             is_active=user.is_active(),
             auction_blocked_until=user.auction_blocked_until,
+            manual_auction_blocked_until=user.manual_auction_blocked_until,
+            effective_auction_blocked_until=user.effective_auction_blocked_until,
             role=user.role,
             auction_purchase_count=user.auction_purchase_count,
         )

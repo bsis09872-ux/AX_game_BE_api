@@ -21,6 +21,27 @@
         finally { button.disabled = false; }
     }
     const create = document.getElementById("member-create");
+    const bid = document.getElementById("member-bid");
+    if (bid) {
+        document.getElementById("bid-timezone").textContent = `(${Intl.DateTimeFormat().resolvedOptions().timeZone})`;
+        if (bid.dataset.until) {
+            const date = new Date(bid.dataset.until);
+            const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+            bid.elements.until.value = local.toISOString().slice(0,16);
+        }
+        bid.addEventListener("submit", event => {
+            event.preventDefault();
+            const date = new Date(bid.elements.until.value);
+            if (!Number.isFinite(date.getTime()) || date <= new Date()) {
+                message.textContent = "미래의 종료 시각을 선택해 주세요."; message.dataset.error = "true"; return;
+            }
+            submit(bid, `/admin/member-accounts/${bid.dataset.memberId}/bid-restriction`, "PATCH", {until:date.toISOString()});
+        });
+        document.getElementById("clear-bid").addEventListener("click", () => {
+            if (!confirm("관리자가 설정한 입찰 제한을 해제할까요? 경매 자동 제한은 유지됩니다.")) return;
+            submit(bid, `/admin/member-accounts/${bid.dataset.memberId}/bid-restriction`, "PATCH", {until:null});
+        });
+    }
     const login = document.getElementById("member-login");
     login?.addEventListener("submit", event => {
         event.preventDefault();
