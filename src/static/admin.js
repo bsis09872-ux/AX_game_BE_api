@@ -71,6 +71,7 @@
         const result = await request("/admin/item-catalogs?" + params);
         if (serial !== catalogRequest) return;
         if (!result.items.length && catalogPage > 1) { catalogPage--; return loadCatalog(); }
+        $("csv-link").href = "/admin/item-catalogs/export.csv?" + params;
         $("catalog-rows").replaceChildren();
         for (const item of result.items) {
             const row = document.createElement("tr");

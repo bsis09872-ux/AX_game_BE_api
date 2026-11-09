@@ -10,7 +10,7 @@
 <p id="session-message" role="status"></p>
 <p id="admin-message" role="status" aria-live="polite"></p>
 <section class="panel admin-section" aria-labelledby="catalog-title">
-  <div class="admin-heading"><h2 id="catalog-title">아이템 카탈로그</h2></div>
+  <div class="admin-heading"><h2 id="catalog-title">아이템 카탈로그</h2><a id="csv-link" class="btn wood" href="/admin/item-catalogs/export.csv">현재 페이지 CSV</a></div>
   <form id="catalog-filters" class="admin-filters">
     <label>분류<select name="category"><option value="">전체</option><option>FISH</option><option>GEM</option><option>MISC</option></select></label>
     <label>등급<select name="rarity"><option value="">전체</option>{% for value in ['COMMON','UNCOMMON','RARE','EPIC','LEGENDARY'] %}<option>{{ value }}</option>{% endfor %}</select></label>
