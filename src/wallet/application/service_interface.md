@@ -7,8 +7,11 @@
 ```python
 from wallet.wiring import build_wallet_service
 
-wallet_service = build_wallet_service(session)  # 호출자의 세션을 그대로 넘긴다
+# 호출자의 세션을 그대로 넘기고, 예약 금액 조회기(경매 제공)를 반드시 주입한다
+wallet_service = build_wallet_service(session, held_reader=AuctionHeldAmountReader(...))
 ```
+
+- `held_reader`는 필수다. 기본값이나 listings 직접 조회 같은 우회 경로는 없다.
 
 - 같은 세션을 넘기면 호출자의 트랜잭션에 함께 묶인다. 지갑은 **flush까지만** 하고 commit하지 않는다.
 - **commit/rollback은 호출자가 한다.** 잔액 변경 로그는 지갑이 세션 이벤트로 처리한다.
@@ -21,25 +24,27 @@ wallet_service = build_wallet_service(session)  # 호출자의 세션을 그대�
 | 명세 | 호출 시점 | 메서드 | 반환 | 예외 (HTTP) |
 | --- | --- | --- | --- | --- |
 | WALL-07 입찰 금액 확인 | AUCT-01 입찰: 매물 FOR UPDATE + 경매 규칙 검사 후 | `check_bid_funds(*, bidder_id, amount, current_bidder_id, current_bid_amount)` | `BidFundsCheck(required_extra, available_before, available_after)` | `InsufficientBalanceError` (400), `WalletNotFoundError` (404, 없는 회원) |
-| WALL-08 낙찰 정산 | AUCT-04 마감: 매물 FOR UPDATE + BIDDING·마감 확인 후, **입찰자가 있을 때만** | `settle_sale(*, buyer_id, seller_id, price)` | `SettlementAmounts(buyer_debit, seller_credit, fee)` | `BuyerBalanceShortError` (500, 데이터 불일치), `WalletNotFoundError` (404), `ValueError` (구매자=판매자) |
+| WALL-08 낙찰 정산 | AUCT-04 마감: 매물 FOR UPDATE + BIDDING·마감 확인 후, **입찰자가 있을 때만** | `settle_sale(*, buyer_id, seller_id, price)` | `SettlementAmounts(buyer_debit, seller_credit)` | `BuyerBalanceShortError` (500, 데이터 불일치), `WalletNotFoundError` (404), `ValueError` (구매자=판매자) |
 
 ### WALL-07 `check_bid_funds`
 - **검사만 한다.** 잔액은 바꾸지 않는다(예약 방식).
 - `amount`에는 **이번 입찰액만** 넘긴다. 다른 매물에 묶인 금액(`sum_leading_bids`)을 더해서 넘기면 지갑이 한 번 더 빼서 이중 계산된다.
   - 예: 잔액 3,000 / 다른 매물 예약 1,000 / 입찰 1,500 → 통과해야 한다. `1,000 + 1,500`을 넘기면 2,500 > 2,000으로 잘못 거절된다.
 - 통과하면 `listings.current_bidder_id`, `current_bid_amount` 갱신은 경매가 한다.
-- 예약 금액(held)은 "내가 최고 입찰자인 BIDDING 매물들의 입찰액 합계"로 지갑이 계산한다. **경매가 잔액·예약 합계를 따로 계산하지 않는다.**
-- `current_bidder_id`, `current_bid_amount`는 매물의 현재 값이다. 둘 다 None이거나 둘 다 값이어야 한다.
+- 예약 금액(held)은 지갑 잠금 뒤 `HeldAmountReader`(경매의 `sum_leading_bids`)로 **지갑이 한 번만** 읽는다. 경매가 잔액·예약 합계를 따로 계산하지 않는다.
+- `current_bidder_id`, `current_bid_amount`는 매물의 **변경 전** 현재 값이다. 둘 다 None이거나 둘 다 값이어야 한다.
   - 경매 규칙상 현재 최고 입찰자는 재입찰할 수 없으므로, 입찰자는 항상 "새 입찰자"다. 묶일 금액 = 입찰액 전액.
   - 따라서 `current_bidder_id=None, current_bid_amount=None`으로 넘겨도 결과가 같다.
   - `current_bidder_id == bidder_id`(재입찰)로 넘어오면 경매 검사 누락으로 보고 `ValueError`.
 - 입찰자 지갑만 잠근다(FOR UPDATE). 밀려나는 이전 입찰자 지갑은 잠그지 않는다(사용 가능 금액이 늘기만 하므로).
 
 ### WALL-08 `settle_sale`
-- 구매자 `-price`, 판매자 `+(price - 수수료)`. 수수료는 현재 0.
+- 구매자 `-price`, 판매자 `+price`. **수수료는 없다**(정책 확정).
 - 두 지갑을 user_id 오름차순으로 잠근다(교차 정산 데드락 방지).
 - 유찰(입찰자 없음)이면 호출하지 않는다. 예약 방식이라 돌려줄 돈이 없다.
 - 거래 기록(trades), SOLD 처리, 아이템 이전, 구매자 낙찰 횟수(`users.update_limit`)는 경매가 한다.
+- 지갑은 commit/rollback하지 않는다. 실패는 예외로 호출자에게 올리고, 최종 확정은 경매가 한다.
+- 구매자 잔액 < 낙찰가면 잔액을 바꾸기 전에 `BuyerBalanceShortError`. 경매는 정산 전체를 rollback한다. 지갑은 유찰 처리하지 않는다.
 - 이중 정산은 경매의 매물 잠금·상태 확인과 `trades.listing_id` UNIQUE가 막는다. 지갑 함수만으로는 막지 않는다.
 
 ### 경매 `WalletGateway` 연결 예시
@@ -62,7 +67,9 @@ class WalletGatewayAdapter(WalletGateway):
         await self._wallet.settle_sale(buyer_id=from_user_id, seller_id=to_user_id, price=amount)
 
 # auction/wiring.py
-#   wallets=WalletGatewayAdapter(build_wallet_service(session)),
+#   wallets=WalletGatewayAdapter(
+#       build_wallet_service(session, held_reader=AuctionHeldAmountReader(<listing repo>))),
+#   build_held_amount_reader(session) -> AuctionHeldAmountReader  # main.py가 지갑 API에도 주입
 
 # auction/application/listings/service.py (bid)
 #   await self.wallets.has_balance(bidder_id, amount)   # tied + amount 아님
@@ -95,9 +102,9 @@ class WalletGatewayAdapter(WalletGateway):
 | 계약 | 제공 도메인 | 현재 구현 |
 | --- | --- | --- |
 | `RoleCheck.is_admin(user_id)` | users | users가 제공하는 `build_admin_role_checker(session)` (wiring.py에서 연결). 없는 회원·일반·탈퇴·로그인 정지 회원은 False → 403 |
-| `HeldAmountReader.held_amount(user_id)` | auction | **임시**: listings 테이블 직접 조회 (infrastructure/held_amount_reader.py). auction이 `sum_leading_bids`를 공개하면 교체 |
+| `HeldAmountReader.held_amount(user_id)` | auction | 경매의 `AuctionHeldAmountReader`(`ListingRepository.sum_leading_bids`). 같은 세션, commit·추가 잠금 없음. 경매 입찰·정산은 `build_wallet_service(..., held_reader=)`로, 지갑 API는 main.py가 `create_wallet_router(get_current_user_id, build_held_amount_reader)`로 주입 |
 
 ## 미정 (팀 결정 필요)
-- 거래 수수료율 (현재 0, `domain/rules.py`의 `FEE_PERCENT`)
+- 거래 수수료: **없음으로 확정** (관련 코드 제거)
 - 초기 지급액 (현재 3,000, `INITIAL_BALANCE`)
 - 탈퇴 회원의 잔액·입찰 처리

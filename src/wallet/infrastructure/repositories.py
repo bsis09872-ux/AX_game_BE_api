@@ -1,7 +1,7 @@
 """SQLAlchemy 지갑 저장소 (wallets 테이블만 다룬다)
 
 세션은 주입받아 공유하고 commit하지 않는다.
-예약 금액(listings 조회)은 held_amount_reader.py로 분리했다.
+예약 금액은 경매가 제공하는 HeldAmountReader로 받는다 (wiring에서 주입).
 """
 from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
