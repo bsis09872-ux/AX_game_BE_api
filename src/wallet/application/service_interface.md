@@ -87,14 +87,14 @@ class WalletGatewayAdapter(WalletGateway):
 | --- | --- | --- | --- |
 | `InsufficientBalanceError` | BusinessRuleError | 400 | 사용 가능 금액 부족 |
 | `WalletNotFoundError` | NotFoundError | 404 | 없는 회원 |
-| `InsufficientAuthorityError` | ForbiddenError | 403 | 관리자 아닌 충전 (지갑 API 전용) |
+| `InsufficientAuthorityError` | ForbiddenError | 403 | 관리자 아닌 충전 (요청자가 없는·탈퇴·정지 회원이어도 같음, 지갑 API 전용) |
 | `BuyerBalanceShortError` | AppError | 500 | 정산 시 구매자 잔액 < 낙찰가 (예약 규칙이 지켜지면 생기지 않는 데이터 불일치) |
 
 ## 지갑이 다른 도메인에 필요한 것 (application/contracts.py)
 
 | 계약 | 제공 도메인 | 현재 구현 |
 | --- | --- | --- |
-| `RoleCheck.is_admin(user_id)` | users | `UserService.get_user(id).role` (infrastructure/role_checker.py) |
+| `RoleCheck.is_admin(user_id)` | users | users가 제공하는 `build_admin_role_checker(session)` (wiring.py에서 연결). 없는 회원·일반·탈퇴·로그인 정지 회원은 False → 403 |
 | `HeldAmountReader.held_amount(user_id)` | auction | **임시**: listings 테이블 직접 조회 (infrastructure/held_amount_reader.py). auction이 `sum_leading_bids`를 공개하면 교체 |
 
 ## 미정 (팀 결정 필요)

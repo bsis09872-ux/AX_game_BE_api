@@ -17,7 +17,7 @@ from typing import Protocol
 class RoleCheck(Protocol):
 
     # user_id는 presentation이 인증으로 확인해 넘긴 요청자 ID다.
-    # 반환: 관리자면 True. 회원이 없으면 구현체가 NotFoundError 계열 예외를 올린다.
+    # 반환: 관리자면 True. 없는 회원·일반·탈퇴·로그인 정지 회원은 False (users의 AdminRoleChecker와 같은 모양).
     async def is_admin(self, user_id: int) -> bool:
         ...
 
