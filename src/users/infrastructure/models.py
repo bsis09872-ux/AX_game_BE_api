@@ -33,6 +33,8 @@ class UserModel(Base):
 
     auction_purchase_count: Mapped[int] = mapped_column(default=0, server_default="0")
     auction_blocked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    manual_auction_blocked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    login_suspended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # 탈퇴하지 않은 회원은 NULL이며, 시간대 정보를 포함하는 시각으로 저장한다.
     deleted_at: Mapped[datetime | None] = mapped_column(

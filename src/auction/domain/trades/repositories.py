@@ -37,6 +37,21 @@ class TradeRepository(ABC):
     async def list_by_seller(self, seller_id: int, page: int) -> list[Trade]:
         ...
 
+    # 매물·구매자·판매자 ID로 거래 내역을 필터링해 페이지별로 조회한다.
+    # None인 조건은 생략하며, 여러 조건은 모두 만족해야 한다.
+    # 체결 시각 최신순, 같은 시각이면 ID 내림차순으로 반환한다.
+    # 권한은 서비스에서 검사하고, 결과가 없으면 빈 목록을 반환한다.
+    @abstractmethod
+    async def list_filtered(
+        self,
+        page: int,
+        *,
+        listing_id: int | None = None,
+        buyer_id: int | None = None,
+        seller_id: int | None = None,
+    ) -> list[Trade]:
+        ...
+
     # [AUC-08] 낙찰 제한을 계산할 때 구매자의 기간 내 낙찰 시각 전체를 조회한다.
     # since와 until은 UTC이며 since <= completed_at <= until인 기록을 반환한다.
     # 오래된 순으로 반환하고 같은 시각의 여러 거래도 각각 포함한다.

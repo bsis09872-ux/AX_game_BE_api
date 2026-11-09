@@ -19,6 +19,33 @@ router = APIRouter(prefix="/trades", tags=["trades"])
 
 Page = Annotated[int, Query(ge=1)]
 
+# 인증된 요청자 ID와 필터를 받아 관리자 거래 조회를 요청한다.
+# 관리자 권한은 서비스에서 검사하고, 결과를 거래 목록 응답으로 변환한다.
+@router.get(
+    "/management",
+    response_model=TradePageResponse,
+    summary="관리자 거래 내역 조회",
+    tags=["auction-management"],
+)
+async def get_admin_trades(
+    user_id: CurrentUserId,
+    service: TradeServiceDep,
+    page: Page = 1,
+    listing_id: Annotated[int | None, Query(gt=0)] = None,
+    buyer_id: Annotated[int | None, Query(gt=0)] = None,
+    seller_id: Annotated[int | None, Query(gt=0)] = None,
+) -> TradePageResponse:
+    trades = await service.get_admin_trades(
+        requester_id=user_id,
+        page=page,
+        listing_id=listing_id,
+        buyer_id=buyer_id,
+        seller_id=seller_id,
+    )
+    return TradePageResponse(
+        items=[TradeResponse.from_trade(trade) for trade in trades],
+        page=page,
+    )
 
 # [AUC-07] 내 낙찰 내역: 체결 시각 최신순
 @router.get("/me/won", response_model=TradePageResponse, summary="내 낙찰 내역 조회")
@@ -49,7 +76,6 @@ async def get_my_sales(
 
 
 # [AUC-08] 내 입찰 제한 상태
-# [TO DO] users의 낙찰 횟수 조회가 제공되기 전까지는 500을 반환한다. (진행 전)
 @router.get("/me/bid-limit", response_model=BidLimitResponse, summary="내 입찰 제한 상태 조회")
 async def get_my_bid_limit(
     user_id: CurrentUserId,

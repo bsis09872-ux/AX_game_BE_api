@@ -15,11 +15,12 @@ class UserReaderAdapter(UserReader):
         if user.id is None:
             raise RuntimeError("회원 조회 결과에 ID가 없습니다.")
         return AuthUser(
-            id=user.id, is_active=user.is_active(), password_hash=user.password_hash
+            id=user.id, is_active=user.can_login(), password_hash=user.password_hash
         )
 
     async def find_by_login_id(self, login_id: str) -> AuthUser | None:
-        user = await self._user_service.find_by_login_id(login_id)
+        # 로그인과 관리자 정지가 같은 회원 행을 잠가 세션 생성/폐기 순서를 맞춘다.
+        user = await self._user_service.find_by_login_id_for_update(login_id)
         return self._to_auth_user(user) if user is not None else None
 
     async def find_by_id(self, user_id: int) -> AuthUser | None:

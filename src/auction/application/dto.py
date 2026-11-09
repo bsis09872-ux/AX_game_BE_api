@@ -5,10 +5,11 @@
 # 시각은 timezone-aware UTC로 전달한다.
 #
 # [TO DO] 다음 PR의 Adapter에서 외부 데이터를 아래 필드로 변환한다.
-# User: id → user_id, auction_purchase_count → purchase_count,
-#       auction_blocked_until → blocked_until.
-# ItemInfo: id → inventory_item_id, definition.id → item_definition_id,
-#           definition.name → name, definition.start_price → start_price.
+# # UserSummary → AuctionUserState 변환:
+# id → user_id, auction_purchase_count → purchase_count
+# auction_blocked_until → blocked_until
+# effective_auction_blocked_until → effective_blocked_until
+# is_active → is_active
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -21,6 +22,8 @@ class AuctionUserState:
     user_id: int
     purchase_count: int
     blocked_until: datetime | None
+    effective_blocked_until: datetime | None
+    is_active: bool
 
 # 인벤토리에서 받은 아이템 정보를 경매에 전달한다.
 # 종류·시작가는 매물 생성에, 이름은 거래 기록에 사용한다.

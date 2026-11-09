@@ -1,4 +1,3 @@
-/* 화면별 폭과 폼 배치를 지정한다. 색상, 폰트와 공통 UI는 global.css를 사용한다. */
 .auth-layout {
     width: 100%;
     max-width: 400px;
@@ -30,7 +29,6 @@
     min-height: 44px;
 }
 
-/* 상태 메시지는 스크립트가 갱신한다. 내용이 없을 때는 빈 공간도 감춘다. */
 .session-message {
     margin: 0 0 20px;
     color: var(--muted);

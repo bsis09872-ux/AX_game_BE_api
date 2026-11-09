@@ -12,6 +12,22 @@ from auth.infrastructure.user_reader import UserReaderAdapter
 from users.wiring import build_user_service
 from auth.infrastructure.refresh_token_codec import OpaqueRefreshTokenCodec
 from auth.infrastructure.session_repository import SqlAlchemySessionRepository
+from auth.infrastructure.revoked_session_cache import RevokedSessionCache
+from users.application.admin_service import MemberAdminService
+
+
+def build_member_admin_service(session: AsyncSession) -> MemberAdminService:
+    # TODO(지갑 연동): users.application.contracts.MemberWalletProvisioner 구현이 반영되면
+    # 같은 session으로 주입한다. 회원 flush -> create_wallet -> 마지막 한 번 commit,
+    # 초기 지급 로그 확정은 commit 성공 후 연결한다. 지금은 회원 계정만 생성한다.
+    # 기존 회원의 지갑 누락 보정 정책은 지갑 담당과 별도로 합의해야 한다.
+    return MemberAdminService(build_user_service(session), get_password_hasher(), session,
+                              SqlAlchemySessionRepository(session))
+
+
+@lru_cache
+def get_revoked_session_cache() -> RevokedSessionCache:
+    return RevokedSessionCache()
 
 
 def initialize_auth() -> None:
@@ -20,7 +36,7 @@ def initialize_auth() -> None:
 
 
 def get_refresh_ttl_seconds() -> int:
-    ttl = int(os.environ.get("REFRESH_TTL_SECONDS", "604800"))
+    ttl = int(os.environ.get("REFRESH_TTL_SECONDS", "1800"))
     if not 30 <= ttl <= 2592000:
         raise ValueError("REFRESH_TTL_SECONDS는 30~2592000 사이여야 합니다.")
     return ttl
@@ -42,4 +58,5 @@ def build_auth_service(session: AsyncSession) -> AuthService:
         sessions=SqlAlchemySessionRepository(session),
         refresh_codec=OpaqueRefreshTokenCodec(),
         refresh_ttl_seconds=get_refresh_ttl_seconds(),
+        revoked_sessions=get_revoked_session_cache(),
     )

@@ -9,6 +9,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Query, status
 
+from auction.domain.listings.entities import ListingStatus
 from auction.presentation.dependencies import CurrentUserId, ListingServiceDep
 from auction.presentation.listings.schemas import (
     BidRequest,
@@ -27,12 +28,43 @@ async def get_listings(
     service: ListingServiceDep,
     page: Annotated[int, Query(ge=1)] = 1,
 ) -> ListingPageResponse:
-    listings = await service.get_listings(page)
+    listings = await service.get_listing_list(page)
     return ListingPageResponse(
         items=[ListingResponse.from_listing(listing) for listing in listings],
         page=page,
     )
 
+# 인증된 사용자 ID와 필터를 받아 관리자용 매물 목록을 요청한다.
+# 관리자 권한은 서비스에서 검사하며, 결과는 기존 목록 응답으로 변환한다.
+@router.get(
+    "/management",
+    response_model=ListingPageResponse,
+    summary="관리자 매물 목록 조회",
+    tags=["auction-management"],
+)
+async def get_admin_listings(
+    user_id: CurrentUserId,
+    service: ListingServiceDep,
+    page: Annotated[int, Query(ge=1)] = 1,
+    listing_id: Annotated[int | None, Query(gt=0)] = None,
+    item_definition_id: Annotated[int | None, Query(gt=0)] = None,
+    inventory_item_id: Annotated[int | None, Query(gt=0)] = None,
+    listing_status: Annotated[
+        ListingStatus | None, Query(alias="status")
+    ] = None,
+) -> ListingPageResponse:
+    listings = await service.get_admin_listings(
+        requester_id=user_id,
+        page=page,
+        listing_id=listing_id,
+        item_definition_id=item_definition_id,
+        inventory_item_id=inventory_item_id,
+        status=listing_status,
+    )
+    return ListingPageResponse(
+        items=[ListingResponse.from_listing(listing) for listing in listings],
+        page=page,
+    )
 
 # [AUC-03] 매물 상세 조회
 @router.get("/{listing_id}", response_model=ListingResponse, summary="매물 상세 조회")
@@ -40,7 +72,7 @@ async def get_listing(
     listing_id: int,
     service: ListingServiceDep,
 ) -> ListingResponse:
-    listing = await service.get_listing(listing_id)
+    listing = await service.get_listing_detail(listing_id)
     return ListingResponse.from_listing(listing)
 
 # [AUC-01] 매물 등록: 같은 종류가 공개 중이면 QUEUED, 아니면 바로 BIDDING

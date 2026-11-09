@@ -1,0 +1,35 @@
+{% extends "auth/admin/layout.html" %}
+{% block admin_title %}회원 상세{% endblock %}
+{% block admin_content %}
+<section class="panel admin-section">
+  <h2>{{ member.display_name }} <small>#{{ member.id }}</small></h2>
+  <dl class="member-details"><dt>로그인 아이디</dt><dd>{{ member.login_id }}</dd><dt>권한</dt><dd>{{ member.role }}</dd><dt>회원 상태</dt><dd>{{ '정상' if member.is_active else '탈퇴' }}</dd><dt>가입 시각 (UTC)</dt><dd>{{ member.created_at.strftime('%Y-%m-%d %H:%M') }}</dd><dt>낙찰 횟수</dt><dd>{{ member.auction_purchase_count }}</dd></dl>
+  <a href="/admin/members">← 회원 목록</a>
+  <p>로그인: <strong>{{ '정지됨' if member.login_suspended_at else '허용' }}</strong>{% if member.login_suspended_at %} / 정지 시각 {{ member.login_suspended_at.strftime('%Y-%m-%d %H:%M') }} UTC{% endif %}</p>
+</section>
+{% if member.is_active %}
+<section class="panel admin-section"><h2>입찰 제한</h2>
+  <p>로그인 허용 여부와 별개로 제한 종료 시각을 설정합니다. 관리자 제한을 해제해도 경매 자동 제한은 유지됩니다.</p>
+  <dl class="member-details"><dt>경매 자동 제한</dt><dd>{{ member.auction_blocked_until.strftime('%Y-%m-%d %H:%M UTC') if member.auction_blocked_until else '없음' }}</dd><dt>관리자 설정</dt><dd>{{ member.manual_auction_blocked_until.strftime('%Y-%m-%d %H:%M UTC') if member.manual_auction_blocked_until else '없음' }}</dd><dt>최종 종료 시각</dt><dd>{{ member.effective_auction_blocked_until.strftime('%Y-%m-%d %H:%M UTC') if member.effective_auction_blocked_until else '없음' }}</dd></dl>
+  <form id="member-bid" class="admin-filters" data-member-id="{{ member.id }}" data-until="{{ member.manual_auction_blocked_until.isoformat() if member.manual_auction_blocked_until else '' }}">
+    <label>종료 시각 <span id="bid-timezone"></span><input name="until" type="datetime-local" required></label><button class="btn wood">입찰 제한 저장</button>
+    <button id="clear-bid" type="button" class="btn wood">관리자 제한 해제</button>
+  </form>
+  <p class="admin-hint">회원의 제한 설정을 저장합니다. 실제 입찰 차단은 경매 기능의 연동이 필요합니다.</p>
+</section>
+<section class="panel admin-section"><h2>로그인 정지</h2>
+  <p>로그인과 기존 로그인 세션을 차단합니다. 정지를 해제한 뒤에는 다시 로그인해야 합니다.</p>
+  {% if member.id == user.id %}<p>자기 계정은 로그인 정지할 수 없습니다.</p>
+  {% else %}<form id="member-login" data-member-id="{{ member.id }}" data-suspend="{{ 'false' if member.login_suspended_at else 'true' }}">
+    <button class="btn wood">{{ '로그인 정지 해제' if member.login_suspended_at else '로그인 정지' }}</button>
+  </form>{% endif %}
+</section>
+<section class="panel admin-section"><h2>권한 변경</h2>
+  {% if member.id == user.id %}<p>자기 계정의 관리자 권한은 해제할 수 없습니다.</p>
+  {% else %}<form id="member-role" class="admin-filters" data-member-id="{{ member.id }}">
+    <label>권한<select name="role"><option {% if member.role == 'USER' %}selected{% endif %}>USER</option><option {% if member.role == 'ADMIN' %}selected{% endif %}>ADMIN</option></select></label>
+    <button class="btn wood">권한 변경</button>
+  </form><p class="admin-hint">변경된 권한은 다음 요청부터 적용됩니다.</p>{% endif %}
+</section>
+{% else %}<p>탈퇴한 회원은 관리 설정을 변경할 수 없습니다.</p>{% endif %}
+{% endblock %}

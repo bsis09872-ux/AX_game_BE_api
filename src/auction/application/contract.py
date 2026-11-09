@@ -56,6 +56,15 @@ class AuctionUserGateway(Protocol):
     ) -> dict[int, str]:
         ...
 
+    # 인증된 요청자의 ID로 관리자 기능 사용 가능 여부를 조회한다.
+    # 없는 회원·일반 회원·탈퇴 또는 로그인 정지 회원은 False를 반환한다.
+    # 조회 중 발생한 오류는 숨기지 않고 전달한다.
+    async def is_admin(
+        self,
+        user_id: int,
+    ) -> bool:
+        ...
+
 
 # 경매에서 필요한 잔액 확인·재화 이전 기능의 계약이다.
 # [TO DO] Wallet의 check_bid_funds·settle_sale 기준으로 이름·인자를 Wallet 담당자와 맞춘다. (진행 전)
