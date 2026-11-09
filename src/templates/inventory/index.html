@@ -1,6 +1,5 @@
 {% extends "base.html" %}
-{% from "inventory/_macros.html" import gold, moment, filter_group %}
-
+{% from "inventory/_macros.html" import gold, moment, filter_group, item_icon %}
 {% block title %}내 인벤토리 | Catch &amp; Bid{% endblock %}
 
 {% block styles %}
@@ -26,11 +25,11 @@
     {% if items %}
     <table class="table-fixed">
       <colgroup>
+        <col style="width: 20%">
+        <col style="width: 10%">
+        <col style="width: 16%">
         <col style="width: 26%">
-        <col style="width: 10%">
-        <col style="width: 14%">
-        <col style="width: 24%">
-        <col style="width: 10%">
+        <col style="width: 12%">
         <col style="width: 16%">
       </colgroup>
       <thead>
@@ -46,7 +45,7 @@
       <tbody>
         {% for item in items %}
         <tr>
-          <td><a href="/inventory/{{ item.id }}">{{ item.definition.name }}</a></td>
+          <td>{{ item_icon(item.definition) }}<a href="/inventory/{{ item.id }}">{{ item.definition.name }}</a></td>
           <td>{{ item.definition.category }}</td>
           <td>{{ item.definition.rarity }}</td>
           <td>{{ moment(item.acquired_at) }}</td>
