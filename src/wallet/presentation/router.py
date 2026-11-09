@@ -39,9 +39,8 @@ def create_wallet_router(current_user_id: Callable[..., Awaitable[int]]) -> APIR
     async def get_my_wallet(service: ServiceDep, session: SessionDep, user_id: UserIdDep) -> WalletResponse:
         view = await service.get_my_wallet(user_id)
         # 처음 조회라 지갑을 만들었다면 확정한다 (이미 있었으면 바뀐 것이 없다)
+        # INITIAL_GRANT 로그는 commit 성공 시 세션 이벤트로 자동으로 남는다 (balance_recoder.py)
         await session.commit()
-        # commit이 성공한 뒤에만 INITIAL_GRANT 로그를 남긴다 (infrastructure/balance_log.py 규칙)
-        service.logger.flush()
         return WalletResponse.model_validate(view)
 
     @router.post(
@@ -63,9 +62,8 @@ def create_wallet_router(current_user_id: Callable[..., Awaitable[int]]) -> APIR
     ) -> WalletResponse:
         # 관리자 여부는 서비스(RoleCheck)가 판단한다. 라우터는 요청자 ID만 넘긴다.
         await service.add_balance(actor_id, user_id, body.amount)
+        # 잔액 변경 로그는 commit 성공 시 세션 이벤트로 자동으로 남는다 (balance_recoder.py)
         await session.commit()
-        # commit이 성공한 뒤에만 잔액 변경 로그를 남긴다 (infrastructure/balance_log.py 규칙)
-        service.logger.flush()
         return WalletResponse.model_validate(await service.get_my_wallet(user_id))
 
     return router

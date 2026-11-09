@@ -1,6 +1,7 @@
-"""지갑 도메인이 바깥에 요구하는 계약 (구현은 infrastructure, 조립은 wiring)
+"""지갑 도메인 객체(Wallet)가 쓰는 계약 (구현은 infrastructure, 조립은 wiring)
 
-도메인과 애플리케이션은 이 계약만 알고, 구현체가 무엇을 쓰는지(로그, users 도메인 등)는 모른다.
+도메인은 이 계약만 알고, 구현체가 무엇을 쓰는지(서버 로그 등)는 모른다.
+서비스만 쓰는 다른 도메인 기능의 계약은 application/contracts.py에 있다.
 """
 from abc import ABC, abstractmethod
 from typing import Literal
@@ -25,11 +26,5 @@ class BalanceRecord(ABC):
         pass
 
 
-class RoleCheck(ABC):
-    @abstractmethod
-    async def is_admin(self, user_id: int) -> bool:
-        """해당 회원이 관리자인지 확인한다.
-
-        user_id는 presentation이 인증으로 확인해 넘긴 요청자 ID다.
-        회원 정보를 어디서 읽는지는 구현체(infrastructure)가 정한다.
-        """
+# 관리자 여부(RoleCheck)는 도메인 객체가 쓰지 않고 서비스만 쓰는 다른 도메인(users) 기능이라
+# 팀 규칙대로 application/contracts.py로 옮겼다.

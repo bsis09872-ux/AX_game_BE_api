@@ -3,23 +3,32 @@
 - 서비스는 commit하지 않는다. 라우터나 내부 함수를 호출한 쪽(AUCT-01, AUCT-04)이 commit한다.
 - WALL-06 지연 생성: 지갑이 필요한 시점(조회·입찰 확인·정산·충전)에 없으면 ensure_wallet이 만든다.
   가입 흐름(auth)을 고치지 않고 지갑 안에서 처리하기 위한 방식이다.
-- 잔액 변경은 logger(BalanceRecord 계약)에 쌓이고, 호출자가 commit 성공 뒤 logger.flush()로 남긴다.
-  commit이 실패하면 logger.discard()로 버린다.
+- 잔액 변경은 logger(BalanceRecord 계약)에 쌓이고, 호출자의 commit이 성공하면 로그로 남고
+  rollback되면 버려진다(구현체가 세션 이벤트로 처리). 호출자는 commit/rollback만 하면 된다.
 - 금액 판단은 domain/rules.py가 하고, 여기서는 조회·잠금·저장 순서만 조율한다.
-- 이 계층은 domain만 import한다. 구현체(DB, 로그, users 조회)는 wiring이 생성자로 넣어 준다.
+- 이 계층은 domain과 자기 계약(application/contracts.py)만 import한다.
+  구현체(DB, 로그, users 조회, listings 조회)는 wiring이 생성자로 넣어 준다.
 """
+from wallet.application.contracts import HeldAmountReader, RoleCheck
 from wallet.application.dto import WalletView
 from wallet.domain import rules
 from wallet.domain.wallet import Wallet
-from wallet.domain.service import RoleCheck, BalanceRecord
+from wallet.domain.service import BalanceRecord
 from wallet.domain.repository import WalletRepository
 from wallet.domain.exceptions import WalletNotFoundError, InsufficientAuthorityError
 
 class WalletService:
-    def __init__(self, roleCheck: RoleCheck, logger: BalanceRecord, wallet_repo: WalletRepository):
-        self.roleCheck = roleCheck
-        self.logger = logger
-        self.wallet_repo = wallet_repo
+    def __init__(
+        self,
+        roleCheck: RoleCheck,
+        logger: BalanceRecord,
+        wallet_repo: WalletRepository,
+        held_reader: HeldAmountReader,
+    ):
+        self.roleCheck = roleCheck          # users: 관리자 여부
+        self.logger = logger                # 잔액 변경 기록
+        self.wallet_repo = wallet_repo      # wallets 테이블
+        self.held_reader = held_reader      # auction: 입찰로 묶인 금액
 
 
     async def get_wallet(self, user_id) -> Wallet:
@@ -33,7 +42,7 @@ class WalletService:
         """WALL-06 지연 생성: 지갑이 없으면 초기 골드로 만든다. 처음 만든 경우에만 INITIAL_GRANT 기록.
 
         여러 번 호출해도 지급은 한 번뿐이다. 회원이 없으면 WalletNotFoundError.
-        commit은 호출자가 하고, commit 성공 뒤 logger.flush()로 로그를 남긴다.
+        commit은 호출자가 한다. 지급 로그는 commit이 성공하면 자동으로 남는다.
         """
         created = await self.wallet_repo.create_if_absent(user_id, rules.INITIAL_BALANCE)
         if created is not None:
@@ -49,7 +58,7 @@ class WalletService:
         처음 조회면 지갑을 만들므로 호출자(라우터)가 commit한다."""
         await self.ensure_wallet(user_id)
         wallet = await self.get_wallet(user_id)
-        held = await self.wallet_repo.held_amount(user_id)
+        held = await self.held_reader.held_amount(user_id)
         return WalletView(
             user_id=wallet.user_id,
             balance=wallet.balance.value,
@@ -63,7 +72,7 @@ class WalletService:
         """WALL-06 지갑 생성, 초기 골드 지급.
 
         AUTH-01 가입 트랜잭션 안에서 user flush 직후 호출한다. commit은 호출자가 하고,
-        commit 성공 뒤 service.logger.flush()로 지급 로그를 남긴다.
+        지급 로그는 commit이 성공하면 자동으로 남는다. (지금은 ensure_wallet 지연 생성을 주로 쓴다)
         같은 계정에 두 번 호출하면 PK 위반이 그대로 올라가 가입 전체가 롤백된다.
         """
         wallet = await self.wallet_repo.create(user_id, rules.INITIAL_BALANCE)
@@ -99,7 +108,7 @@ class WalletService:
             current_bid_amount=current_bid_amount,
         )
         # 잠금 뒤에 읽어야 다른 매물에 대한 내 동시 입찰 결과까지 반영된다
-        held = await self.wallet_repo.held_amount(bidder_id)
+        held = await self.held_reader.held_amount(bidder_id)
         return rules.check_bid_funds(balance=wallet.balance.value, held_amount=held, extra=extra)
 
     async def settle_sale(self, *, buyer_id: int, seller_id: int, price: int) -> rules.SettlementAmounts:
@@ -108,7 +117,7 @@ class WalletService:
         AUCT-04가 매물을 FOR UPDATE로 잠그고 BIDDING·마감 경과를 확인한 뒤 호출한다.
         유찰(입찰자 없음)이면 호출하지 않는다. 예약 방식이라 돌려줄 돈이 없다.
         trades 기록, SOLD 처리, 아이템 이전은 경매 쪽이 한다(담당 확정 전).
-        commit은 호출자가 하고, commit 성공 뒤 service.logger.flush()로 로그를 남긴다.
+        commit은 호출자가 한다. 잔액 변경 로그는 commit이 성공하면 자동으로 남는다.
         """
         if buyer_id == seller_id:
             raise ValueError("판매자와 구매자가 같습니다.")

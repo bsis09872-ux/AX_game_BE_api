@@ -18,7 +18,7 @@ from wallet.domain.exceptions import (
 )
 from wallet.domain.wallet import Balance, Wallet
 from wallet.infrastructure.balance_recoder import BalanceRecordImpl
-from wallet.domain.service import RoleCheck
+from wallet.application.contracts import RoleCheck
 
 NOW = datetime(2026, 11, 6, tzinfo=timezone.utc)
 
@@ -57,6 +57,7 @@ class FakeRepo:
         return {uid: Wallet(uid, Balance(self.wallets[uid]), NOW)
                 for uid in sorted(user_ids) if uid in self.wallets}
 
+    # HeldAmountReader 모양도 함께 맞춘다 (make_service에서 held_reader로도 끼운다)
     async def held_amount(self, user_id):
         return self.held
 
@@ -71,7 +72,12 @@ class FakeRoleCheck(RoleCheck):
 
 
 def make_service(repo: FakeRepo, admin_ids: set[int] | None = None) -> WalletService:
-    return WalletService(roleCheck=FakeRoleCheck(admin_ids), logger=BalanceRecordImpl(), wallet_repo=repo)
+    return WalletService(
+        roleCheck=FakeRoleCheck(admin_ids),
+        logger=BalanceRecordImpl(),
+        wallet_repo=repo,
+        held_reader=repo,
+    )
 
 
 # ---------- WALL-06 지갑 생성 ----------

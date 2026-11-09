@@ -1,6 +1,7 @@
-"""SQLAlchemy 지갑 저장소
+"""SQLAlchemy 지갑 저장소 (wallets 테이블만 다룬다)
 
 세션은 주입받아 공유하고 commit하지 않는다.
+예약 금액(listings 조회)은 held_amount_reader.py로 분리했다.
 """
 from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -10,7 +11,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from wallet.domain.exceptions import WalletNotFoundError
 from wallet.domain.repository import WalletRepository
 from wallet.domain.wallet import Balance, Wallet
-from wallet.infrastructure.external_tables import listings
 from wallet.infrastructure.models import WalletModel
 
 # PostgreSQL 외래키 위반 SQLSTATE
@@ -87,13 +87,6 @@ class SqlAlchemyWalletRepository(WalletRepository):
             .execution_options(populate_existing=True)
         )
         return {m.user_id: _to_wallet(m) for m in result.scalars()}
-
-    async def held_amount(self, user_id: int) -> int:
-        statement = select(func.coalesce(func.sum(listings.c.current_bid_amount), 0)).where(
-            listings.c.current_bidder_id == user_id,
-            listings.c.status == "BIDDING",  # 마감이 지나도 정산 전이면 BIDDING이라 포함된다
-        )
-        return int(await self.session.scalar(statement))
 
 
 # from datetime import datetime
