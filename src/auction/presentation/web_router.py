@@ -10,6 +10,7 @@
 
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from typing import Literal
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Form, Path, Query, Request
@@ -20,7 +21,8 @@ from auction.domain.listings.entities import ListingStatus
 from auction.presentation.dependencies import ListingServiceDep, TradeServiceDep
 from auction.presentation.web_dependencies import get_inventory_reader, get_user_gateway, read_balance
 from auction.presentation.web_views import (
-    UNKNOWN_ITEM, card_view, detail_url, detail_view, item_view, list_url, new_view, notice_text, parse_number,
+    TRADE_TABS, UNKNOWN_ITEM, card_view, detail_url, detail_view, item_view, limit_view, list_url, new_view,
+    notice_text, parse_number, trade_rows, trades_url,
 )
 from auction.wiring import PAGE_SIZE
 from database import get_db
@@ -279,6 +281,40 @@ def create_auction_web_router(
                 error=exc.message, status_code=error_status(exc),
             )
         return RedirectResponse(detail_url(listing_id, ctx.embed, ok='cancelled'), status_code=303)
+    # endregion
+
+    # region [Claude] 내 거래 (낙찰받은 것, 판매한 것)
+    @router.get('/auctions/trades', response_class=HTMLResponse)
+    async def get_auction_trades_page(
+        request: Request,
+        trades: TradeServiceDep,
+        tab: Literal['won', 'sold'] = 'won',
+        page: int = Query(1, ge=1),
+        ctx: PageContext = Depends(page_context),
+    ):
+        if tab == 'won':
+            records = await trades.get_my_purchases(ctx.user_id, page)
+        else:
+            records = await trades.get_my_sales(ctx.user_id, page)
+
+        # 입찰 제한 상태는 조회만 한다 (제한 중에도 이 화면은 볼 수 있다)
+        try:
+            limit = limit_view(await trades.get_bid_limit_status(ctx.user_id, datetime.now(timezone.utc)))
+        except AppError:
+            limit = None
+
+        return render(request, 'auction/trades.html', {
+            **ctx.base('trades'),
+            'tab': tab,
+            'tabs': [{'key': key, 'label': label, 'href': trades_url(key), 'current': key == tab} for key, label in TRADE_TABS.items()],
+            'rows': trade_rows(records, tab),
+            'limit': limit,
+            'has_previous': page > 1,
+            # 전체 개수를 모르므로 꽉 찬 쪽이면 다음 쪽이 있다고 본다
+            'has_next': len(records) == PAGE_SIZE,
+            'prev_url': trades_url(tab, page - 1),
+            'next_url': trades_url(tab, page + 1),
+        })
     # endregion
 
     return router

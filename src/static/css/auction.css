@@ -286,3 +286,26 @@ body.embed .main-content {
   .confetti { display: none; }
   .timebar-fill { transition: none; }
 }
+
+/* 내 거래: 탭(링크)과 제한 안내 */
+.tabs a {
+  color: var(--muted);
+  background: var(--wood-dark);
+  border: var(--px) solid var(--outline);
+  border-bottom: none;
+  padding: 6px 12px;
+}
+
+.tabs a.on {
+  background: var(--wood);
+  color: var(--text);
+}
+
+.tabs a:hover {
+  text-decoration: none;
+  color: var(--text);
+}
+
+.limit {
+  margin: 12px 0;
+}

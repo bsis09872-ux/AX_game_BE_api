@@ -381,3 +381,49 @@ def new_view(info, now: datetime, embed: bool = False) -> NewView:
         back_href=list_url(1, embed),
     )
 # endregion
+
+
+# region [Claude] 내 거래 (낙찰받은 것, 판매한 것)
+TRADE_TABS = {'won': '낙찰받은 것', 'sold': '판매한 것'}
+
+
+@dataclass(frozen=True)
+class TradeRow:
+    href: str
+    item_name: str
+    partner_name: str  # 낙찰받은 것이면 판매자, 판매한 것이면 구매자
+    price: int
+    completed_at: datetime
+
+
+# 거래 기록의 체결 당시 이름 스냅샷으로 표의 줄을 만든다
+def trade_rows(trades, tab: str) -> list[TradeRow]:
+    return [
+        TradeRow(
+            href=detail_url(trade.listing_id),
+            item_name=trade.item_name_snapshot,
+            partner_name=trade.seller_name_snapshot if tab == 'won' else trade.buyer_name_snapshot,
+            price=trade.price_snapshot,
+            completed_at=trade.completed_at,
+        )
+        for trade in trades
+    ]
+
+
+# 입찰 제한 상태 (최근 낙찰 횟수와 제한 중이면 남은 시간)
+@dataclass(frozen=True)
+class LimitView:
+    count: int
+    max_count: int
+    blocked: bool
+    remaining_text: str
+
+
+def limit_view(state) -> LimitView:
+    return LimitView(
+        count=state.purchase_count,
+        max_count=state.max_count,
+        blocked=state.is_blocked,
+        remaining_text=format_clock(int(state.remaining.total_seconds())),
+    )
+# endregion
