@@ -25,6 +25,8 @@ wallet_service = build_wallet_service(session)  # 호출자의 세션을 그대�
 
 ### WALL-07 `check_bid_funds`
 - **검사만 한다.** 잔액은 바꾸지 않는다(예약 방식).
+- `amount`에는 **이번 입찰액만** 넘긴다. 다른 매물에 묶인 금액(`sum_leading_bids`)을 더해서 넘기면 지갑이 한 번 더 빼서 이중 계산된다.
+  - 예: 잔액 3,000 / 다른 매물 예약 1,000 / 입찰 1,500 → 통과해야 한다. `1,000 + 1,500`을 넘기면 2,500 > 2,000으로 잘못 거절된다.
 - 통과하면 `listings.current_bidder_id`, `current_bid_amount` 갱신은 경매가 한다.
 - 예약 금액(held)은 "내가 최고 입찰자인 BIDDING 매물들의 입찰액 합계"로 지갑이 계산한다. **경매가 잔액·예약 합계를 따로 계산하지 않는다.**
 - `current_bidder_id`, `current_bid_amount`는 매물의 현재 값이다. 둘 다 None이거나 둘 다 값이어야 한다.
@@ -50,6 +52,7 @@ class WalletGatewayAdapter(WalletGateway):
         self._wallet = wallet_service
 
     async def has_balance(self, user_id: int, amount: int) -> bool:
+        # amount = 이번 입찰액만 (묶인 금액은 지갑이 계산한다)
         # 재입찰 금지 규칙 → 항상 새 입찰자. 부족하면 InsufficientBalanceError(400)가 그대로 올라간다.
         await self._wallet.check_bid_funds(
             bidder_id=user_id, amount=amount, current_bidder_id=None, current_bid_amount=None)
@@ -60,6 +63,9 @@ class WalletGatewayAdapter(WalletGateway):
 
 # auction/wiring.py
 #   wallets=WalletGatewayAdapter(build_wallet_service(session)),
+
+# auction/application/listings/service.py (bid)
+#   await self.wallets.has_balance(bidder_id, amount)   # tied + amount 아님
 ```
 
 ## 공통 규칙
