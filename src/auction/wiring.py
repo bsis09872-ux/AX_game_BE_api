@@ -23,14 +23,28 @@ from auction.infrastructure.adapters.inventory_gateway import InventoryGatewayAd
 from auction.infrastructure.adapters.transaction import SqlAlchemyTransactionManager
 from auction.infrastructure.adapters.user_gateway import AuctionUserGatewayAdapter
 from auction.infrastructure.adapters.wallet_gateway import WalletGatewayAdapter
+from auction.infrastructure.adapters.held_amount_reader import AuctionHeldAmountReader
 
 from auction.infrastructure.listings.repositories import SqlAlchemyListingRepository
 from auction.infrastructure.trades.repositories import SqlAlchemyTradeRepository
 
 from inventory.wiring import build_inventory_service
 from users.wiring import build_user_service
+from wallet.wiring import build_wallet_service
 
 PAGE_SIZE = 20
+
+
+# 호출자가 전달한 세션으로 예약 금액 조회기를 만든다.
+# Wallet과 같은 트랜잭션에서 조회하며, 세션 생성·종료와 commit은 하지 않는다.
+def build_held_amount_reader(
+    session: AsyncSession,
+) -> AuctionHeldAmountReader:
+    listings = SqlAlchemyListingRepository(
+        session,
+        page_size=PAGE_SIZE,
+    )
+    return AuctionHeldAmountReader(listings)
 
 
 def build_user_gateway(session: AsyncSession) -> AuctionUserGatewayAdapter:
@@ -40,16 +54,16 @@ def build_user_gateway(session: AsyncSession) -> AuctionUserGatewayAdapter:
 def build_inventory_gateway(session: AsyncSession) -> InventoryGatewayAdapter:
     return InventoryGatewayAdapter(build_inventory_service(session))
 
+
 # 매물 조회·등록·입찰·취소
 def build_listing_service(session: AsyncSession) -> ListingService:
     return ListingService(
         listings=SqlAlchemyListingRepository(session, page_size=PAGE_SIZE),
         inventory=build_inventory_gateway(session),
         users=build_user_gateway(session),
-        wallets=WalletGatewayAdapter(),
+        wallets=WalletGatewayAdapter(build_wallet_service(session)),
         tx=SqlAlchemyTransactionManager(session),
     )
-
 
 
 # 거래 기록·제한 조회
@@ -66,7 +80,7 @@ def build_auction_service(session: AsyncSession) -> AuctionService:
         listings=SqlAlchemyListingRepository(session, page_size=PAGE_SIZE),
         trades=SqlAlchemyTradeRepository(session, page_size=PAGE_SIZE),
         users=build_user_gateway(session),
-        wallets=WalletGatewayAdapter(),
+        wallets=WalletGatewayAdapter(build_wallet_service(session)),
         inventory=build_inventory_gateway(session),
         tx=SqlAlchemyTransactionManager(session),
     )
