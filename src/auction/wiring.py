@@ -13,6 +13,7 @@ from fastapi import Depends, FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auction.presentation import dependencies as deps
+from auction.presentation.scheduler import AuctionCloseScheduler
 from database import AsyncSessionLocal, get_db
 
 from auction.application.auction_service import AuctionService
@@ -33,6 +34,7 @@ from users.wiring import build_user_service
 from wallet.wiring import build_wallet_service
 
 PAGE_SIZE = 20
+CLOSE_INTERVAL_SECONDS = 5
 
 
 # 호출자가 전달한 세션으로 예약 금액 조회기를 만든다.
@@ -93,6 +95,12 @@ async def open_auction_service() -> AsyncIterator[AuctionService]:
     async with AsyncSessionLocal() as session:
         yield build_auction_service(session)
 
+# 마감 스케줄러를 조립한다. 주기마다 새 세션으로 정산 서비스를 연다.
+# 입력: 실행 간격(초). 반환: 시작 전 스케줄러. 시작·종료는 앱 lifespan이 한다.
+def build_auction_scheduler(
+    interval_seconds: float = CLOSE_INTERVAL_SECONDS,
+) -> AuctionCloseScheduler:
+    return AuctionCloseScheduler(open_auction_service, interval_seconds)
 
 # ===== FastAPI 의존성 연결 =====
 # 앱 시작 시 presentation의 자리 표시자를 실제 구현으로 바꾼다.
