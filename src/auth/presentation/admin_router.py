@@ -1,9 +1,10 @@
 import csv
 import io
 import logging
+import asyncio
 from typing import Literal
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Path, Query, Request, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Path, Query, Request, Response
 from fastapi.responses import HTMLResponse, StreamingResponse
 
 from auth.presentation.web_dependencies import get_current_web_admin_id
@@ -15,6 +16,7 @@ from inventory.presentation.schemas import (
 from users.application.service import UserService
 from users.presentation.dependencies import get_user_service
 from users.presentation.schemas import UserMeResponse
+from shared.item_images import MAX_UPLOAD_BYTES, list_images, save_image
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +35,25 @@ def csv_cell(value) -> str:
 def create_admin_router(inventory_dependency) -> APIRouter:
     """관리자 웹의 표현 계층. 카탈로그 업무는 기존 공개 서비스에 위임한다."""
     router = APIRouter(prefix="/admin", tags=["admin-web"])
+
+    @router.get('/item-images')
+    async def available_images(response: Response, user_id: int = Depends(get_current_web_admin_id)):
+        response.headers['Cache-Control'] = 'no-store'
+        return await asyncio.to_thread(list_images)
+
+    @router.post('/item-images', status_code=201)
+    async def upload_image(request: Request, response: Response, user_id: int = Depends(get_current_web_admin_id)):
+        data = bytearray()
+        async for chunk in request.stream():
+            if len(data) + len(chunk) > MAX_UPLOAD_BYTES:
+                raise HTTPException(413, '이미지는 2MB 이하의 파일을 선택해 주세요.')
+            data.extend(chunk)
+        try:
+            result = await asyncio.to_thread(save_image, bytes(data))
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        response.headers['Cache-Control'] = 'no-store'
+        return result
 
     @router.get("", response_class=HTMLResponse)
     async def dashboard(
