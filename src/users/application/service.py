@@ -41,6 +41,7 @@ class UserService:
             display_name=user.display_name,
             is_active=user.is_active(),
             auction_blocked_until=user.auction_blocked_until,
+            role=user.role,
         )
 
 
