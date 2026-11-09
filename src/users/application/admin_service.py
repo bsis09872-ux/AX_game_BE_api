@@ -41,7 +41,7 @@ class MemberAdminService:
         if role != 'ADMIN' and target.role == 'ADMIN':
             if actor_id == target_id:
                 raise AdminAccountProtectionError('자기 계정의 관리자 권한은 해제할 수 없습니다.')
-            if await self.repository.count_available_admins() <= 1:
+            if target.can_login() and await self.repository.count_available_admins() <= 1:
                 raise AdminAccountProtectionError()
         target.change_role(role)
         await self.repository.save_admin_settings(target)
