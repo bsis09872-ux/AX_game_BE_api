@@ -40,12 +40,16 @@ def build_user_gateway(session: AsyncSession) -> AuctionUserGatewayAdapter:
 def build_inventory_gateway(session: AsyncSession) -> InventoryGatewayAdapter:
     return InventoryGatewayAdapter(build_inventory_service(session))
 
-
-# 매물 조회
+# 매물 조회·등록·입찰·취소
 def build_listing_service(session: AsyncSession) -> ListingService:
     return ListingService(
         listings=SqlAlchemyListingRepository(session, page_size=PAGE_SIZE),
+        inventory=build_inventory_gateway(session),
+        users=build_user_gateway(session),
+        wallets=WalletGatewayAdapter(),
+        tx=SqlAlchemyTransactionManager(session),
     )
+
 
 
 # 거래 기록·제한 조회
