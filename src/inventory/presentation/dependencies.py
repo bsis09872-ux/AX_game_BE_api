@@ -1,7 +1,7 @@
 """의존성 주입(Depends) 함수
 
 - 라우터가 필요로 하는 서비스와 DB 세션을 밖에서 만들어 넘겨 주는 곳이다
-- 현재 사용자 확인(인증)은 인증 담당이 제공하는 의존성을 가져다 쓴다 (직접 구현하지 않는다)
+- 현재 사용자 확인은 CurrentUserAdapter가 한다: 토큰은 auth의 AuthService로 확인하고, 역할(role)은 users의 회원 정보(UserSummary.role)에서 가져온다 (다른 도메인의 infrastructure는 직접 import하지 않고 wiring을 거친다)
 - 관리자 확인은 require_admin 의존성으로 한다
 - 업무 규칙을 두지 않는다
 """
