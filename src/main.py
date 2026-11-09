@@ -12,6 +12,11 @@ from database import Base, engine
 from shared.core.exception_handlers import register_exception_handlers
 from shared.core.logging_config import setup_logging
 
+# create_all이 테이블을 만들도록 ORM 모델을 Base.metadata에 등록한다
+import users.infrastructure.models  # noqa: F401
+import wallet.infrastructure.models  # noqa: F401
+import auction.infrastructure.listings.models  # noqa: F401  (지갑 예약금 조회가 listings를 읽는다)
+
 from auth.wiring import initialize_auth
 from auth.presentation.dependencies import get_current_user_id, get_member_admin_service
 from auth.presentation.exception_handlers import register_auth_exception_handlers
@@ -28,6 +33,7 @@ from shared.item_images import image_directory
 from auth.presentation.web_dependencies import (
     get_current_web_user_id, get_current_web_admin_id, get_web_settings, register_web_auth_handlers,
 )
+from wallet.presentation.router import create_wallet_router
 
 from auction.presentation.listings.router import router as listing_router
 from auction.presentation.trades.router import router as trade_router
@@ -84,6 +90,7 @@ app.include_router(auth_web_router)
 app.include_router(create_admin_router(get_inventory_service))
 app.include_router(create_member_admin_router(get_current_web_admin_id, get_member_admin_service))
 app.include_router(create_user_web_router(get_current_web_user_id))
+app.include_router(create_wallet_router(get_current_user_id), prefix=API_PREFIX)
 
 wire_auction_dependencies(app, get_current_user_id)
 app.include_router(listing_router, prefix=API_PREFIX)
