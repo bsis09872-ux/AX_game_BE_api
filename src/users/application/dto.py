@@ -12,3 +12,4 @@ class UserSummary:
     # None은 제한 시각 없음. 현재 제한 여부는 종료 시각과 현재 시각을 비교해 판단한다.
     auction_blocked_until: datetime | None
     role: str
+    auction_purchase_count: int = 0

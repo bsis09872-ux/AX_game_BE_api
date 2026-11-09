@@ -53,6 +53,14 @@ class User:
     def is_active(self) -> bool:
         return self.deleted_at is None
 
+    def update_auction_limit(self, purchase_count: int, blocked_until: datetime | None) -> None:
+        if type(purchase_count) is not int or not 0 <= purchase_count <= 2147483647:
+            raise InvalidUserError("낙찰 횟수는 0 이상의 정수여야 합니다.")
+        if blocked_until is not None and blocked_until.utcoffset() is None:
+            raise InvalidUserError("입찰 제한 종료 시각에 시간대 정보가 필요합니다.")
+        self.auction_purchase_count = purchase_count
+        self.auction_blocked_until = blocked_until
+
     # 제한 종료 시각 이전에만 입찰 제한으로 판단한다. 탈퇴 상태는 별도 검사한다.
     def is_auction_blocked(self, now: datetime) -> bool:
         if now.utcoffset() is None:
