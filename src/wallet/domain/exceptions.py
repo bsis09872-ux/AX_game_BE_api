@@ -17,14 +17,8 @@ class WalletNotFoundError(NotFoundError):
     message = "지갑을 찾을 수 없습니다."
 
 
-class TradeNotFoundError(NotFoundError):
-    # WALL-05: 없는 거래, 그리고 당사자가 아닌 사용자의 조회 모두 이 예외 (존재 여부를 숨긴다)
-    code = "TRADE_NOT_FOUND"
-    message = "거래를 찾을 수 없습니다."
-
-
 class InsufficientBalanceError(BusinessRuleError):
-    # WALL-07: 입찰액(증액이면 차액)이 사용 가능 금액을 넘음. AUCT-01이 그대로 전달
+    # WALL-07: 입찰액이 사용 가능 금액을 넘음. AUCT-01이 그대로 전달
     code = "INSUFFICIENT_BALANCE"
     message = "사용 가능한 골드가 부족합니다."
 
