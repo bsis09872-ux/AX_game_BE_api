@@ -227,4 +227,58 @@ def create_auction_web_router(
         return RedirectResponse(detail_url(listing.id, ctx.embed, ok=code), status_code=303)
     # endregion
 
+    # region [Claude] 입찰·취소 (실패하면 되돌리고 같은 상세 화면에 이유를 보여 준다)
+    @router.post('/auctions/{listing_id:int}/bid', response_class=HTMLResponse, dependencies=[Depends(require_origin)])
+    async def post_auction_bid(
+        request: Request,
+        service: ListingServiceDep,
+        trades: TradeServiceDep,
+        listing_id: int = Path(ge=1),
+        users=Depends(get_user_gateway),
+        inventory=Depends(get_inventory_reader),
+        session: AsyncSession = Depends(get_db),
+        amount: str = Form(''),
+        ctx: PageContext = Depends(page_context),
+    ):
+        number = parse_number(amount)
+        if number is None:
+            # 숫자가 아니면 서비스를 부르지 않는다
+            return await detail_response(
+                request, ctx, listing_id, service, trades, users, inventory,
+                error='입찰 금액은 1 이상의 숫자로 입력해 주세요.', status_code=400,
+            )
+        try:
+            await service.bid(listing_id, ctx.user_id, number, datetime.now(timezone.utc))
+        except AppError as exc:
+            # 입찰 제한, 잔액 부족, 더 높은 입찰에 밀림 등의 이유는 오류가 가진 문구를 그대로 보여 준다
+            await session.rollback()
+            return await detail_response(
+                request, ctx, listing_id, service, trades, users, inventory,
+                error=exc.message, status_code=error_status(exc),
+            )
+        return RedirectResponse(detail_url(listing_id, ctx.embed, ok='bid'), status_code=303)
+
+    # HTML 폼은 POST만 보낼 수 있어서 API의 DELETE 대신 화면용 POST 주소를 따로 둔다
+    @router.post('/auctions/{listing_id:int}/cancel', response_class=HTMLResponse, dependencies=[Depends(require_origin)])
+    async def post_auction_cancel(
+        request: Request,
+        service: ListingServiceDep,
+        trades: TradeServiceDep,
+        listing_id: int = Path(ge=1),
+        users=Depends(get_user_gateway),
+        inventory=Depends(get_inventory_reader),
+        session: AsyncSession = Depends(get_db),
+        ctx: PageContext = Depends(page_context),
+    ):
+        try:
+            await service.cancel(listing_id, ctx.user_id, datetime.now(timezone.utc))
+        except AppError as exc:
+            await session.rollback()
+            return await detail_response(
+                request, ctx, listing_id, service, trades, users, inventory,
+                error=exc.message, status_code=error_status(exc),
+            )
+        return RedirectResponse(detail_url(listing_id, ctx.embed, ok='cancelled'), status_code=303)
+    # endregion
+
     return router
