@@ -36,6 +36,14 @@ def create_admin_router(inventory_dependency) -> APIRouter:
     """관리자 웹의 표현 계층. 카탈로그 업무는 기존 공개 서비스에 위임한다."""
     router = APIRouter(prefix="/admin", tags=["admin-web"])
 
+    async def render_page(request, users, user_id, template, section, **context):
+        user = UserMeResponse.from_user(await users.get_user(user_id))
+        return request.app.state.templates.TemplateResponse(
+            request=request, name=f'auth/admin/{template}.html',
+            context={'user': user, 'section': section, **context},
+            headers={'Cache-Control': 'no-store'},
+        )
+
     @router.get('/item-images')
     async def available_images(response: Response, user_id: int = Depends(get_current_web_admin_id)):
         response.headers['Cache-Control'] = 'no-store'
@@ -61,11 +69,30 @@ def create_admin_router(inventory_dependency) -> APIRouter:
         user_id: int = Depends(get_current_web_admin_id),
         users: UserService = Depends(get_user_service),
     ):
-        user = UserMeResponse.from_user(await users.get_user(user_id))
-        return request.app.state.templates.TemplateResponse(
-            request=request, name="auth/admin.html", context={"user": user},
-            headers={"Cache-Control": "no-store"},
-        )
+        return await render_page(request, users, user_id, 'home', 'home')
+
+    @router.get('/catalogs', response_class=HTMLResponse)
+    async def catalog_page(request: Request, user_id: int = Depends(get_current_web_admin_id),
+                           users: UserService = Depends(get_user_service)):
+        return await render_page(request, users, user_id, 'catalogs', 'catalogs')
+
+    @router.get('/catalogs/new', response_class=HTMLResponse)
+    async def new_catalog_page(request: Request, user_id: int = Depends(get_current_web_admin_id),
+                              users: UserService = Depends(get_user_service)):
+        return await render_page(request, users, user_id, 'editor', 'editor', item=None)
+
+    @router.get('/catalogs/{definition_id}/edit', response_class=HTMLResponse)
+    async def edit_catalog_page(request: Request, definition_id: int = Path(ge=1),
+                               user_id: int = Depends(get_current_web_admin_id),
+                               users: UserService = Depends(get_user_service),
+                               inventory: InventoryService = Depends(inventory_dependency)):
+        item = AdminDefinitionResponse.from_info(await inventory.get_definition(definition_id))
+        return await render_page(request, users, user_id, 'editor', 'editor', item=item.model_dump())
+
+    @router.get('/history', response_class=HTMLResponse)
+    async def history_page(request: Request, user_id: int = Depends(get_current_web_admin_id),
+                           users: UserService = Depends(get_user_service)):
+        return await render_page(request, users, user_id, 'events', 'events')
 
     @router.get("/item-catalogs", response_model=PageResponse[AdminDefinitionResponse])
     async def catalogs(

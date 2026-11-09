@@ -1,0 +1,19 @@
+{% extends "auth/base.html" %}
+{% block title %}운영 관리 | Catch &amp; Bid{% endblock %}
+{% block page %}admin{% endblock %}
+{% block styles %}<link rel="stylesheet" href="{{ url_for('static', path='/css/admin.css') }}">{% endblock %}
+{% block content %}
+<div class="admin-heading">
+  <div><p class="admin-eyebrow">CATCH &amp; BID / 운영 관리</p><h1>{% block admin_title %}관리 홈{% endblock %}</h1></div>
+  <form method="post" action="/logout"><button class="btn wood">로그아웃</button></form>
+</div>
+<nav class="admin-tabs" aria-label="관리 메뉴">
+  {% for key, href, label in [('home','/admin','관리 홈'),('catalogs','/admin/catalogs','아이템 목록'),('editor','/admin/catalogs/new','아이템 만들기'),('events','/admin/history','보유 아이템 이력')] %}
+  <a href="{{ request.url.path if key == 'editor' and item is defined and item else href }}" {% if section == key %}aria-current="page"{% endif %}>{{ '아이템 수정' if key == 'editor' and item is defined and item else label }}</a>
+  {% endfor %}
+</nav>
+<p id="session-message" role="status"></p>
+<p id="admin-message" role="status" aria-live="polite"></p>
+{% block admin_content %}{% endblock %}
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', path='/admin.js') }}" defer></script>{% endblock %}
