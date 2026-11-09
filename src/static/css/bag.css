@@ -1,0 +1,71 @@
+/* [Claude] 이 파일은 Claude가 작성함 (검토 전) */
+/* 내 가방 화면: 아이템 칸 격자와 오른쪽 패널. 칸(.slot)·버튼(.btn)은 global.css, 그림 틀은 inventory.css를 쓴다 */
+
+.bag-layout .bag-main {
+  flex: 2 1 420px;
+}
+
+.bag-layout .bag-side {
+  flex: 1 1 280px;
+}
+
+.bag-slots {
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  margin-bottom: 12px;
+}
+
+/* 칸은 링크라서 글자색과 밑줄을 맞춘다 */
+a.slot {
+  color: var(--text);
+  gap: 2px;
+}
+
+a.slot:hover {
+  text-decoration: none;
+}
+
+.slot-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.slot.empty {
+  cursor: default;
+  opacity: .5;
+}
+
+.slot.empty:hover {
+  background: var(--slot);
+}
+
+.bag-side .panel + .panel {
+  margin-top: 16px;
+}
+
+.wallet-box dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0;
+}
+
+.wallet-box dd {
+  margin: 0;
+  text-align: right;
+}
+
+.gold-text {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.select-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
