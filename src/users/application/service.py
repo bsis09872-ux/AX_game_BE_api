@@ -32,6 +32,9 @@ class UserService:
     async def find_by_login_id(self, login_id: str) -> User | None:
         return await self.repository.find_by_login_id(login_id)
 
+    async def find_by_login_id_for_update(self, login_id: str) -> User | None:
+        return await self.repository.find_by_login_id_for_update(login_id)
+
     # 다른 도메인에 필요한 회원 상태만 전달하며 탈퇴 회원도 조회 결과에 포함한다.
     async def get_user_summary(self, user_id: int) -> UserSummary:
         user = await self.get_user(user_id=user_id)

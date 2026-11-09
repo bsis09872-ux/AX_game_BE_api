@@ -20,13 +20,14 @@ class SqlAlchemyUserRepository(UserRepository):
 
     async def count_available_admins(self) -> int:
         return await self.session.scalar(select(func.count()).select_from(UserModel).where(
-            UserModel.role == 'ADMIN', UserModel.deleted_at.is_(None)))
+            UserModel.role == 'ADMIN', UserModel.deleted_at.is_(None), UserModel.login_suspended_at.is_(None)))
 
     async def save_admin_settings(self, user: User) -> None:
         row = await self.session.get(UserModel, user.id)
         if row is None:
             raise UserNotFoundError()
         row.role = user.role
+        row.login_suspended_at = user.login_suspended_at
         await self.session.flush()
 
     async def list_members(self, query: str, role: str | None, page: int, size: int) -> tuple[list[User], int]:
@@ -70,6 +71,7 @@ class SqlAlchemyUserRepository(UserRepository):
             user_id=model.id,
             auction_purchase_count=model.auction_purchase_count,
             auction_blocked_until=model.auction_blocked_until,
+            login_suspended_at=model.login_suspended_at,
             created_at=model.created_at,
             updated_at=model.updated_at,
             role=model.role,
@@ -99,6 +101,11 @@ class SqlAlchemyUserRepository(UserRepository):
             return None
 
         return self._to_domain(user_model)
+
+    async def find_by_login_id_for_update(self, login_id: str) -> User | None:
+        statement = select(UserModel).where(UserModel.login_id == login_id).with_for_update().execution_options(populate_existing=True)
+        row = await self.session.scalar(statement)
+        return self._to_domain(row) if row else None
 
     # 신규 회원만 등록하며 기존 회원의 갱신은 처리하지 않는다.
     async def create(self, user: User) -> User:

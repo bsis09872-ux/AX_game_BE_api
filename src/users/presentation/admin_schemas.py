@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictBool
 from users.domain.user import User
 
 
@@ -17,12 +17,18 @@ class AdminMemberRoleRequest(BaseModel):
     role: Literal['USER', 'ADMIN']
 
 
+class AdminLoginSuspensionRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    suspended: StrictBool
+
+
 class AdminMemberResponse(BaseModel):
     id: str
     login_id: str
     display_name: str
     role: Literal['USER', 'ADMIN']
     is_active: bool
+    login_suspended_at: datetime | None
     created_at: datetime
     auction_purchase_count: int
     auction_blocked_until: datetime | None
@@ -30,6 +36,7 @@ class AdminMemberResponse(BaseModel):
     @classmethod
     def from_user(cls, user: User):
         return cls(id=str(user.id), login_id=user.login_id, display_name=user.display_name,
-                   role=user.role, is_active=user.is_active(), created_at=user.created_at,
+                   role=user.role, is_active=user.is_active(), login_suspended_at=user.login_suspended_at,
+                   created_at=user.created_at,
                    auction_purchase_count=user.auction_purchase_count,
                    auction_blocked_until=user.auction_blocked_until)

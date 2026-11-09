@@ -19,6 +19,7 @@ from auth.presentation.router import router as auth_router
 from users.presentation.router import create_user_router
 from users.presentation.web_router import create_user_web_router
 from users.presentation.admin_router import create_member_admin_router
+from users.infrastructure.schema import upgrade_member_controls
 from auth.presentation.web_router import router as auth_web_router
 from inventory.presentation.router import router as inventory_router
 from inventory.presentation.dependencies import get_inventory_service
@@ -41,6 +42,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         # 시작 시점까지 등록된 ORM 모델의 테이블을 준비한다.
         async with engine.begin() as connection:
             await connection.run_sync(Base.metadata.create_all)
+            await upgrade_member_controls(connection)
         yield
     finally:
         await engine.dispose()

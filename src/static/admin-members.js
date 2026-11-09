@@ -21,6 +21,13 @@
         finally { button.disabled = false; }
     }
     const create = document.getElementById("member-create");
+    const login = document.getElementById("member-login");
+    login?.addEventListener("submit", event => {
+        event.preventDefault();
+        const suspended = login.dataset.suspend === "true";
+        if (!confirm(suspended ? "이 회원의 로그인을 정지하고 기존 세션을 종료할까요?" : "로그인 정지를 해제할까요?")) return;
+        submit(login, `/admin/member-accounts/${login.dataset.memberId}/login-suspension`, "PATCH", {suspended});
+    });
     const role = document.getElementById("member-role");
     role?.addEventListener("submit", event => {
         event.preventDefault();

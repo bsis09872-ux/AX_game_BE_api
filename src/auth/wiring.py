@@ -17,7 +17,8 @@ from users.application.admin_service import MemberAdminService
 
 
 def build_member_admin_service(session: AsyncSession) -> MemberAdminService:
-    return MemberAdminService(build_user_service(session), get_password_hasher(), session)
+    return MemberAdminService(build_user_service(session), get_password_hasher(), session,
+                              SqlAlchemySessionRepository(session))
 
 
 @lru_cache
