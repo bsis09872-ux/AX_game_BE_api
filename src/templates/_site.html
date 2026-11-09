@@ -1,0 +1,21 @@
+{# [Claude] 이 파일은 Claude가 작성함 (검토 전) #}
+{# 경매장·인벤토리 화면이 같이 쓰는 헤더 조각: 주 메뉴와 보유 골드 #}
+
+
+{# 주 메뉴: active는 'auction', 'inventory', 'trades', 'me' 중 하나 (지금 화면의 메뉴 강조) #}
+{% macro site_nav(active) -%}
+<nav class="nav" aria-label="주 메뉴">
+  <a {% if active == 'auction' %}class="on" aria-current="page" {% endif %}href="/auctions">경매장</a>
+  <a {% if active == 'inventory' %}class="on" aria-current="page" {% endif %}href="/inventory">내 인벤토리</a>
+  <a {% if active == 'trades' %}class="on" aria-current="page" {% endif %}href="/auctions/trades">내 거래</a>
+  <a {% if active == 'me' %}class="on" aria-current="page" {% endif %}href="/me">내 정보</a>
+</nav>
+{%- endmacro %}
+
+
+{# 보유 골드: 값이 없으면(지갑 없음, 팝업 안) 아무것도 보여 주지 않는다 #}
+{% macro gold_status(gold) -%}
+{% if gold is not none %}
+<div class="hud"><span class="gold" aria-label="보유 골드">{{ '{:,}'.format(gold) }} GOLD</span></div>
+{% endif %}
+{%- endmacro %}

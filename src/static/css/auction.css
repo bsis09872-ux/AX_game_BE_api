@@ -1,0 +1,32 @@
+/* [Claude] 이 파일은 Claude가 작성함 (검토 전) */
+/* 경매장 화면 스타일. 색·버튼·슬롯·표는 global.css, 아이템 그림 틀은 inventory.css를 그대로 쓴다 */
+
+/* 팝업(iframe) 안: global.css가 헤더·푸터를 숨기므로 배경 캐러셀과 건너뛰기 링크도 숨긴다 */
+body.embed .title-carousel,
+body.embed .skip-link {
+  display: none;
+}
+
+body.embed .main-content {
+  padding-top: 10px;
+}
+
+/* 알림: 성공은 초록, 오류는 빨강 */
+.notice {
+  margin: 0 0 14px;
+  padding: 8px 12px;
+  border: var(--px) solid var(--outline);
+  background: var(--green-dark);
+  color: var(--text);
+}
+
+.notice.error {
+  background: var(--red);
+}
+
+/* 이전·다음 */
+.pager {
+  display: flex;
+  gap: 16px;
+  margin-top: 14px;
+}
