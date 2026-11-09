@@ -7,6 +7,8 @@ from database import get_db
 from auth.application.service import AuthService
 from auth.wiring import build_auth_service
 from auth.wiring import build_member_admin_service
+from auth.wiring import build_admin_auction_reader
+from auth.application.admin_contracts import AdminAuctionReader
 from users.application.admin_service import MemberAdminService
 from auth.application.dto import TokenClaims
 from auth.domain.exceptions import AuthenticationError
@@ -27,6 +29,10 @@ def get_auth_service(session: AsyncSession = Depends(get_db)) -> AuthService:
 
 def get_member_admin_service(session: AsyncSession = Depends(get_db)) -> MemberAdminService:
     return build_member_admin_service(session)
+
+
+def get_admin_auction_reader(session: AsyncSession = Depends(get_db)) -> AdminAuctionReader:
+    return build_admin_auction_reader(session)
 
 
 def get_bearer_token(token: str | None = Depends(oauth2_scheme)) -> str:

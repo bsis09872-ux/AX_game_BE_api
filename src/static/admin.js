@@ -2,7 +2,7 @@ import { initAdminMembers } from "./admin-members.js";
 
 let viewController;
 let navigationController;
-const adminPath = /^\/admin(?:\/(?:catalogs(?:\/(?:new|[1-9]\d*\/edit))?|members(?:\/(?:new|[1-9]\d*))?|history))?$/;
+const adminPath = /^\/admin(?:\/(?:catalogs(?:\/(?:new|[1-9]\d*\/edit))?|members(?:\/(?:new|[1-9]\d*))?|history|auctions))?$/;
 
 function isAdminPage(url) {
     return url.origin === location.origin && adminPath.test(url.pathname);
@@ -29,7 +29,8 @@ async function navigate(path, { fromHistory = false } = {}) {
             location.assign(response.redirected ? response.url : url.href);
             return;
         }
-        if (!response.ok) throw new Error("화면을 불러오지 못했습니다. 다시 눌러 주세요.");
+        const missingAuction = response.status === 404 && url.pathname === '/admin/auctions';
+        if (!response.ok && !missingAuction) throw new Error("화면을 불러오지 못했습니다. 다시 눌러 주세요.");
         const html = await response.text();
         controller.signal.throwIfAborted();
         const page = new DOMParser().parseFromString(html, "text/html");

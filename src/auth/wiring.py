@@ -14,6 +14,18 @@ from auth.infrastructure.refresh_token_codec import OpaqueRefreshTokenCodec
 from auth.infrastructure.session_repository import SqlAlchemySessionRepository
 from auth.infrastructure.revoked_session_cache import RevokedSessionCache
 from users.application.admin_service import MemberAdminService
+from auth.application.admin_contracts import AdminAuctionReader
+from auth.infrastructure.admin_auction_reader import AdminAuctionReaderAdapter
+from auction.application.listings.service import ListingService
+from auction.infrastructure.listings.repositories import SqlAlchemyListingRepository
+
+
+def build_admin_auction_reader(session: AsyncSession) -> AdminAuctionReader:
+    # TODO(경매 담당): 공용 조회 factory가 제공되면 이 조립부를 해당 wiring으로 교체한다.
+    # 기존 조회 서비스와 저장소만 조립하며 등록/입찰/취소/정산은 연결하지 않는다.
+    return AdminAuctionReaderAdapter(
+        ListingService(SqlAlchemyListingRepository(session, page_size=20)),
+    )
 
 
 def build_member_admin_service(session: AsyncSession) -> MemberAdminService:

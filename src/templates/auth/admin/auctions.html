@@ -1,0 +1,37 @@
+{% extends "auth/admin/layout.html" %}
+{% block admin_title %}경매 조회{% endblock %}
+{% block admin_content %}
+{% set states = {'QUEUED':'대기', 'BIDDING':'입찰 진행', 'SOLD':'낙찰', 'FAILED':'유찰', 'CANCELLED':'취소'} %}
+{% macro time(value) %}{{ value.strftime('%Y-%m-%d %H:%M UTC') if value else '없음' }}{% endmacro %}
+<section class="panel admin-section">
+  <h2>경매 매물 조회</h2>
+  <form action="/admin/auctions" method="get" class="admin-filters">
+    <label>매물 ID<input name="listing_id" type="number" min="1" max="9223372036854775807" value="{{ listing_id if listing_id is not none else '' }}" required></label>
+    <button class="btn wood">상세 조회</button><a href="/admin/auctions">공개 매물 목록</a>
+  </form>
+  {% if listing_id is not none %}
+    {% if selected %}
+    <h3>매물 #{{ selected.id }} / {{ states.get(selected.status, selected.status) }}</h3>
+    <dl class="member-details">
+      <dt>판매자</dt><dd><a href="/admin/members/{{ selected.seller_id }}">회원 #{{ selected.seller_id }}</a></dd>
+      <dt>보유 아이템 ID</dt><dd>{{ selected.inventory_item_id }}</dd>
+      <dt>카탈로그</dt><dd><a href="/admin/catalogs/{{ selected.item_definition_id }}/edit">#{{ selected.item_definition_id }}</a></dd>
+      <dt>시작가</dt><dd>{{ '{:,}'.format(selected.start_price) }} GOLD</dd>
+      <dt>최고 입찰액</dt><dd>{{ '{:,}'.format(selected.current_bid_amount) ~ ' GOLD' if selected.current_bid_amount is not none else '입찰 없음' }}</dd>
+      <dt>최고 입찰자</dt><dd>{% if selected.current_bidder_id is not none %}<a href="/admin/members/{{ selected.current_bidder_id }}">회원 #{{ selected.current_bidder_id }}</a>{% else %}없음{% endif %}</dd>
+      <dt>등록 시각</dt><dd>{{ time(selected.created_at) }}</dd>
+      <dt>공개 시각</dt><dd>{{ time(selected.started_at) }}</dd>
+      <dt>마감 예정</dt><dd>{{ time(selected.ends_at) }}</dd>
+      <dt>종료 시각</dt><dd>{{ time(selected.closed_at) }}</dd>
+    </dl>
+    {% else %}<p role="status">매물 #{{ listing_id }}을 찾을 수 없습니다.</p>{% endif %}
+  {% else %}
+  <p>입찰 진행 상태의 매물입니다. 대기/종료 매물은 ID로 조회할 수 있습니다.</p>
+  <div class="admin-table-scroll"><table><thead><tr><th>매물</th><th>판매자</th><th>보유 아이템</th><th>시작가</th><th>최고 입찰액</th><th>마감 예정 (UTC)</th></tr></thead><tbody>
+    {% for row in rows %}<tr><td><a href="/admin/auctions?listing_id={{ row.id }}">#{{ row.id }}</a></td><td><a href="/admin/members/{{ row.seller_id }}">#{{ row.seller_id }}</a></td><td>#{{ row.inventory_item_id }}</td><td>{{ '{:,}'.format(row.start_price) }}</td><td>{{ '{:,}'.format(row.current_bid_amount) if row.current_bid_amount is not none else '입찰 없음' }}</td><td>{{ time(row.ends_at) }}</td></tr>
+    {% else %}<tr><td colspan="6">조회할 공개 매물이 없습니다.</td></tr>{% endfor %}
+  </tbody></table></div>
+  <div class="admin-pagination">{% if page > 1 %}<a class="btn wood" href="/admin/auctions?page={{ page-1 }}">이전</a>{% endif %}<span>{{ page }} 페이지</span>{% if has_next %}<a class="btn wood" href="/admin/auctions?page={{ page+1 }}">다음</a>{% endif %}</div>
+  {% endif %}
+</section>
+{% endblock %}
