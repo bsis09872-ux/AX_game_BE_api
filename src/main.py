@@ -140,6 +140,7 @@ app.include_router(create_wallet_router(get_current_user_id), prefix=API_PREFIX)
 
 # region 관리자 화면
 app.include_router(create_admin_router(get_inventory_service))
+app.include_router(create_admin_auction_router(get_admin_auction_reader))
 app.include_router(create_member_admin_router(get_current_web_admin_id, get_member_admin_service))
 # endregion
 

@@ -11,7 +11,7 @@ from auth.presentation.web_dependencies import get_current_web_admin_id
 from inventory.application.service import InventoryService
 from inventory.presentation.schemas import (
     AdminDefinitionResponse, DefinitionCreateRequest, DefinitionUpdateRequest,
-    EventResponse, PageResponse,
+    EventResponse, PageResponse, InventoryItemResponse,
 )
 from users.application.service import UserService
 from users.presentation.dependencies import get_user_service
@@ -93,6 +93,31 @@ def create_admin_router(inventory_dependency) -> APIRouter:
     async def history_page(request: Request, user_id: int = Depends(get_current_web_admin_id),
                            users: UserService = Depends(get_user_service)):
         return await render_page(request, users, user_id, 'events', 'events')
+
+    @router.get('/members/{member_id}/inventory', response_class=HTMLResponse)
+    async def member_inventory(
+        request: Request, member_id: int = Path(ge=1, le=9223372036854775807),
+        status: Literal['', 'OWNED', 'LISTED'] = '',
+        category: Literal['', 'FISH', 'GEM', 'MISC'] = '',
+        rarity: Literal['', 'COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'] = '',
+        page: int = Query(1, ge=1, le=2147483647),
+        user_id: int = Depends(get_current_web_admin_id),
+        users: UserService = Depends(get_user_service),
+        inventory: InventoryService = Depends(inventory_dependency),
+    ):
+        member = UserMeResponse.from_user(await users.get_user(member_id))
+        rows, total = await inventory.list_my_items(
+            member_id, status=status or None, category=category or None,
+            rarity=rarity or None, sort='acquired_desc', page=page, size=20,
+        )
+        return await render_page(
+            request, users, user_id, 'member_inventory', 'members', member=member,
+            items=[InventoryItemResponse.from_info(row) for row in rows],
+            total=total, page=page, has_next=page * 20 < total,
+            status=status, category=category, rarity=rarity,
+            prev_url=str(request.url.include_query_params(page=page - 1)),
+            next_url=str(request.url.include_query_params(page=page + 1)),
+        )
 
     @router.get("/item-catalogs", response_model=PageResponse[AdminDefinitionResponse])
     async def catalogs(

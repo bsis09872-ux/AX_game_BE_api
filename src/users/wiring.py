@@ -18,4 +18,6 @@ def build_user_service(session: AsyncSession) -> UserService:
 
 def build_admin_role_checker(session: AsyncSession) -> AdminRoleChecker:
     # 호출 도메인의 요청 세션을 공유한다. 인증된 회원 ID는 auth에서 전달받는다.
+    # TODO(지갑 담당): 충전 권한 검사 계약에 이 checker를 연결한다. 없는 회원도 False이며
+    # USER, 탈퇴, 로그인 정지 회원은 거절하고 DB 조회 실패는 예외로 전달한다.
     return build_user_service(session)

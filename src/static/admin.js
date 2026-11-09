@@ -2,7 +2,7 @@ import { initAdminMembers } from "./admin-members.js";
 
 let viewController;
 let navigationController;
-const adminPath = /^\/admin(?:\/(?:catalogs(?:\/(?:new|[1-9]\d*\/edit))?|members(?:\/(?:new|[1-9]\d*))?|history))?$/;
+const adminPath = /^\/admin(?:\/(?:catalogs(?:\/(?:new|[1-9]\d*\/edit))?|members(?:\/(?:new|[1-9]\d*(?:\/inventory)?))?|history|auctions))?$/;
 
 function isAdminPage(url) {
     return url.origin === location.origin && adminPath.test(url.pathname);
@@ -29,7 +29,8 @@ async function navigate(path, { fromHistory = false } = {}) {
             location.assign(response.redirected ? response.url : url.href);
             return;
         }
-        if (!response.ok) throw new Error("화면을 불러오지 못했습니다. 다시 눌러 주세요.");
+        const missingAuction = response.status === 404 && url.pathname === '/admin/auctions';
+        if (!response.ok && !missingAuction) throw new Error("화면을 불러오지 못했습니다. 다시 눌러 주세요.");
         const html = await response.text();
         controller.signal.throwIfAborted();
         const page = new DOMParser().parseFromString(html, "text/html");
@@ -298,5 +299,14 @@ function initAdminItems(root, signal, navigate) {
         $("event-search").addEventListener("submit", event => { event.preventDefault(); eventItem = event.target.elements.item_id.value; eventPage = 1; run(loadEvents); });
         $("event-prev").addEventListener("click", () => { eventPage--; run(loadEvents); });
         $("event-next").addEventListener("click", () => { eventPage++; run(loadEvents); });
+        const itemId = new URLSearchParams(location.search).get('item_id');
+        if (itemId && /^[1-9]\d{0,18}$/.test(itemId) && BigInt(itemId) <= 9223372036854775807n) {
+            $("event-search").elements.item_id.value = itemId;
+            eventItem = itemId;
+            run(loadEvents);
+        }
+    }
+    for (const image of root.querySelectorAll('img[data-inventory-icon]')) {
+        setImage(image, image.dataset.inventoryIcon);
     }
 }
