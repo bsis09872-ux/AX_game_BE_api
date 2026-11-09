@@ -3,6 +3,10 @@ from typing import Protocol
 from auth.application.admin_dto import AdminListing
 
 
+# TODO(지갑 담당): 회원별 잔액과 페이지별 거래 내역의 조회 계약/factory를 제공하면
+# 관리자 지갑 조회에 연결한다. 현재 main에는 호출할 지갑 서비스가 없다.
+
+
 class AdminAuctionReader(Protocol):
     """관리자 화면에서 사용하는 경매 조회 계약. 상태 변경과 commit은 수행하지 않는다."""
 

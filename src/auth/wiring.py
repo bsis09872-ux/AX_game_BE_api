@@ -23,6 +23,7 @@ from auction.infrastructure.listings.repositories import SqlAlchemyListingReposi
 def build_admin_auction_reader(session: AsyncSession) -> AdminAuctionReader:
     # TODO(경매 담당): 공용 조회 factory가 제공되면 이 조립부를 해당 wiring으로 교체한다.
     # 기존 조회 서비스와 저장소만 조립하며 등록/입찰/취소/정산은 연결하지 않는다.
+    # register/bid/cancel, 정산과 다음 매물 공개 구현 및 스케줄러 연결은 경매 담당 범위다.
     return AdminAuctionReaderAdapter(
         ListingService(SqlAlchemyListingRepository(session, page_size=20)),
     )
@@ -33,8 +34,16 @@ def build_member_admin_service(session: AsyncSession) -> MemberAdminService:
     # 같은 session으로 주입한다. 회원 flush -> create_wallet -> 마지막 한 번 commit,
     # 초기 지급 로그 확정은 commit 성공 후 연결한다. 지금은 회원 계정만 생성한다.
     # 기존 회원의 지갑 누락 보정 정책은 지갑 담당과 별도로 합의해야 한다.
+    # TODO(지갑 담당): PR #21의 최초 사용 시 생성 정책과 위 생성 계약을 맞춘다.
+    # 최초 사용 시 생성이 확정되면 MemberWalletProvisioner와 회원 생성 연동 TODO를 제거한다.
     return MemberAdminService(build_user_service(session), get_password_hasher(), session,
                               SqlAlchemySessionRepository(session))
+
+
+# TODO(인벤토리/앱 조립 담당): PR #25의 main.py 등록을 병합 후 확인한다.
+# create_inventory_web_router에는 get_current_web_user_id를 주입하고,
+# fishing_router는 is_fishing_enabled()에 따라 /v1에 등록한다.
+# 관리자 회원 보유 아이템 조회는 별도로 연결되어 있으며 일반 사용자 라우터를 대체하지 않는다.
 
 
 @lru_cache
