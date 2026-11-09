@@ -5,7 +5,15 @@
 #
 # [TO DO] page_size를 외부 설정에서 받는다. (진행 전)
 
+from collections.abc import Awaitable, Callable
+from typing import Annotated
+
+from fastapi import Depends, FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from auction.presentation import dependencies as deps
+from database import get_db
+
 
 from auction.application.auction_service import AuctionService
 from auction.application.listings.service import ListingService
@@ -58,3 +66,30 @@ def build_auction_service(session: AsyncSession) -> AuctionService:
         inventory=build_inventory_gateway(session),
         tx=SqlAlchemyTransactionManager(session),
     )
+
+
+
+# ===== FastAPI 의존성 연결 =====
+# 앱 시작 시 presentation의 자리 표시자를 실제 구현으로 바꾼다.
+# current_user_id는 main.py가 auth의 의존성을 넘겨 준다. (auth를 직접 import하지 않는다)
+
+SessionDep = Annotated[AsyncSession, Depends(get_db)]
+
+
+def _listing_service(session: SessionDep) -> ListingService:
+    return build_listing_service(session)
+
+
+def _trade_service(session: SessionDep) -> TradeService:
+    return build_trade_service(session)
+
+
+def wire_auction_dependencies(
+    app: FastAPI,
+    current_user_id: Callable[..., Awaitable[int]],
+) -> None:
+    app.dependency_overrides.update({
+        deps.provide_listing_service: _listing_service,
+        deps.provide_trade_service: _trade_service,
+        deps.provide_current_user_id: current_user_id,
+    })
