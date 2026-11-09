@@ -3,6 +3,7 @@ import logging
 from shared.core.exceptions import ForbiddenError
 from users.application.admin_contracts import PasswordHasher, Transaction
 from users.application.service import UserService
+from users.domain.exceptions import AdminAccountProtectionError, UserNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -29,3 +30,19 @@ class MemberAdminService:
         await self.transaction.commit()
         logger.info('admin_member_created actor_id=%s target_id=%s', actor_id, user.id)
         return user
+
+    async def change_role(self, actor_id: int, target_id: int, role: str):
+        members = await self._lock_and_authorize(actor_id, target_id)
+        target = members.get(target_id)
+        if target is None or not target.is_active():
+            raise UserNotFoundError()
+        if role != 'ADMIN' and target.role == 'ADMIN':
+            if actor_id == target_id:
+                raise AdminAccountProtectionError('자기 계정의 관리자 권한은 해제할 수 없습니다.')
+            if await self.repository.count_available_admins() <= 1:
+                raise AdminAccountProtectionError()
+        target.change_role(role)
+        await self.repository.save_admin_settings(target)
+        await self.transaction.commit()
+        logger.info('admin_member_role_changed actor_id=%s target_id=%s role=%s', actor_id, target_id, role)
+        return target

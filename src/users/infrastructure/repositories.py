@@ -18,6 +18,17 @@ class SqlAlchemyUserRepository(UserRepository):
         # 서로를 동시에 강등하는 관리자 요청을 한 트랜잭션씩 처리한다.
         await self.session.execute(text('SELECT pg_advisory_xact_lock(731401, 1)'))
 
+    async def count_available_admins(self) -> int:
+        return await self.session.scalar(select(func.count()).select_from(UserModel).where(
+            UserModel.role == 'ADMIN', UserModel.deleted_at.is_(None)))
+
+    async def save_admin_settings(self, user: User) -> None:
+        row = await self.session.get(UserModel, user.id)
+        if row is None:
+            raise UserNotFoundError()
+        row.role = user.role
+        await self.session.flush()
+
     async def list_members(self, query: str, role: str | None, page: int, size: int) -> tuple[list[User], int]:
         conditions = []
         if query:

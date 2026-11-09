@@ -7,7 +7,7 @@ from users.application.service import UserService
 from users.presentation.dependencies import get_user_service
 from users.presentation.schemas import UserMeResponse
 from users.presentation.admin_schemas import AdminMemberResponse
-from users.presentation.admin_schemas import AdminMemberCreateRequest
+from users.presentation.admin_schemas import AdminMemberCreateRequest, AdminMemberRoleRequest
 from users.application.admin_service import MemberAdminService
 
 
@@ -43,6 +43,14 @@ def create_member_admin_router(current_admin_id, management_dependency) -> APIRo
                             actor_id: int = Depends(current_admin_id),
                             management: MemberAdminService = Depends(management_dependency)):
         member = await management.create_account(actor_id, **body.model_dump())
+        response.headers['Cache-Control'] = 'no-store'
+        return AdminMemberResponse.from_user(member)
+
+    @router.patch('/member-accounts/{member_id}/role', response_model=AdminMemberResponse)
+    async def change_role(body: AdminMemberRoleRequest, response: Response, member_id: int = Path(ge=1),
+                          actor_id: int = Depends(current_admin_id),
+                          management: MemberAdminService = Depends(management_dependency)):
+        member = await management.change_role(actor_id, member_id, body.role)
         response.headers['Cache-Control'] = 'no-store'
         return AdminMemberResponse.from_user(member)
 

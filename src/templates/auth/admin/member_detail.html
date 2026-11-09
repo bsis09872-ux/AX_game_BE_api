@@ -6,4 +6,14 @@
   <dl class="member-details"><dt>로그인 아이디</dt><dd>{{ member.login_id }}</dd><dt>권한</dt><dd>{{ member.role }}</dd><dt>회원 상태</dt><dd>{{ '정상' if member.is_active else '탈퇴' }}</dd><dt>가입 시각 (UTC)</dt><dd>{{ member.created_at.strftime('%Y-%m-%d %H:%M') }}</dd><dt>낙찰 횟수</dt><dd>{{ member.auction_purchase_count }}</dd></dl>
   <a href="/admin/members">← 회원 목록</a>
 </section>
+{% if member.is_active %}
+<section class="panel admin-section"><h2>권한 변경</h2>
+  {% if member.id == user.id %}<p>자기 계정의 관리자 권한은 해제할 수 없습니다.</p>
+  {% else %}<form id="member-role" class="admin-filters" data-member-id="{{ member.id }}">
+    <label>권한<select name="role"><option {% if member.role == 'USER' %}selected{% endif %}>USER</option><option {% if member.role == 'ADMIN' %}selected{% endif %}>ADMIN</option></select></label>
+    <button class="btn wood">권한 변경</button>
+  </form><p class="admin-hint">변경된 권한은 다음 요청부터 적용됩니다.</p>{% endif %}
+</section>
+{% else %}<p>탈퇴한 회원은 관리 설정을 변경할 수 없습니다.</p>{% endif %}
 {% endblock %}
+{% block scripts %}{{ super() }}<script src="{{ url_for('static', path='/admin-members.js') }}" defer></script>{% endblock %}

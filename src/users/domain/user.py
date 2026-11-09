@@ -53,6 +53,11 @@ class User:
     def is_active(self) -> bool:
         return self.deleted_at is None
 
+    def change_role(self, role: str) -> None:
+        if role not in ('USER', 'ADMIN'):
+            raise InvalidUserError('유효하지 않은 회원 역할입니다.')
+        self.role = role
+
     def update_auction_limit(self, purchase_count: int, blocked_until: datetime | None) -> None:
         if type(purchase_count) is not int or not 0 <= purchase_count <= 2147483647:
             raise InvalidUserError("낙찰 횟수는 0 이상의 정수여야 합니다.")

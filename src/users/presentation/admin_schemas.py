@@ -12,6 +12,11 @@ class AdminMemberCreateRequest(BaseModel):
     password: str = Field(min_length=1, max_length=1024, repr=False)
 
 
+class AdminMemberRoleRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    role: Literal['USER', 'ADMIN']
+
+
 class AdminMemberResponse(BaseModel):
     id: str
     login_id: str

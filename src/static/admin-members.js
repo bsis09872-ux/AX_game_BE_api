@@ -21,6 +21,12 @@
         finally { button.disabled = false; }
     }
     const create = document.getElementById("member-create");
+    const role = document.getElementById("member-role");
+    role?.addEventListener("submit", event => {
+        event.preventDefault();
+        if (!confirm(`이 회원의 권한을 ${role.elements.role.value}로 변경할까요?`)) return;
+        submit(role, `/admin/member-accounts/${role.dataset.memberId}/role`, "PATCH", {role:role.elements.role.value});
+    });
     create?.addEventListener("submit", event => {
         event.preventDefault();
         const body = Object.fromEntries(new FormData(create));
