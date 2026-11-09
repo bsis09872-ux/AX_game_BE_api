@@ -55,6 +55,21 @@ from inventory.wiring import is_fishing_enabled
 # endregion
 
 
+# region 도메인 import: 지갑
+from wallet.presentation.router import create_wallet_router
+# endregion
+
+
+# region 도메인 모델 등록
+# create_all이 테이블을 만들도록 ORM 모델을 Base.metadata에 등록한다.
+import auth.infrastructure.models  # noqa: F401
+import users.infrastructure.models  # noqa: F401
+import inventory.infrastructure.models  # noqa: F401
+import wallet.infrastructure.models  # noqa: F401
+import auction.infrastructure.listings.models  # noqa: F401 (임시)
+# endregion
+
+
 API_PREFIX = "/v1"
 
 
@@ -115,6 +130,11 @@ app.include_router(inventory_router, prefix=API_PREFIX)
 if is_fishing_enabled():
     app.include_router(fishing_router, prefix=API_PREFIX)
 app.include_router(create_inventory_web_router(get_current_web_user_id))
+# endregion
+
+
+# region 도메인 라우터: 지갑
+app.include_router(create_wallet_router(get_current_user_id), prefix=API_PREFIX)
 # endregion
 
 
