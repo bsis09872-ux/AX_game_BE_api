@@ -1,4 +1,6 @@
+{# [Claude] 헤더를 경매장 화면과 같은 주 메뉴·골드 조각으로 맞춤 #}
 {% extends "base.html" %}
+{% from "_site.html" import site_nav, gold_status %}
 {% from "inventory/_macros.html" import gold, item_icon %}
 
 {% block title %}아이템 도감 | Catch &amp; Bid{% endblock %}
@@ -7,12 +9,9 @@
 <link rel="stylesheet" href="{{ url_for('static', path='/css/inventory.css') }}">
 {% endblock %}
 
-{% block navigation %}
-<nav class="nav" aria-label="주 메뉴">
-    <a class="on" href="/inventory" aria-current="page">내 인벤토리</a>
-    <a href="/me">내 정보</a>
-</nav>
-{% endblock %}
+{% block navigation %}{{ site_nav('inventory') }}{% endblock %}
+{# [Claude] 헤더 골드: 읽기 함수가 없으면 보이지 않는다 #}
+{% block header_status %}{{ gold_status(gold_balance) }}{% endblock %}
 
 {# 필터 링크 주소: 값이 있는 것만 붙인다 #}
 {# - 는 공백 또는 줄바꿈을 지운다는 의미: 주소가 깨지지 않도록 한다#}

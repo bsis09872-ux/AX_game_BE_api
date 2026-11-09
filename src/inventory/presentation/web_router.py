@@ -61,6 +61,10 @@ def create_inventory_web_router(
     balance_reader: Callable[..., Awaitable[int | None]] | None = None,
     wallet_reader: Callable[..., Awaitable[dict | None]] | None = None,
 ) -> APIRouter:
+    # [Claude] 상세·도감·404 화면의 헤더 골드. 읽기 함수가 없으면 None
+    async def header_gold(session: AsyncSession, user_id: int) -> int | None:
+        return await balance_reader(session, user_id) if balance_reader else None
+
     # [Claude] balance_reader(session, user_id): 헤더에 보여 줄 보유 골드(없으면 None)
     # [Claude] wallet_reader(session, user_id): 가방의 지갑 박스(잔액, 묶인 골드, 사용 가능 골드) 또는 None. 둘 다 main이 넘긴다(wallet을 import하지 않는다)
 
@@ -153,9 +157,11 @@ def create_inventory_web_router(
         request: Request,
         item_id: int = Path(ge=1),
         user_id: int = Depends(current_user_id),
-        service: InventoryService = Depends(get_inventory_service)
+        service: InventoryService = Depends(get_inventory_service),
+        session: AsyncSession = Depends(get_db),
     ) -> HTMLResponse:
         templates = request.app.state.templates
+        gold_balance = await header_gold(session, user_id)  # [Claude]
 
         try:
             info = await service.get_my_item(user_id, item_id)
@@ -165,7 +171,7 @@ def create_inventory_web_router(
             response = templates.TemplateResponse(
                 request=request,
                 name='inventory/not_found.html',
-                context={},
+                context={'gold_balance': gold_balance},  # [Claude]
                 status_code=404
             )
         else:
@@ -173,19 +179,21 @@ def create_inventory_web_router(
                 request=request,
                 name='inventory/detail.html',
                 # 화면에는 응답 모델의 공개 값만 노출
-                context={'item': InventoryItemDetailResponse.from_info(info)}
+                context={'item': InventoryItemDetailResponse.from_info(info), 'gold_balance': gold_balance}  # [Claude]
             )
 
         # 개인 화면을 브라우저에 저장하지 않게 함
         response.headers['Cache-Control'] = 'no-store'
         return response
 
-    @router.get('/item-catalogs', response_class=HTMLResponse, dependencies=[Depends(current_user_id)])
+    @router.get('/item-catalogs', response_class=HTMLResponse)
     async def get_catalog_page(
         request: Request,
         category: Category | None=None,
         rarity: Rarity | None=None,
-        service: InventoryService = Depends(get_inventory_service)
+        user_id: int = Depends(current_user_id),  # [Claude] 헤더 골드를 읽으려고 사용자 번호를 받는다 (로그인 확인은 그대로)
+        service: InventoryService = Depends(get_inventory_service),
+        session: AsyncSession = Depends(get_db),
     ) -> HTMLResponse:
         definitions, _ = await service.list_definitions(
             category=category,
@@ -205,7 +213,8 @@ def create_inventory_web_router(
                 'rarity': rarity,
                 # 필터 링크에 쓸 허용값
                 'categories': get_args(Category),
-                'rarities': get_args(Rarity)
+                'rarities': get_args(Rarity),
+                'gold_balance': await header_gold(session, user_id),  # [Claude]
             }
         )
 
