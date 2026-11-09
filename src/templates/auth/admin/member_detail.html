@@ -1,0 +1,9 @@
+{% extends "auth/admin/layout.html" %}
+{% block admin_title %}회원 상세{% endblock %}
+{% block admin_content %}
+<section class="panel admin-section">
+  <h2>{{ member.display_name }} <small>#{{ member.id }}</small></h2>
+  <dl class="member-details"><dt>로그인 아이디</dt><dd>{{ member.login_id }}</dd><dt>권한</dt><dd>{{ member.role }}</dd><dt>회원 상태</dt><dd>{{ '정상' if member.is_active else '탈퇴' }}</dd><dt>가입 시각 (UTC)</dt><dd>{{ member.created_at.strftime('%Y-%m-%d %H:%M') }}</dd><dt>낙찰 횟수</dt><dd>{{ member.auction_purchase_count }}</dd></dl>
+  <a href="/admin/members">← 회원 목록</a>
+</section>
+{% endblock %}

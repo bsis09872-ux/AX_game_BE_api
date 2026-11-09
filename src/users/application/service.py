@@ -16,6 +16,9 @@ class UserService:
     def __init__(self, repository: UserRepository):
         self.repository = repository
 
+    async def list_members(self, query: str = '', role: str | None = None, page: int = 1, size: int = 20):
+        return await self.repository.list_members(query, role, page, size)
+
     # ID에 해당하는 회원이 없으면 UserNotFoundError를 발생시키고, 저장소 오류는 그대로 전파한다.
     async def get_user(self, user_id: int) -> User:
         result = await self.repository.find_by_id(user_id=user_id)

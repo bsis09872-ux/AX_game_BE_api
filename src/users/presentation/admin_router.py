@@ -1,0 +1,41 @@
+from typing import Literal
+
+from fastapi import APIRouter, Depends, Path, Query, Request
+from fastapi.responses import HTMLResponse
+
+from users.application.service import UserService
+from users.presentation.dependencies import get_user_service
+from users.presentation.schemas import UserMeResponse
+from users.presentation.admin_schemas import AdminMemberResponse
+
+
+def create_member_admin_router(current_admin_id) -> APIRouter:
+    router = APIRouter(prefix='/admin', tags=['admin-members'])
+
+    async def render(request, users, actor_id, template, **context):
+        actor = UserMeResponse.from_user(await users.get_user(actor_id))
+        return request.app.state.templates.TemplateResponse(
+            request=request, name=f'auth/admin/{template}.html',
+            context={'user': actor, 'section': 'members', **context},
+            headers={'Cache-Control': 'no-store'},
+        )
+
+    @router.get('/members', response_class=HTMLResponse)
+    async def members(request: Request, q: str = Query('', max_length=100),
+                      role: Literal['', 'USER', 'ADMIN'] = '',
+                      page: int = Query(1, ge=1),
+                      actor_id: int = Depends(current_admin_id),
+                      users: UserService = Depends(get_user_service)):
+        rows, total = await users.list_members(q.strip(), role or None, page, 20)
+        return await render(request, users, actor_id, 'members',
+                            members=[AdminMemberResponse.from_user(row) for row in rows],
+                            q=q, role=role, page=page, total=total, pages=max(1, (total + 19) // 20))
+
+    @router.get('/members/{member_id}', response_class=HTMLResponse)
+    async def member_detail(request: Request, member_id: int = Path(ge=1),
+                            actor_id: int = Depends(current_admin_id),
+                            users: UserService = Depends(get_user_service)):
+        return await render(request, users, actor_id, 'member_detail',
+                            member=AdminMemberResponse.from_user(await users.get_user(member_id)))
+
+    return router

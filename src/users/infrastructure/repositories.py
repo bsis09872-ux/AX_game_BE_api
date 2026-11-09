@@ -1,5 +1,5 @@
 # SQLAlchemy로 회원을 조회하거나 저장하고 결과를 도메인 User로 변환한다.
-from sqlalchemy import select
+from sqlalchemy import select, func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,6 +13,18 @@ class SqlAlchemyUserRepository(UserRepository):
     # 주입받은 세션을 공유한다. 세션 생성과 트랜잭션 확정은 호출 측에서 담당한다.
     def __init__(self, session: AsyncSession):
         self.session = session
+
+    async def list_members(self, query: str, role: str | None, page: int, size: int) -> tuple[list[User], int]:
+        conditions = []
+        if query:
+            conditions.append(or_(UserModel.login_id.icontains(query, autoescape=True),
+                                  UserModel.display_name.icontains(query, autoescape=True)))
+        if role:
+            conditions.append(UserModel.role == role)
+        total = await self.session.scalar(select(func.count()).select_from(UserModel).where(*conditions))
+        rows = (await self.session.scalars(select(UserModel).where(*conditions)
+                .order_by(UserModel.id.desc()).offset((page - 1) * size).limit(size))).all()
+        return [self._to_domain(row) for row in rows], total
 
     async def find_for_update_many(self, user_ids: list[int]) -> dict[int, User]:
         if not user_ids:
