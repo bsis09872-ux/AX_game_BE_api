@@ -41,7 +41,22 @@ class DefinitionNotFoundError(NotFoundError):
     code: str = 'DEFINITION_NOT_FOUND'
     message: str = '아이템 카탈로그를 찾을 수 없습니다.'
 
+# 404: 아이템을 받을 사용자가 없거나 탈퇴한 경우
+class OwnerNotFoundError(NotFoundError):
+    code: str = 'OWNER_NOT_FOUND'
+    message: str = '아이템을 받을 사용자를 찾을 수 없습니다.'
+
 # 403: 소유자가 아닌 사람이 아이템 상태 변경을 시도하는 경우
 class NotOwnerError(ForbiddenError):
     code: str = 'NOT_OWNER'
     message: str = '해당 아이템 소유자가 아닙니다.'
+
+# 400: 관리자가 이미 있는 code로 카탈로그를 생성하려는 경우
+class DefinitionCodeDuplicateError(BusinessRuleError):
+    code: str = 'DEFINITION_CODE_DUPLICATE'
+    message: str = '이미 있는 아이템 카탈로그 입니다.'
+
+# 400: 관리자가 유저가 보유 중인 아이템 카탈로그를 삭제하려는 경우
+class DefinitionInUseError(BusinessRuleError):
+    code: str = 'DEFINITION_IN_USE'
+    message: str = '이 카탈로그의 아이템을 유저가 보유하고 있어 삭제할 수 없습니다. 추가 지급을 막으려면 fishable을 false로 바꾸세요.'

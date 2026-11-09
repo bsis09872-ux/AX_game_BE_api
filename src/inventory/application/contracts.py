@@ -2,14 +2,95 @@
 
 - 계약은 필요한 기능의 모양(Protocol)만 적는다. 구현은 어댑터가 하고 wiring이 연결한다
 - UserLookup: 주어진 사용자 번호 중 실제로 있고 탈퇴하지 않은(활성) 번호만 돌려준다
+- ItemRepository, DefinitionRepository, UnitOfWork: 서비스가 저장소와 commit에게 요구하는 모양이다 (테스트에서는 가짜를 끼운다)
 - 다른 도메인의 모델이나 infrastructure를 import하지 않는다
+- CurrentUser, CurrentUserProvider: 액세스 토큰으로 요청한 사람(번호, 역할)을 확인하는 기능의 모양이다 (인증 담당이 제공하는 기능을 어댑터가 연결한다)
 """
 
 from collections.abc import Iterable
+from dataclasses import dataclass
 from typing import Protocol
+
+from inventory.domain.inventory_item import InventoryItem
+from inventory.domain.item_definition import ItemDefinition
+from inventory.domain.item_event import ItemEvent
+
 
 # 쓰는 쪽은 이 모양만 알고 누가 어떻게 구현했는지는 모른다
 class UserLookup(Protocol):
+
     # user_ids 중 활성인 번호만 set으로 돌려준다 (없거나 탈퇴한 번호는 제외)
     async def find_active_user_ids(self, user_ids: Iterable[int]) -> set[int]:
+        ...
+
+
+# 서비스가 저장소에 요청하는 모양
+class ItemRepository(Protocol):
+    
+    async def find_by_id(self, item_id: int) -> InventoryItem | None:
+        ...
+    
+    # ===== 옥션 도메인이 참고할 내용 =====
+    # 행을 잠그고 가져온다 → 잠근 뒤 최신 상태를 돌려준다 → 잠금은 매물 도메인이 커밋하거나 롤백할 때 풀린다
+    async def find_by_id_for_update(self, item_id: int) -> InventoryItem | None:
+        ...    
+
+    # 키워드 전용 인자: 이름을 붙여서 넣고 싶을 때
+    async def find_by_owner(
+            self, owner_id: int, *, status=None, category=None, rarity=None,
+            sort: str = 'acquired_desc', page: int = 1, size: int = 20,
+    ) -> tuple[list[InventoryItem], int]:
+        ...
+
+    async def save(self, item: InventoryItem) -> InventoryItem:
+        ...
+
+    async def find_event(
+        self, item_id: int, *, page: int = 1, size: int = 20
+    ) -> tuple[list[ItemEvent], int]:
+        ...
+
+
+# 서비스가 저장소에 요청하는 모양
+class DefinitionRepository(Protocol):
+
+    async def find_by_id(self, definition_id: int) -> ItemDefinition | None:
+        ...
+
+    async def find_all(
+            self, *, category=None, rarity=None, sort: str = 'rarity_desc',
+            page: int = 1, size: int = 20
+    ) -> tuple[list[ItemDefinition], int]:
+        ...
+
+    async def find_by_code(self, code: str) -> ItemDefinition | None:
+        ...
+
+    async def save(self, definition: ItemDefinition) -> ItemDefinition:
+        ...
+
+    async def count_items(self, definition_id: int) -> int:
+        ...
+
+    async def delete(self, definition: ItemDefinition) -> None:
+        ...
+
+
+# 서비스가 확정 요청하는 모양 (커밋 부탁)
+class UnitOfWork(Protocol):
+
+    async def commit(self) -> None:
+        ...
+
+# 인증 담당이 확인해 주는 값을 인벤토리가 쓰는 모양
+@dataclass(frozen=True)
+class CurrentUser:
+    id: int
+    role: str  # 'USER' 또는 'ADMIN'
+
+
+# 액세스 토큰으로 요청한 사람을 확인하는 기능의 모양
+class CurrentUserProvider(Protocol):
+
+    async def authenticate(self, access_token: str) -> CurrentUser | None:
         ...

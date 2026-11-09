@@ -1,0 +1,62 @@
+{% extends "auth/base.html" %}
+
+{% block title %}로그인 | Catch &amp; Bid{% endblock %}
+{% block page %}login{% endblock %}
+
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/auth.css') }}">
+{% endblock %}
+
+{% block content %}
+    <section class="auth-layout" aria-labelledby="login-title">
+        <h1 id="login-title" class="title-tab">로그인</h1>
+
+        <div class="panel auth-panel">
+            {% if registered %}
+                <p class="auth-success" role="status">회원가입이 완료됐습니다. 로그인해 주세요.</p>
+            {% endif %}
+
+            {# refresh cookie가 있으면 스크립트가 기존 로그인 복구를 시도한다. #}
+            <p id="session-message" class="session-message" role="status">
+                {%- if resume -%}
+                    로그인 상태를 확인하고 있습니다.
+                {%- endif -%}
+            </p>
+
+            {% if error %}
+                <p class="auth-error" role="alert">{{ error }}</p>
+            {% endif %}
+
+            {# 입력값은 웹 로그인 라우터로 제출한다. 성공 시 서버가 쿠키를 설정하고 /me로 이동시킨다. #}
+            <form class="auth-form" method="post" action="/login">
+                <div class="field">
+                    <label for="login-id">로그인 ID</label>
+                    <input
+                        id="login-id"
+                        name="login_id"
+                        required
+                        minlength="4"
+                        maxlength="50"
+                        autocomplete="username"
+                    >
+                </div>
+
+                <div class="field">
+                    <label for="password">비밀번호</label>
+                    <input
+                        id="password"
+                        type="password"
+                        name="password"
+                        required
+                        maxlength="1024"
+                        autocomplete="current-password"
+                    >
+                </div>
+
+                <button class="btn big auth-submit" type="submit">로그인</button>
+            </form>
+
+            <p class="auth-link">계정이 없다면 <a href="/register">회원가입</a></p>
+        </div>
+    </section>
+{% endblock %}
