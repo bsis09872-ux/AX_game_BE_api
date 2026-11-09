@@ -1,0 +1,163 @@
+/* 인벤토리 화면들(내 인벤토리, 내 아이템 상세, 도감)이 같이 쓰는 스타일 */
+/* 팀 공통 테마는 global.css가 맡고, 여기서는 인벤토리 화면에만 필요한 것만 둔다 */
+
+/* 상세 화면에서 #item-번호로 들어왔을 때 해당 줄을 강조한다 */
+tr:target {
+  background: rgba(255, 220, 120, 0.25);
+}
+
+/* 표: 열 너비를 고정한다 (필터를 바꿔 내용이 달라져도 열 위치가 흔들리지 않는다) */
+.table-fixed {
+  table-layout: fixed;
+}
+
+.table-fixed td,
+.table-fixed th {
+  /* 한글은 띄어쓰기에서만 줄을 바꾸고('거/의'처럼 글자 중간에서 끊지 않음), 너무 긴 낱말만 억지로 끊는다 */
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+/* 표 머리글은 값과 같은 14px로 보여 준다 (12px이면 첫 글자가 값보다 안쪽에서 시작하는 것처럼 보인다) */
+/* 색은 옅은 색 그대로 두어 머리글과 값을 구분한다 */
+.table-fixed th {
+  font-size: 14px;
+}
+
+/* 상세 표의 머리글도 값과 같은 14px로 맞춘다 */
+.item-detail-info th {
+  font-size: 14px;
+}
+
+/* 페이지 아래 링크 줄: 왼쪽에는 돌아가기, 오른쪽(.to-right)에는 도감으로 가는 링크 */
+.page-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 14px;
+}
+
+.page-links .to-right {
+  margin-left: auto;
+}
+
+/* 필터: 항목 묶음(분류, 희귀도)마다 줄을 나누고 값은 버튼 모양으로 보여 준다 */
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--wood-dark);
+}
+
+.filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 필터 줄의 이름표(상태, 분류, 희귀도, 정렬)도 표 머리글과 같은 14px로 맞춘다 */
+.filter-label {
+  min-width: 64px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* 버튼 너비는 모두 같게 고정한다: 값이 길든 짧든, 골랐든 안 골랐든 너비가 변하지 않는다 */
+.filter-group a {
+  position: relative;
+  display: inline-block;
+  /* 글자 길이와 상관없이 너비를 똑같이 고정한다 (min-width는 글자가 길면 혼자 넓어진다) */
+  /* flex: none은 한 줄이 비좁아도 버튼이 줄어들지 않게 한다 */
+  flex: none;
+  width: 148px;
+  white-space: nowrap;
+  /* 왼쪽의 체크 표시가 글자와 겹치지 않을 만큼만 여백을 둔다 */
+  padding: 4px 14px;
+  text-align: center;
+  color: var(--muted);
+  background: var(--wood-dark);
+  border: 2px solid var(--outline);
+}
+
+.filter-group a:hover {
+  color: var(--text);
+  background: var(--slot);
+  text-decoration: none;
+}
+
+/* 지금 고른 값: 색뿐 아니라 체크 표시로도 구분한다 */
+/* 글자 굵기를 바꾸거나 체크를 글자 앞에 끼우면 너비가 변하므로, 체크는 왼쪽에 띄워서 그린다 */
+.filter-group a[aria-current="true"] {
+  color: var(--night);
+  background: var(--gold);
+}
+
+.filter-group a[aria-current="true"]::before {
+  content: "✓";
+  position: absolute;
+  left: 8px;
+}
+
+/* 희귀도 색: 한 곳에서 정하고 필터 버튼과 그림 틀이 같이 쓴다 */
+.rarity-COMMON {
+  --rarity: var(--steel);
+}
+.rarity-UNCOMMON {
+  --rarity: var(--green);
+}
+.rarity-RARE {
+  --rarity: var(--water);
+}
+.rarity-EPIC {
+  --rarity: var(--pink);
+}
+.rarity-LEGENDARY {
+  --rarity: var(--gold);
+}
+
+/* 희귀도 필터 버튼은 왼쪽 띠 색으로 등급을 구분한다 */
+.filter-group a[class^="rarity-"] {
+  border-left-width: 4px;
+  border-left-color: var(--rarity);
+}
+
+/* 아이템 그림 틀: 16x16 픽셀 그림을 희귀도 색 테두리로 감싼다 */
+.item-icon {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 8px;
+  line-height: 0;
+  border: 2px solid var(--rarity, var(--outline));
+  background: var(--wood-dark);
+}
+
+.item-icon img {
+  display: block;
+}
+
+/* 상세 패널의 안쪽 여백: 그림과 표 사이 간격(32px)과 같게 해서 테두리에 붙어 보이지 않게 한다 */
+.item-detail-panel {
+  padding: 32px;
+}
+
+/* 아이템 상세: 왼쪽에 큰 그림, 오른쪽에 항목 표 (좁은 화면에서는 위아래로 쌓인다) */
+.item-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+.item-detail .item-icon {
+  margin-right: 0;
+  border-width: 3px;
+}
+
+/* 표를 div로 한 번 감싸는 이유: table은 테마에서 width: 100%라서 바로 옆에 두면 그림 아래로 밀려난다 */
+.item-detail-info {
+  flex: 1 1 320px;
+  min-width: 0;
+}

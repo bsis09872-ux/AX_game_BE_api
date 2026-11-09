@@ -1,0 +1,38 @@
+{# 인벤토리 화면들이 같이 쓰는 조각 #}
+
+
+{# 금액 표시: 천 단위 콤마 + 화폐 단위(GOLD). 단위를 바꾸려면 여기만 고친다 #}
+{% macro gold(amount) -%}
+{{ '{:,}'.format(amount) }} GOLD
+{%- endmacro %}
+
+
+{# 시각 표시: 초 단위까지만 보여 주고(마이크로초는 숨김), 저장된 값이 UTC라서 뒤에 UTC를 붙인다 #}
+{% macro moment(value) -%}
+{{ value.strftime('%Y-%m-%d %H:%M:%S') }} UTC
+{%- endmacro %}
+
+
+{# 필터 표시 #}
+{% macro filter_group(group) -%}
+<nav class="filter-group" aria-label="{{ group.label }}">
+    <span class="filter-label">{{ group.label }}</span>
+    {% for o in group.options %}
+    <a {% if o.css %}class="{{ o.css }}" {% endif %}href="{{ o.href }}" {% if o.current %} aria-current="true" {% endif
+        %}>{{ o.text }}</a>
+    {% endfor %}
+</nav>
+{%- endmacro %}
+
+
+{# 아이템 그림 위치: 그림 폴더나 대체 그림이 바뀌면 이 두 줄만 고친다 #}
+{% set ICON_DIR = '/static/sprites' %}
+{% set ICON_FALLBACK = 'item_gift_box.png' %}
+
+{# 아이템 그림: 희귀도 색 틀 + 16x16 픽셀 그림. 그림 파일이 없으면 대체 그림을 보여 준다 #}
+{# icon 값은 아무 글자나 올 수 있어서 다른 경로를 가리키지 못하게 변환한다 #}
+{% macro item_icon(definition, size=32) -%}
+<span class="item-icon rarity-{{ definition.rarity }}"><img class="px" alt=""
+        src="{{ ICON_DIR }}/item_{{ definition.icon | replace('/', '_') | urlencode }}.png" width="{{ size }}"
+        height="{{ size }}" onerror="this.onerror=null;this.src='{{ ICON_DIR }}/{{ ICON_FALLBACK }}'"></span>
+{%- endmacro %}

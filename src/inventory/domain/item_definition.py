@@ -3,7 +3,7 @@
 - 누구의 소유물도 아니다. 사용자가 가진 개별 아이템(InventoryItem)과 구분한다
 - code는 고유하고 ^[a-z][a-z0-9_]{2,49}$ 형식, name은 공백 제외 1~100자다
 - category는 FISH/GEM/MISC, rarity는 COMMON~LEGENDARY만 허용한다
-- start_price는 0보다 큰 정수, weight는 0 이상의 정수, icon은 1~50자다
+- start_price는 0보다 큰 정수, weight는 0 이상의 정수, icon은 영문 소문자로 시작하고 영문 소문자·숫자·밑줄만 쓴 1~50자다
 - name과 category는 만든 뒤 바꿀 수 없다 (바꾸려 하면 도메인이 거절한다)
 - start_price가 바뀌어도 이미 등록된 매물에는 영향이 없다 (매물이 등록 때 복사해 간다)
 - id는 저장소가 DB에 저장할 때 정해진다. 만들 때는 비어 있고, 규칙 검사 대상이 아니다
@@ -19,6 +19,7 @@ from inventory.domain.exceptions import (
 )
 
 _CODE_PATTERN = re.compile(r'^[a-z][a-z0-9_]{2,49}$')
+_ICON_PATTERN = re.compile(r'^[a-z][a-z0-9_]{0,49}$')
 
 def _check_code(code) -> str:
     if not isinstance(code, str) or not _CODE_PATTERN.fullmatch(code):
@@ -46,8 +47,9 @@ def _check_int(field: str, value, minimum: int) -> int:
     return value
 
 def _check_icon(icon) -> str:
-    if not isinstance(icon, str) or not 1 <= len(icon) <= 50:
-        raise ItemRuleViolationError('icon 값은 1~50자 이내여야 합니다.')
+    # 그림 파일 이름이 주소에 그대로 쓰이므로 허용할 값을 1차 방어
+    if not isinstance(icon, str) or not _ICON_PATTERN.fullmatch(icon):
+        raise ItemRuleViolationError('icon은 영문 소문자로 시작작하고 숫자와 언더바를 포함한 1~50자 이내여야 합니다.')
     return icon
 
 def _check_fishable(fishable) -> bool:

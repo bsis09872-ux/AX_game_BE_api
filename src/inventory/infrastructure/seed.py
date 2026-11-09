@@ -1,5 +1,6 @@
 """시드: 카탈로그 13개와 시연용 아이템 24개(이력 24건)를 넣는다
 
+- 카탈로그 13개에는 설명(description)이 들어 있다. 이미 있는 카탈로그는 덮어쓰지 않으므로, 설명이 없던 옛 데이터에는 시드를 다시 돌려도 설명이 채워지지 않는다
 - DB에 직접 INSERT하지 않고 ItemDefinition, InventoryItem.grant를 거쳐 규칙을 통과시킨다. 이력은 grant가 만들고 save가 저장한다
 - 여러 번 실행해도 안전하다. 카탈로그는 code로 있으면 건너뛰고, 시연 아이템은 소유자가 아이템을 하나도 안 가졌을 때만 넣는다
 - 시연 소유자는 임시 사용자 1, 2, 3이다 (DEMO_ITEMS에서 바꾼다). 활성 사용자인지는 UserLookup 계약으로 묻고, 아니면 그 소유자는 건너뛰고 경고만 남긴다
@@ -24,21 +25,34 @@ from inventory.infrastructure.repositories import (
 
 logger = logging.getLogger(__name__)
 
-# 아이템 카탈로그
+# 아이템 카탈로그: (code, 이름, 분류, 희귀도, 시작가, 낚시 가중치, 아이콘, 설명)
 CATALOG = [
-    ('crucian_carp', '붕어', 'FISH', 'COMMON', 100, 40, 'fish_carp'),
-    ('mackerel', '고등어', 'FISH', 'COMMON', 120, 35, 'fish_mackerel'),
-    ('sea_bass', '농어', 'FISH', 'UNCOMMON', 400, 20, 'fish_bass'),
-    ('salmon', '연어', 'FISH', 'UNCOMMON', 500, 15, 'fish_salmon'),
-    ('pufferfish', '복어', 'FISH', 'RARE', 1500, 8, 'fish_puffer'),
-    ('golden_carp', '황금 잉어', 'FISH', 'EPIC', 5000, 3, 'fish_golden'),
-    ('sea_dragon', '바다용', 'FISH', 'LEGENDARY', 20000, 1, 'fish_dragon'),
-    ('pearl', '진주', 'GEM', 'UNCOMMON', 600, 6, 'gem_pearl'),
-    ('sapphire', '사파이어', 'GEM', 'RARE', 2000, 3, 'gem_sapphire'),
-    ('black_pearl', '흑진주', 'GEM', 'EPIC', 6000, 1, 'gem_black_pearl'),
-    ('old_boot', '낡은 장화', 'MISC', 'COMMON', 30, 12, 'misc_boot'),
-    ('seaweed', '해초', 'MISC', 'COMMON', 40, 10, 'misc_seaweed'),
-    ('message_bottle', '편지병', 'MISC', 'RARE', 1200, 2, 'misc_bottle'),
+    ('crucian_carp', '붕어', 'FISH', 'COMMON', 100, 40, 'fish_carp',
+     '냇가와 저수지 어디서나 만날 수 있는 흔한 민물고기'),
+    ('mackerel', '고등어', 'FISH', 'COMMON', 120, 35, 'fish_mackerel',
+     '등에 푸른 물결무늬가 있는 바다 물고기'),
+    ('sea_bass', '농어', 'FISH', 'UNCOMMON', 400, 20, 'fish_bass',
+     '힘이 좋아 낚싯대를 휘게 하는 바다 물고기'),
+    ('salmon', '연어', 'FISH', 'UNCOMMON', 500, 15, 'fish_salmon',
+     '강을 거슬러 오르는 붉은 살 생선'),
+    ('pufferfish', '복어', 'FISH', 'RARE', 1500, 8, 'fish_puffer',
+     '몸을 부풀려 스스로를 지키는 물고기'),
+    ('golden_carp', '황금 잉어', 'FISH', 'EPIC', 5000, 3, 'fish_golden',
+     '비늘이 금빛으로 반짝이는 전설 속의 잉어'),
+    ('sea_dragon', '바다용', 'FISH', 'LEGENDARY', 20000, 1, 'fish_dragon',
+     '깊은 바다에서만 모습을 드러낸다고 전해지는 거대한 용'),
+    ('pearl', '진주', 'GEM', 'UNCOMMON', 600, 6, 'gem_pearl',
+     '조개 속에서 오랜 시간 자란 은은한 빛의 구슬'),
+    ('sapphire', '사파이어', 'GEM', 'RARE', 2000, 3, 'gem_sapphire',
+     '깊은 바다처럼 푸른 보석'),
+    ('black_pearl', '흑진주', 'GEM', 'EPIC', 6000, 1, 'gem_black_pearl',
+     '어둠 속에서도 은은한 광택을 내는 희귀한 진주'),
+    ('old_boot', '낡은 장화', 'MISC', 'COMMON', 30, 12, 'misc_boot',
+     '바다 밑에서 건져 올린 낡은 장화'),
+    ('seaweed', '해초', 'MISC', 'COMMON', 40, 10, 'misc_seaweed',
+     '바위에 붙어 자라는 미역과 다시마 같은 해조류'),
+    ('message_bottle', '편지병', 'MISC', 'RARE', 1200, 2, 'misc_bottle',
+     '누군가 바다에 띄워 보낸 병 속의 편지. 누가 보냈는지는 알 수 없다.'),
 ]
 
 # 개별 아이템
@@ -60,7 +74,7 @@ async def run_seed(session: AsyncSession, now: datetime, user_lookup: UserLookup
     # 1. 카탈로그 13개: code로 찾아서 없을 때만 만든다 (멱등)
     definitions = {}
     created_definitions = 0
-    for code, name, category, rarity, start_price, weight, icon in CATALOG:
+    for code, name, category, rarity, start_price, weight, icon, description in CATALOG:
         # 이미 있는 카탈로그는 값을 덮어쓰지 않고 그대로 쓴다 (관리자가 고쳤을 수 있어서)
         definition = await definition_repository.find_by_code(code)
         if definition is None:
@@ -72,7 +86,8 @@ async def run_seed(session: AsyncSession, now: datetime, user_lookup: UserLookup
                     rarity=rarity,
                     start_price=start_price,
                     weight=weight,
-                    icon=icon
+                    icon=icon,
+                    description=description
                 )
             )
             created_definitions += 1
