@@ -1,33 +1,46 @@
+# 표준 라이브러리
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+# 웹 프레임워크
 from fastapi import FastAPI, HTTPException, Path as PathParameter
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+# 데이터베이스
 from database import Base, engine
 
+# 공통
 from shared.core.exception_handlers import register_exception_handlers
 from shared.core.logging_config import setup_logging
+from shared.item_images import image_directory
 
+# 도메인: 인증
 from auth.wiring import initialize_auth
 from auth.presentation.dependencies import get_current_user_id, get_member_admin_service
 from auth.presentation.exception_handlers import register_auth_exception_handlers
 from auth.presentation.router import router as auth_router
+from auth.presentation.web_router import router as auth_web_router
+from auth.presentation.admin_router import create_admin_router
+from auth.presentation.web_dependencies import (
+    get_current_web_user_id, get_current_web_admin_id, get_web_settings, register_web_auth_handlers,
+)
+
+# 도메인: 유저
 from users.presentation.router import create_user_router
 from users.presentation.web_router import create_user_web_router
 from users.presentation.admin_router import create_member_admin_router
 from users.infrastructure.schema import upgrade_member_controls
-from auth.presentation.web_router import router as auth_web_router
+
+# 도메인: 인벤토리
 from inventory.presentation.router import router as inventory_router
 from inventory.presentation.dependencies import get_inventory_service
-from auth.presentation.admin_router import create_admin_router
-from shared.item_images import image_directory
-from auth.presentation.web_dependencies import (
-    get_current_web_user_id, get_current_web_admin_id, get_web_settings, register_web_auth_handlers,
-)
+from inventory.presentation.fishing_router import router as fishing_router
+from inventory.presentation.web_router import create_inventory_web_router
+from inventory.wiring import is_fishing_enabled
+
 
 API_PREFIX = "/v1"
 
@@ -72,13 +85,25 @@ register_auth_exception_handlers(app)
 register_web_auth_handlers(app)
 
 # 도메인 라우터는 /auth 등의 경로를 선언하고 앱에 직접 등록할 때 공통 버전을 적용한다.
+
+# 도메인: 인증
 app.include_router(auth_router, prefix=API_PREFIX)
-app.include_router(create_user_router(get_current_user_id), prefix=API_PREFIX)
-app.include_router(inventory_router, prefix=API_PREFIX)
 app.include_router(auth_web_router)
+
+# 도메인: 유저
+app.include_router(create_user_router(get_current_user_id), prefix=API_PREFIX)
+app.include_router(create_user_web_router(get_current_web_user_id))
+
+# 도메인: 인벤토리
+app.include_router(inventory_router, prefix=API_PREFIX)
+if is_fishing_enabled():
+    app.include_router(fishing_router, prefix=API_PREFIX)
+app.include_router(create_inventory_web_router(get_current_web_user_id))
+
+# 관리자 화면
 app.include_router(create_admin_router(get_inventory_service))
 app.include_router(create_member_admin_router(get_current_web_admin_id, get_member_admin_service))
-app.include_router(create_user_web_router(get_current_web_user_id))
+
 
 
 @app.get("/health")
