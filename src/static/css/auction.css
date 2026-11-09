@@ -97,3 +97,192 @@ body.embed .main-content {
   gap: 16px;
   margin-top: 14px;
 }
+
+/* 경매 상세: 진행 바 (남은 시간만큼 채워져 줄어든다, 점은 남은 3:00·1:00·0:00) */
+.timebar {
+  position: relative;
+  height: 16px;
+  margin: 4px 8px 0;
+  background: var(--slot-in);
+  border: var(--px) solid var(--outline);
+}
+
+.timebar-fill {
+  height: 100%;
+  background: var(--green);
+  transition: width .4s;
+}
+
+.timebar.urgent .timebar-fill {
+  background: var(--red);
+}
+
+.timebar-dot {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  background: var(--text);
+  border: 2px solid var(--outline);
+  border-radius: 50%;
+}
+
+.timebar-dot.passed {
+  background: var(--steel);
+}
+
+.timebar-labels {
+  position: relative;
+  height: 18px;
+  margin: 2px 8px 10px;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.timebar-labels li {
+  position: absolute;
+  transform: translateX(-50%);
+}
+
+.timebar-labels li:first-child {
+  transform: translateX(-50%);
+}
+
+/* 무대: 경매사, 아이템 카드, 1등 */
+.stage {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 14px 8px 8px;
+}
+
+.stage-npc {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.stage-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 18px;
+  text-align: center;
+  background: var(--night);
+  border: var(--px) solid var(--outline);
+}
+
+.stage-card h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.stage-price {
+  color: var(--gold);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.tag.lead {
+  background: var(--gold);
+  color: var(--outline);
+}
+
+.side .panel + .panel {
+  margin-top: 16px;
+}
+
+.rules ol {
+  margin: 0;
+  padding-left: 20px;
+}
+
+/* 결과 배너 (낙찰, 유찰, 취소, 대기) */
+.banner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin: 8px auto;
+  padding: 10px 24px;
+  max-width: 420px;
+  text-align: center;
+  background: var(--steel);
+  color: var(--outline);
+  border: var(--px) solid var(--outline);
+}
+
+.banner strong {
+  font-size: 22px;
+}
+
+.banner.sold {
+  background: var(--gold);
+  animation: banner-pop .5s ease-out;
+}
+
+.banner.queued {
+  background: #2e5f8f;
+  color: var(--text);
+}
+
+.banner.fail,
+.banner.cancel {
+  background: var(--steel);
+}
+
+@keyframes banner-pop {
+  0% { transform: scale(.6); opacity: 0; }
+  70% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+/* 낙찰 이펙트: 위에서 떨어지는 조각 (CSS만 사용) */
+.confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.confetti i {
+  position: absolute;
+  top: -8px;
+  width: 8px;
+  height: 8px;
+  background: var(--pink);
+  animation: confetti-fall 1.8s ease-in infinite;
+}
+
+.confetti i:nth-child(1) { left: 5%; animation-delay: 0s; }
+.confetti i:nth-child(2) { left: 15%; animation-delay: .4s; background: var(--water); }
+.confetti i:nth-child(3) { left: 25%; animation-delay: .8s; background: var(--green); }
+.confetti i:nth-child(4) { left: 35%; animation-delay: .2s; }
+.confetti i:nth-child(5) { left: 45%; animation-delay: .6s; background: var(--water); }
+.confetti i:nth-child(6) { left: 55%; animation-delay: 1s; background: var(--green); }
+.confetti i:nth-child(7) { left: 65%; animation-delay: .3s; }
+.confetti i:nth-child(8) { left: 75%; animation-delay: .7s; background: var(--water); }
+.confetti i:nth-child(9) { left: 85%; animation-delay: 1.1s; background: var(--green); }
+.confetti i:nth-child(10) { left: 95%; animation-delay: .5s; }
+
+@keyframes confetti-fall {
+  0% { transform: translateY(0) rotate(0); opacity: 1; }
+  100% { transform: translateY(90px) rotate(240deg); opacity: 0; }
+}
+
+/* 시스템에서 "동작 줄이기"를 켠 사람에게는 움직임을 끈다 */
+@media (prefers-reduced-motion: reduce) {
+  .banner.sold { animation: none; }
+  .confetti { display: none; }
+  .timebar-fill { transition: none; }
+}

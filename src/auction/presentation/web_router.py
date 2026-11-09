@@ -12,16 +12,17 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Path, Query, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auction.presentation.dependencies import ListingServiceDep
+from auction.domain.listings.entities import ListingStatus
+from auction.presentation.dependencies import ListingServiceDep, TradeServiceDep
 from auction.presentation.web_dependencies import get_inventory_reader, get_user_gateway, read_balance
-from auction.presentation.web_views import UNKNOWN_ITEM, card_view, item_view, list_url
+from auction.presentation.web_views import UNKNOWN_ITEM, card_view, detail_view, item_view, list_url, notice_text
 from auction.wiring import PAGE_SIZE
 from database import get_db
-from shared.core.exceptions import AppError
+from shared.core.exceptions import AppError, NotFoundError
 
 
 # 모든 화면이 공통으로 쓰는 요청 정보
@@ -51,6 +52,49 @@ async def load_item(inventory, inventory_item_id: int):
         return item_view(await inventory.get_item(inventory_item_id))
     except AppError:
         return UNKNOWN_ITEM
+
+
+# 없는 매물과 남의 대기 매물은 같은 화면(404)으로 보여 준다 (존재 여부를 알려 주지 않는다)
+def not_found_response(request: Request, ctx: PageContext):
+    return render(request, 'auction/not_found.html', ctx.base(), status_code=404)
+
+
+# 매물 상세 화면을 그린다. 입찰·취소가 실패했을 때 같은 화면에 오류를 얹어 다시 그리는 데도 쓴다
+async def detail_response(
+    request: Request, ctx: PageContext, listing_id: int,
+    service, trades, users, inventory,
+    *, notice: str | None = None, error: str | None = None, status_code: int = 200,
+):
+    try:
+        listing = await service.get_listing_detail(listing_id)
+    except NotFoundError:
+        return not_found_response(request, ctx)
+    # 대기 매물은 공개 전이라 판매자에게만 보인다
+    if listing.status == ListingStatus.QUEUED and listing.seller_id != ctx.user_id:
+        return not_found_response(request, ctx)
+
+    now = datetime.now(timezone.utc)
+    winner_id = listing.current_bidder_id if listing.status == ListingStatus.SOLD else None
+    names = await users.get_display_names([listing.seller_id] + ([winner_id] if winner_id else []))
+
+    # 입찰 제한 상태는 입찰할 수 있는 사람에게만 보여 준다 (제한 중에도 조회는 허용)
+    blocked_seconds = None
+    if listing.status == ListingStatus.BIDDING and listing.seller_id != ctx.user_id:
+        try:
+            state = await trades.get_bid_limit_status(ctx.user_id, now)
+            blocked_seconds = int(state.remaining.total_seconds()) if state.is_blocked else None
+        except AppError:
+            blocked_seconds = None
+
+    view = detail_view(
+        listing, ctx.user_id, now,
+        await load_item(inventory, listing.inventory_item_id),
+        names.get(listing.seller_id, '알 수 없음'),
+        names.get(winner_id, '알 수 없음') if winner_id else '',
+        blocked_seconds,
+        ctx.embed,
+    )
+    return render(request, 'auction/detail.html', {**ctx.base(), 'd': view, 'notice': notice, 'error': error}, status_code)
 
 
 def create_auction_web_router(
@@ -105,6 +149,24 @@ def create_auction_web_router(
             'prev_url': list_url(page - 1, ctx.embed),
             'next_url': list_url(page + 1, ctx.embed),
         })
+    # endregion
+
+    # region [Claude] 경매 상세 (진행, 낙찰, 유찰, 취소, 대기 모두 이 화면)
+    # {listing_id:int}는 숫자만 받아서 /auctions/new 같은 고정 주소와 겹치지 않는다
+    @router.get('/auctions/{listing_id:int}', response_class=HTMLResponse)
+    async def get_auction_detail_page(
+        request: Request,
+        service: ListingServiceDep,
+        trades: TradeServiceDep,
+        listing_id: int = Path(ge=1),
+        users=Depends(get_user_gateway),
+        inventory=Depends(get_inventory_reader),
+        ok: str | None = None,
+        ctx: PageContext = Depends(page_context),
+    ):
+        return await detail_response(
+            request, ctx, listing_id, service, trades, users, inventory, notice=notice_text(ok),
+        )
     # endregion
 
     return router

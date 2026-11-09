@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from urllib.parse import urlencode
 
-from auction.domain.listings.entities import Listing
+from auction.domain.listings.entities import AUCTION_DURATION, Listing, ListingStatus
 
 
 # region [Claude] 주소 만들기
@@ -155,5 +155,182 @@ def card_view(listing: Listing, item: ItemView, seller_name: str, now: datetime,
         remaining_seconds=seconds,
         remaining_text=format_clock(seconds),
         urgent=seconds <= URGENT_SECONDS,
+    )
+# endregion
+
+
+# region [Claude] 경매 상세
+STATUS_LABELS = {
+    ListingStatus.BIDDING: '입찰 중',
+    ListingStatus.QUEUED: '대기 중',
+    ListingStatus.SOLD: '낙찰',
+    ListingStatus.FAILED: '유찰',
+    ListingStatus.CANCELLED: '취소',
+}
+
+# 진행 바에 점을 찍는 중요한 지점 (남은 시간, 초): 절반, 마감 임박, 마감
+TIMEBAR_MARKS = (180, 60, 0)
+
+
+@dataclass(frozen=True)
+class TimebarMark:
+    left: float  # 바 왼쪽 끝에서의 위치(%). 남은 시간이 이 지점이면 채워진 부분의 끝이 여기에 닿는다
+    passed: bool  # 남은 시간이 이 지점에 이르렀거나 지났는지
+    label: str
+
+
+@dataclass(frozen=True)
+class Timebar:
+    percent: float  # 채워진 부분(남은 시간 비율)
+    urgent: bool
+    remaining: int
+    total: int
+    marks: tuple[TimebarMark, ...]
+
+
+# 남은 시간(초)으로 진행 바를 만든다. 바는 남은 시간만큼 채워져 점점 줄어든다
+def timebar_view(remaining_seconds: int) -> Timebar:
+    total = int(AUCTION_DURATION.total_seconds())
+    remaining = min(max(remaining_seconds, 0), total)
+    marks = tuple(
+        TimebarMark(left=round(mark / total * 100, 2), passed=remaining <= mark, label=format_clock(mark))
+        for mark in TIMEBAR_MARKS
+    )
+    return Timebar(
+        percent=round(remaining / total * 100, 2),
+        urgent=remaining <= URGENT_SECONDS,
+        remaining=remaining,
+        total=total,
+        marks=marks,
+    )
+
+
+# 결과 배너 (낙찰, 유찰, 취소, 대기). 입찰 중에는 없다
+@dataclass(frozen=True)
+class Banner:
+    kind: str  # 'sold', 'fail', 'cancel', 'queued'
+    title: str
+    sub: str
+
+
+def banner_view(listing: Listing, viewer_id: int, winner_name: str) -> Banner | None:
+    if listing.status == ListingStatus.SOLD:
+        price = f'{listing.current_bid_amount:,}'
+        if listing.current_bidder_id == viewer_id:
+            return Banner('sold', '축하해요, 낙찰!', f'{price} GOLD · 아이템이 가방으로 들어갔어요')
+        if listing.seller_id == viewer_id:
+            return Banner('sold', '팔렸어요!', f'{price} GOLD에 {winner_name}님이 낙찰받았어요')
+        return Banner('sold', f'낙찰! {winner_name}', f'{price} GOLD에 낙찰됐어요')
+    if listing.status == ListingStatus.FAILED:
+        return Banner('fail', '유찰…', '입찰자가 없어서 아이템이 판매자에게 돌아갔어요')
+    if listing.status == ListingStatus.CANCELLED:
+        return Banner('cancel', '경매 취소', '판매자가 경매를 취소했어요')
+    if listing.status == ListingStatus.QUEUED:
+        return Banner('queued', '대기 중', '같은 아이템이 경매 중이라 순서를 기다려요')
+    return None
+
+
+# 무대에 서는 1등(입찰 중) 또는 낙찰자(낙찰). 입찰 중에는 익명 별명, 내가 1등이면 "나"
+@dataclass(frozen=True)
+class Leader:
+    sprite: int
+    label: str
+    badge: str
+    amount: int
+
+
+def leader_view(listing: Listing, viewer_id: int, winner_name: str) -> Leader | None:
+    if not listing.has_bidder() or listing.status not in (ListingStatus.BIDDING, ListingStatus.SOLD):
+        return None
+    sprite, alias = alias_for(listing.id, listing.current_bid_amount)
+    is_me = listing.current_bidder_id == viewer_id
+    if listing.status == ListingStatus.SOLD:
+        return Leader(sprite, '나' if is_me else winner_name, '낙찰!', listing.current_bid_amount)
+    return Leader(sprite, '나' if is_me else alias, '1등', listing.current_bid_amount)
+
+
+@dataclass(frozen=True)
+class DetailView:
+    id: int
+    item: ItemView
+    status: str
+    status_label: str
+    seller_name: str
+    price: int
+    price_label: str
+    has_bid: bool
+    min_bid: int  # 이 금액 이상으로 입찰해야 한다
+    ends_at: datetime | None
+    remaining_text: str
+    timebar: Timebar | None
+    leader: Leader | None
+    banner: Banner | None
+    message: str  # 입찰 패널의 내 상태 안내
+    can_bid: bool
+    can_cancel: bool
+    is_seller: bool
+    bid_action: str
+    cancel_action: str
+    list_href: str
+
+
+def detail_view(
+    listing: Listing,
+    viewer_id: int,
+    now: datetime,
+    item: ItemView,
+    seller_name: str,
+    winner_name: str,
+    blocked_seconds: int | None,
+    embed: bool = False,
+) -> DetailView:
+    bidding = listing.status == ListingStatus.BIDDING
+    is_seller = listing.seller_id == viewer_id
+    is_leader = listing.current_bidder_id == viewer_id
+
+    remaining = listing.remaining(now)
+    seconds = int(remaining.total_seconds()) if remaining is not None else 0
+    blocked = bidding and blocked_seconds is not None and blocked_seconds > 0
+
+    if not bidding:
+        message = ''
+    elif is_seller:
+        message = '내 매물이에요. 입찰할 수 없어요.'
+    elif is_leader:
+        message = '지금 내가 1등이에요! 다른 사람이 더 높게 부르면 밀려나요.'
+    elif blocked:
+        message = f'연속 낙찰 제한 중이라 입찰할 수 없어요. (남은 시간 {format_clock(blocked_seconds)})'
+    elif listing.has_bidder():
+        message = '지금은 다른 입찰자가 1등이에요.'
+    else:
+        message = '아직 입찰이 없어요. 첫 입찰을 해 보세요!'
+
+    if listing.status == ListingStatus.SOLD:
+        price_label = '낙찰가'
+    else:
+        price_label = '현재가' if listing.has_bidder() else '시작가'
+
+    return DetailView(
+        id=listing.id,
+        item=item,
+        status=listing.status.value,
+        status_label=STATUS_LABELS[listing.status],
+        seller_name=seller_name,
+        price=listing.current_bid_amount or listing.start_price,
+        price_label=price_label,
+        has_bid=listing.has_bidder(),
+        min_bid=(listing.current_bid_amount or listing.start_price) + 1,
+        ends_at=listing.ends_at,
+        remaining_text=format_clock(seconds) if bidding else '마감',
+        timebar=timebar_view(seconds) if bidding else None,
+        leader=leader_view(listing, viewer_id, winner_name),
+        banner=banner_view(listing, viewer_id, winner_name),
+        message=message,
+        can_bid=bidding and seconds > 0 and not is_seller and not is_leader and not blocked,
+        can_cancel=listing.status == ListingStatus.QUEUED and is_seller,
+        is_seller=is_seller,
+        bid_action=bid_action(listing.id, embed),
+        cancel_action=cancel_action(listing.id, embed),
+        list_href=list_url(1, embed),
     )
 # endregion
