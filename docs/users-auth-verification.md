@@ -294,6 +294,19 @@ Swagger에서 회원가입 후 `/v1/auth/token`의 `username`에 로그인 ID를
 - 웹: [web_dependencies.py](../src/auth/presentation/web_dependencies.py)의 `get_current_web_user_id`, `get_current_web_admin_id`는 정수 ID를 반환한다. 쓰기 요청에는 Origin 검사가 필요하며 관리자 의존성에 포함되어 있다.
 - 인벤토리 API의 `CurrentUserAdapter`는 이미 인증과 현재 회원 역할에 연결되어 있다. 회원 번호 1이나 JWT의 역할 정보로 관리자 권한을 우회하지 않는다.
 
+다른 도메인에서 관리자 여부만 필요하면 [AdminRoleChecker](../src/users/application/contracts.py)의 `is_admin(user_id) -> bool`을 사용한다. ADMIN이면서 탈퇴/로그인 정지 상태가 아닌 회원은 true, 그 외와 없는 회원은 false를 반환한다. DB 조회 오류는 예외로 전파한다. 토큰과 세션 인증은 auth에서 수행한다.
+
+호출 도메인의 wiring에서 요청 세션으로 구성하여 서비스에 주입한다.
+
+```python
+from users.wiring import build_admin_role_checker
+
+checker = build_admin_role_checker(session)
+is_admin = await checker.is_admin(authenticated_user_id)
+```
+
+계약과 구현, factory는 제공되어 있으며 다른 도메인의 호출부 연결은 각 담당자가 수행한다.
+
 ### 미연동 계약과 담당자 연결 사항
 
 | 대상 | 준비된 코드 | 남은 연결 |
