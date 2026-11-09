@@ -62,3 +62,9 @@ class TokenCodec(Protocol):
 
 class Transaction(Protocol):
     async def commit(self) -> None: ...
+
+
+class RevokedSessions(Protocol):
+    def contains(self, session_id: UUID) -> bool: ...
+
+    def add(self, session_id: UUID, expires_at: datetime) -> None: ...
