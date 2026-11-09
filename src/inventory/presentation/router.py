@@ -6,11 +6,15 @@
 - 소유자 ID는 요청 값이 아니라 검증된 인증 정보에서 얻는다
 - 오류 응답은 팀 공통 핸들러가 만든다 (이 계층에서 예외를 HTTP 오류로 바꾸지 않는다)
 - GET /v1/inventory/{item_id}/events: 관리자용 아이템 이력 조회 (오래된 순, 페이지)
+- GET /v1/inventory는 응답을 보낸 뒤 접근 로그 한 줄(사용자 번호, 이번에 돌려준 건수)을 백그라운드로 남긴다
+  - 읽기 요청의 부가 기록만 백그라운드로 넘긴다. 상태를 바꾸는 일(저장, 지급, 예약 등)은 넘기지 않는다: 실패해도 사용자가 알 수 없고, 응답은 이미 성공으로 나간 뒤이기 때문이다
+  - 토큰, 필터 값, 아이템 이름은 로그에 넣지 않는다
 """
 
+import logging
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Path, Query
+from fastapi import APIRouter, Depends, Path, Query, BackgroundTasks
 
 from inventory.application.contracts import CurrentUser
 from inventory.application.service import InventoryService
@@ -27,6 +31,16 @@ from inventory.presentation.schemas import (
     PageResponse,
 )
 
+logger = logging.getLogger(__name__)
+
+
+# 내 인벤토리를 조회한 기록 (응답을 보낸 뒤 실행)
+# 읽기 요청의 sub 기록이므로 실패해도 영향도 낮음
+# 토큰, 필터 값, 아이템 이름은 남지 않는다
+def _log_inventory_access(user_id: int, count: int) -> None:
+    logger.info('inventory_viewed user_id=%s count=%s', user_id, count)
+
+
 router = APIRouter(tags=['inventory'])
 
 
@@ -34,15 +48,19 @@ router = APIRouter(tags=['inventory'])
 Status = Literal['OWNED', 'LISTED']
 Category = Literal['FISH', 'GEM', 'MISC']
 Rarity = Literal['COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY']
+InventorySort = Literal['acquired_desc', 'rarity_desc', 'name_asc']
 
 
 # 내 인벤토리 조회
 @router.get('/inventory', response_model=PageResponse[InventoryItemResponse])
 async def list_my_items(
+
+    # 기본값이 없는 매개변수는 기본값이 있는 것보다 앞에 와야 한다
+    background_tasks: BackgroundTasks,
     status: Status | None=None,
     category: Category | None=None,
     rarity: Rarity | None=None,
-    sort: Literal['acquired_desc', 'rarity_desc', 'name_asc'] = 'acquired_desc',
+    sort: InventorySort = 'acquired_desc',
     page: int = Query(1, ge=1),            # 1 이상
     size: int = Query(20, ge=1, le=100),   # 1 이상 100 이하
     user: CurrentUser = Depends(get_current_user),
@@ -51,6 +69,11 @@ async def list_my_items(
     items, total = await service.list_my_items(
         user.id, status=status, category=category, rarity=rarity, sort=sort, page=page, size=size
     )
+
+    # 응답을 보낸 뒤에 로그가 남도록 예약 (함수 없이 이름과 인자 기록)
+    background_tasks.add_task(_log_inventory_access, user.id, len(items))
+
+
     return PageResponse(
         items=[InventoryItemResponse.from_info(item) for item in items],
         page=page, size=size, total=total,
