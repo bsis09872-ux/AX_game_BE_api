@@ -66,6 +66,44 @@ class SqlAlchemyListingRepository(ListingRepository):
         models = (await self.session.scalars(statement)).all()
         return [self._to_entity(model) for model in models]
 
+    # 전달된 필터를 모두 만족하는 매물을 페이지별로 조회한다.
+    # 등록 시각 최신순으로 정렬하고, 결과를 Listing 목록으로 반환한다.
+    async def list_filtered(
+        self,
+        page: int,
+        *,
+        listing_id: int | None = None,
+        item_definition_id: int | None = None,
+        inventory_item_id: int | None = None,
+        status: ListingStatus | None = None,
+    ) -> list[Listing]:
+        if page < 1:
+            raise ValueError("페이지 번호는 1 이상이어야 합니다.")
+
+        statement = select(ListingModel)
+
+        # 값이 전달된 조건만 추가한다. 조건들은 AND로 연결된다.
+        filters = (
+            (ListingModel.id, listing_id),
+            (ListingModel.item_definition_id, item_definition_id),
+            (ListingModel.inventory_item_id, inventory_item_id),
+            (ListingModel.status, status.value if status is not None else None),
+        )
+        for column, value in filters:
+            if value is not None:
+                statement = statement.where(column == value)
+
+        # 같은 등록 시각에도 순서가 일정하도록 ID를 함께 정렬한다.
+        statement = (
+            statement
+            .order_by(ListingModel.created_at.desc(), ListingModel.id.desc())
+            .offset((page - 1) * self.page_size)
+            .limit(self.page_size)
+        )
+
+        models = (await self.session.scalars(statement)).all()
+        return [self._to_entity(model) for model in models]
+
     # [AUC-01, AUC-06] 같은 종류의 매물이 이미 공개 중인지 확인한다.
     async def exists_bidding(self, item_definition_id: int) -> bool:
         query = select(ListingModel.id).where(

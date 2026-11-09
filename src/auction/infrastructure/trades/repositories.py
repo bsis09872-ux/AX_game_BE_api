@@ -93,6 +93,40 @@ class SqlAlchemyTradeRepository(TradeRepository):
 
         return [self._to_entity(model) for model in models]
 
+        # 매물·구매자·판매자 ID 조건에 맞는 거래를 페이지별로 조회한다.
+    # 체결 시각 최신순으로 반환하며, 조회 결과가 없으면 빈 목록이다.
+    async def list_filtered(
+        self,
+        page: int,
+        *,
+        listing_id: int | None = None,
+        buyer_id: int | None = None,
+        seller_id: int | None = None,
+    ) -> list[Trade]:
+        offset = self._offset(page)
+        statement = select(TradeModel)
+
+        # 전달된 조건만 적용하며, 여러 조건은 AND로 연결한다.
+        filters = (
+            (TradeModel.listing_id, listing_id),
+            (TradeModel.buyer_id, buyer_id),
+            (TradeModel.seller_id, seller_id),
+        )
+        for column, value in filters:
+            if value is not None:
+                statement = statement.where(column == value)
+
+        # 같은 체결 시각에도 순서가 일정하도록 ID를 함께 정렬한다.
+        statement = (
+            statement
+            .order_by(TradeModel.completed_at.desc(), TradeModel.id.desc())
+            .offset(offset)
+            .limit(self.page_size)
+        )
+
+        models = (await self.session.scalars(statement)).all()
+        return [self._to_entity(model) for model in models]
+
     # [AUC-08] 제한 정책 계산에 필요한 기간 내 낙찰 시각 전체를 조회한다.
     # since·until은 UTC이며 양쪽 경계를 포함한다. 오래된 순으로 반환한다.
     # 같은 시각의 여러 거래도 각각 포함하고, 결과가 없으면 빈 리스트다.

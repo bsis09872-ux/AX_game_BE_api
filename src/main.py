@@ -27,11 +27,12 @@ from shared.item_images import image_directory
 
 # region 도메인 import: 인증
 from auth.wiring import initialize_auth
-from auth.presentation.dependencies import get_current_user_id, get_member_admin_service
+from auth.presentation.dependencies import get_current_user_id, get_member_admin_service, get_admin_auction_reader
 from auth.presentation.exception_handlers import register_auth_exception_handlers
 from auth.presentation.router import router as auth_router
 from auth.presentation.web_router import router as auth_web_router
 from auth.presentation.admin_router import create_admin_router
+from auth.presentation.admin_auction_router import create_admin_auction_router
 from auth.presentation.web_dependencies import (
     get_current_web_user_id, get_current_web_admin_id, get_web_settings, register_web_auth_handlers,
 )
@@ -68,6 +69,11 @@ import inventory.infrastructure.models  # noqa: F401
 import wallet.infrastructure.models  # noqa: F401
 import auction.infrastructure.listings.models  # noqa: F401 (임시)
 # endregion
+
+
+from auction.presentation.listings.router import router as listing_router
+from auction.presentation.trades.router import router as trade_router
+from auction.wiring import wire_auction_dependencies
 
 
 API_PREFIX = "/v1"
@@ -143,6 +149,10 @@ app.include_router(create_admin_router(get_inventory_service))
 app.include_router(create_admin_auction_router(get_admin_auction_reader))
 app.include_router(create_member_admin_router(get_current_web_admin_id, get_member_admin_service))
 # endregion
+
+wire_auction_dependencies(app, get_current_user_id)
+app.include_router(listing_router, prefix=API_PREFIX)
+app.include_router(trade_router, prefix=API_PREFIX)
 
 
 @app.get("/health")
