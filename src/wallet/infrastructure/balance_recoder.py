@@ -1,11 +1,12 @@
 """BalanceRecord 구현: 잔액 변경을 모아 두었다가 commit 성공 뒤에 로그로 남긴다.
 
-balance_log.py 규칙대로 commit 전에는 로그를 쓰지 않는다.
+infrastructure/balance_log.py 규칙대로 commit 전에는 로그를 쓰지 않는다.
 도메인이 logging()을 부르면 버퍼에만 쌓고, 호출자가 commit 성공 뒤 flush()를 부른다.
 commit이 실패하면 flush 대신 discard()로 버린다.
 """
-from wallet.application.balance_log import BalanceChange, log_balance_changes
+from wallet.domain.balance_change import BalanceChange
 from wallet.domain.service import BalanceEventType, BalanceRecord
+from wallet.infrastructure.balance_log import log_balance_changes
 
 
 class BalanceRecordImpl(BalanceRecord):

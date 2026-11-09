@@ -8,7 +8,7 @@
 """지갑 도메인 객체 (프레임워크 의존 없음)"""
 from dataclasses import dataclass
 from datetime import datetime
-from wallet.domain.exceptions import InsufficientAuthorityError, InsufficientBalanceError
+from wallet.domain.exceptions import InsufficientBalanceError
 from wallet.domain.service import BalanceEventType, BalanceRecord
 
 @dataclass

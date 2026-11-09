@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from wallet.application.balance_log import BalanceChange
+from wallet.domain.balance_change import BalanceChange
 
 
 @dataclass(frozen=True)

@@ -29,6 +29,7 @@ from auth.presentation.web_router import router as auth_web_router
 from auth.presentation.web_dependencies import (
     get_current_web_user_id, get_web_settings, register_web_auth_handlers,
 )
+from wallet.presentation.router import create_wallet_router
 
 API_PREFIX = "/v1"
 
@@ -64,6 +65,7 @@ app.include_router(auth_router, prefix=API_PREFIX)
 app.include_router(create_user_router(get_current_user_id), prefix=API_PREFIX)
 app.include_router(auth_web_router)
 app.include_router(create_user_web_router(get_current_web_user_id))
+app.include_router(create_wallet_router(get_current_user_id), prefix=API_PREFIX)
 
 
 @app.get("/health")

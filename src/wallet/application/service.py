@@ -1,9 +1,12 @@
 """지갑 유스케이스 (WALL-01, 04, 05, 06, 07, 08)
 
-- 서비스는 commit하지 않는다. 조회 API는 commit이 필요 없고,
-  내부 함수(06·07·08)는 호출한 쪽(AUTH-01, AUCT-01, AUCT-04)의 트랜잭션 안에서 실행된다.
-- 잔액 변경 로그는 결과의 balance_changes로 돌려주고, 호출자가 commit 성공 뒤에 남긴다.
+- 서비스는 commit하지 않는다. 라우터나 내부 함수를 호출한 쪽(AUCT-01, AUCT-04)이 commit한다.
+- WALL-06 지연 생성: 지갑이 필요한 시점(조회·입찰 확인·정산·충전)에 없으면 ensure_wallet이 만든다.
+  가입 흐름(auth)을 고치지 않고 지갑 안에서 처리하기 위한 방식이다.
+- 잔액 변경은 logger(BalanceRecord 계약)에 쌓이고, 호출자가 commit 성공 뒤 logger.flush()로 남긴다.
+  commit이 실패하면 logger.discard()로 버린다.
 - 금액 판단은 domain/rules.py가 하고, 여기서는 조회·잠금·저장 순서만 조율한다.
+- 이 계층은 domain만 import한다. 구현체(DB, 로그, users 조회)는 wiring이 생성자로 넣어 준다.
 """
 from wallet.application.dto import WalletView
 from wallet.domain import rules
@@ -26,8 +29,25 @@ class WalletService:
 
         return wallet
 
+    async def ensure_wallet(self, user_id: int) -> None:
+        """WALL-06 지연 생성: 지갑이 없으면 초기 골드로 만든다. 처음 만든 경우에만 INITIAL_GRANT 기록.
+
+        여러 번 호출해도 지급은 한 번뿐이다. 회원이 없으면 WalletNotFoundError.
+        commit은 호출자가 하고, commit 성공 뒤 logger.flush()로 로그를 남긴다.
+        """
+        created = await self.wallet_repo.create_if_absent(user_id, rules.INITIAL_BALANCE)
+        if created is not None:
+            self.logger.logging(user_id, 0, created.balance.value, "INITIAL_GRANT")
+
+    async def _ensure_wallets(self, user_ids: list[int]) -> None:
+        # lock과 같은 user_id 오름차순으로 만들어 잠금 순서를 맞춘다
+        for user_id in sorted(set(user_ids)):
+            await self.ensure_wallet(user_id)
+
     async def get_my_wallet(self, user_id: int) -> WalletView:
-        """WALL-01 내 지갑 조회: 총잔액 + 예약 합계 + 사용 가능 금액"""
+        """WALL-01 내 지갑 조회: 총잔액 + 예약 합계 + 사용 가능 금액
+        처음 조회면 지갑을 만들므로 호출자(라우터)가 commit한다."""
+        await self.ensure_wallet(user_id)
         wallet = await self.get_wallet(user_id)
         held = await self.wallet_repo.held_amount(user_id)
         return WalletView(
@@ -66,6 +86,7 @@ class WalletService:
         통과하면 listings의 current_bidder_id·current_bid_amount 갱신은 경매 쪽이 한다.
         실제 차감은 낙찰 정산(WALL-08)에서 한다.
         """
+        await self._ensure_wallets([bidder_id])
         locked = await self.wallet_repo.lock([bidder_id])
         wallet = locked.get(bidder_id)
         if wallet is None:
@@ -92,6 +113,7 @@ class WalletService:
         if buyer_id == seller_id:
             raise ValueError("판매자와 구매자가 같습니다.")
 
+        await self._ensure_wallets([buyer_id, seller_id])
         # 두 지갑을 user_id 오름차순으로 잠가 교차 정산(A↔B) 데드락을 피한다
         locked = await self.wallet_repo.lock([buyer_id, seller_id])
         buyer, seller = locked.get(buyer_id), locked.get(seller_id)
@@ -107,10 +129,12 @@ class WalletService:
         return amounts
 
 
-    async def add_balance(self, user_id: int, amount: int):
-        if not self.roleCheck.is_admin():
-            raise InsufficientAuthorityError
-            
+    async def add_balance(self, actor_id: int, user_id: int, amount: int):
+        """관리자 충전. actor_id(요청자)가 관리자가 아니면 403, user_id(대상)가 없는 회원이면 404."""
+        if not await self.roleCheck.is_admin(actor_id):
+            raise InsufficientAuthorityError()
+
+        await self.ensure_wallet(user_id)  # 없는 회원이면 여기서 WalletNotFoundError(404)
         wallet = await self.get_wallet(user_id)
         wallet.add_balance(amount, self.logger)
         await self.wallet_repo.save(user_id, wallet.balance.value)

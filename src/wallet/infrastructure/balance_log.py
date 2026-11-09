@@ -9,31 +9,17 @@
 반드시 DB commit이 성공한 뒤에 호출한다. commit 전에 남기면
 롤백된 변경이 확정된 것처럼 기록된다. 이 로그는 정산 성공 판정이나
 중복 차감 방지의 기준이 아니다(그 기준은 DB의 trades UNIQUE와 매물 상태).
+
+로그 출력은 바깥 세계(로깅 시스템)와 맞닿는 일이라 infrastructure에 둔다.
+기록할 내용(BalanceChange)은 도메인이 정한다.
 """
 import logging
 import uuid
-from dataclasses import dataclass
 from datetime import datetime, timezone
 
-# 종류 목록은 도메인(BalanceRecord 계약)이 정한다
-from wallet.domain.service import BalanceEventType
+from wallet.domain.balance_change import BalanceChange
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True)
-class BalanceChange:
-    """서비스가 트랜잭션 안에서 만들고, 호출자가 commit 뒤에 기록한다."""
-    event_type: BalanceEventType
-    user_id: int
-    balance_before: int
-    amount: int  # 증가는 양수, 감소는 음수
-    listing_id: int | None = None
-    trade_id: int | None = None
-
-    @property
-    def balance_after(self) -> int:
-        return self.balance_before + self.amount
 
 
 def _v(value: object) -> str:
