@@ -25,6 +25,13 @@ from shared.item_images import image_directory
 # endregion
 
 
+# region ORM 모델 등록 import (create_all이 테이블을 만들도록 Base.metadata에 등록)
+import users.infrastructure.models  # noqa: F401
+import wallet.infrastructure.models  # noqa: F401
+import auction.infrastructure.listings.models  # noqa: F401  (지갑 예약금 조회가 listings를 읽는다)
+# endregion
+
+
 # region 도메인 import: 인증
 from auth.wiring import initialize_auth
 from auth.presentation.dependencies import get_current_user_id, get_member_admin_service
@@ -52,6 +59,11 @@ from inventory.presentation.dependencies import get_inventory_service
 from inventory.presentation.fishing_router import router as fishing_router
 from inventory.presentation.web_router import create_inventory_web_router
 from inventory.wiring import is_fishing_enabled
+# endregion
+
+
+# region 도메인 import: 지갑
+from wallet.presentation.router import create_wallet_router
 # endregion
 
 
@@ -115,6 +127,11 @@ app.include_router(inventory_router, prefix=API_PREFIX)
 if is_fishing_enabled():
     app.include_router(fishing_router, prefix=API_PREFIX)
 app.include_router(create_inventory_web_router(get_current_web_user_id))
+# endregion
+
+
+# region 도메인 라우터: 지갑
+app.include_router(create_wallet_router(get_current_user_id), prefix=API_PREFIX)
 # endregion
 
 
