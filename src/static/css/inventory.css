@@ -24,6 +24,11 @@ tr:target {
   font-size: 14px;
 }
 
+/* 상세 표의 머리글도 값과 같은 14px로 맞춘다 */
+.item-detail-info th {
+  font-size: 14px;
+}
+
 /* 페이지 아래 링크 줄: 왼쪽에는 돌아가기, 오른쪽(.to-right)에는 도감으로 가는 링크 */
 .page-links {
   display: flex;
@@ -131,4 +136,28 @@ tr:target {
 
 .item-icon img {
   display: block;
+}
+
+/* 상세 패널의 안쪽 여백: 그림과 표 사이 간격(32px)과 같게 해서 테두리에 붙어 보이지 않게 한다 */
+.item-detail-panel {
+  padding: 32px;
+}
+
+/* 아이템 상세: 왼쪽에 큰 그림, 오른쪽에 항목 표 (좁은 화면에서는 위아래로 쌓인다) */
+.item-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+.item-detail .item-icon {
+  margin-right: 0;
+  border-width: 3px;
+}
+
+/* 표를 div로 한 번 감싸는 이유: table은 테마에서 width: 100%라서 바로 옆에 두면 그림 아래로 밀려난다 */
+.item-detail-info {
+  flex: 1 1 320px;
+  min-width: 0;
 }
