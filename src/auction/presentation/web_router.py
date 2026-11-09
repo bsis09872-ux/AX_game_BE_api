@@ -12,17 +12,19 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, Path, Query, Request
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Depends, Form, Path, Query, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auction.domain.listings.entities import ListingStatus
 from auction.presentation.dependencies import ListingServiceDep, TradeServiceDep
 from auction.presentation.web_dependencies import get_inventory_reader, get_user_gateway, read_balance
-from auction.presentation.web_views import UNKNOWN_ITEM, card_view, detail_view, item_view, list_url, notice_text
+from auction.presentation.web_views import (
+    UNKNOWN_ITEM, card_view, detail_url, detail_view, item_view, list_url, new_view, notice_text, parse_number,
+)
 from auction.wiring import PAGE_SIZE
 from database import get_db
-from shared.core.exceptions import AppError, NotFoundError
+from shared.core.exceptions import AppError, ConflictError, ForbiddenError, NotFoundError
 
 
 # 모든 화면이 공통으로 쓰는 요청 정보
@@ -55,8 +57,32 @@ async def load_item(inventory, inventory_item_id: int):
 
 
 # 없는 매물과 남의 대기 매물은 같은 화면(404)으로 보여 준다 (존재 여부를 알려 주지 않는다)
-def not_found_response(request: Request, ctx: PageContext):
-    return render(request, 'auction/not_found.html', ctx.base(), status_code=404)
+def not_found_response(request: Request, ctx: PageContext, message: str | None = None):
+    return render(request, 'auction/not_found.html', {**ctx.base(), 'message': message}, status_code=404)
+
+
+# 서비스가 던진 오류를 화면의 상태 코드로 바꾼다 (메시지는 오류가 가진 한국어 문구를 그대로 보여 준다)
+def error_status(exc: AppError) -> int:
+    if isinstance(exc, ConflictError):
+        return 409
+    if isinstance(exc, ForbiddenError):
+        return 403
+    return 400
+
+
+# 경매 등록 화면을 그린다. 등록이 실패했을 때 같은 화면에 오류를 얹어 다시 그리는 데도 쓴다
+async def new_response(
+    request: Request, ctx: PageContext, inventory, item_id: int | None,
+    *, error: str | None = None, status_code: int = 200,
+):
+    if item_id is None:
+        return not_found_response(request, ctx, '올릴 아이템을 가방에서 골라 주세요.')
+    try:
+        info = await inventory.get_my_item(ctx.user_id, item_id)  # 내 아이템만 읽는다
+    except AppError:
+        return not_found_response(request, ctx, '아이템을 찾을 수 없어요.')
+    view = new_view(info, datetime.now(timezone.utc), ctx.embed)
+    return render(request, 'auction/new.html', {**ctx.base(), 'n': view, 'error': error}, status_code)
 
 
 # 매물 상세 화면을 그린다. 입찰·취소가 실패했을 때 같은 화면에 오류를 얹어 다시 그리는 데도 쓴다
@@ -167,6 +193,38 @@ def create_auction_web_router(
         return await detail_response(
             request, ctx, listing_id, service, trades, users, inventory, notice=notice_text(ok),
         )
+    # endregion
+
+    # region [Claude] 경매 등록 (낚시 팝업의 "경매장에 올리기", 가방의 "경매 시작")
+    @router.get('/auctions/new', response_class=HTMLResponse)
+    async def get_auction_new_page(
+        request: Request,
+        inventory=Depends(get_inventory_reader),
+        item: int | None = Query(None, ge=1),
+        ctx: PageContext = Depends(page_context),
+    ):
+        return await new_response(request, ctx, inventory, item)
+
+    @router.post('/auctions/new', response_class=HTMLResponse, dependencies=[Depends(require_origin)])
+    async def post_auction_new(
+        request: Request,
+        service: ListingServiceDep,
+        inventory=Depends(get_inventory_reader),
+        session: AsyncSession = Depends(get_db),
+        item_id: str = Form(''),
+        ctx: PageContext = Depends(page_context),
+    ):
+        number = parse_number(item_id)
+        if number is None:
+            return not_found_response(request, ctx, '아이템을 찾을 수 없어요.')
+        try:
+            listing = await service.register(ctx.user_id, number, datetime.now(timezone.utc))
+        except AppError as exc:
+            # 서비스가 저장하던 변경을 되돌리고, 같은 화면에 이유를 보여 준다
+            await session.rollback()
+            return await new_response(request, ctx, inventory, number, error=exc.message, status_code=error_status(exc))
+        code = 'started' if listing.status == ListingStatus.BIDDING else 'queued'
+        return RedirectResponse(detail_url(listing.id, ctx.embed, ok=code), status_code=303)
     # endregion
 
     return router

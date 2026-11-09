@@ -7,7 +7,7 @@
 """
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.parse import urlencode
 
 from auction.domain.listings.entities import AUCTION_DURATION, Listing, ListingStatus
@@ -332,5 +332,52 @@ def detail_view(
         bid_action=bid_action(listing.id, embed),
         cancel_action=cancel_action(listing.id, embed),
         list_href=list_url(1, embed),
+    )
+# endregion
+
+
+# region [Claude] 경매 등록
+# 금액·번호 입력을 숫자로 바꾼다. 숫자가 아니거나 0 이하이거나 너무 크면 None
+MAX_INPUT_NUMBER = 10**12
+
+
+def parse_number(text: str) -> int | None:
+    cleaned = (text or '').strip().replace(',', '')
+    if not cleaned.isdigit():
+        return None
+    value = int(cleaned)
+    return value if 1 <= value <= MAX_INPUT_NUMBER else None
+
+
+@dataclass(frozen=True)
+class NewView:
+    item_id: int
+    item: ItemView
+    start_price: int  # 아이템 카탈로그의 시작가. 사용자가 바꿀 수 없다
+    can_register: bool
+    reason: str  # 올릴 수 없을 때의 이유
+    action: str
+    back_href: str
+
+
+# 인벤토리의 아이템 정보(ItemInfo)로 등록 화면에 보여 줄 값을 만든다
+def new_view(info, now: datetime, embed: bool = False) -> NewView:
+    reason = ''
+    resale_at = info.resale_available_at
+    if info.status != 'OWNED':
+        reason = '이미 경매에 올라가 있는 아이템이에요.'
+    elif resale_at is not None:
+        # 시각이 시간대 없이 저장돼 있어도 UTC로 보고 비교한다
+        aware = resale_at if resale_at.tzinfo is not None else resale_at.replace(tzinfo=timezone.utc)
+        if aware > now:
+            reason = f'아직 다시 팔 수 없어요. ({aware.strftime("%Y-%m-%d %H:%M:%S")} UTC 이후)'
+    return NewView(
+        item_id=info.id,
+        item=item_view(info),
+        start_price=info.definition.start_price,
+        can_register=not reason,
+        reason=reason,
+        action=register_action(embed),
+        back_href=list_url(1, embed),
     )
 # endregion
