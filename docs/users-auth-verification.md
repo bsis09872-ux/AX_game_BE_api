@@ -50,25 +50,25 @@ Copy-Item .env.example .env.local
 uv run python -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 
-출력된 무작위 값을 자신의 `JWT_SECRET_KEY`에 넣는다. `.env.example`에 없는 `REFRESH_TTL_SECONDS`와 `WEB_ORIGIN`은 `.env.local`에 추가한다.
+출력된 무작위 값을 자신의 `JWT_SECRET_KEY`에 넣는다.
 
 ```dotenv
 DATABASE_URL=postgresql+asyncpg://postgres:CHANGE_ME@127.0.0.1:5432/ax_game
 JWT_SECRET_KEY=여기에_각자_생성한_무작위_값
 JWT_TTL_SECONDS=1800
-REFRESH_TTL_SECONDS=604800
+REFRESH_TTL_SECONDS=1800
 WEB_ORIGIN=http://127.0.0.1:8000
 ITEM_IMAGE_DIR=.local/item-images
 ```
 
 - `DATABASE_URL`: 자신이 만든 DB의 사용자, 비밀번호, 호스트 포트와 DB 이름을 사용한다. 비밀번호에 URL 예약 문자가 있으면 URL 인코딩한다.
 - `JWT_SECRET_KEY`: 32바이트 이상의 무작위 값이다. 저장소나 PR에 올리지 않는다.
-- `JWT_TTL_SECONDS`: Access token 수명, 60~86400초.
-- `REFRESH_TTL_SECONDS`: 로그인 세션의 최종 수명, 30~2592000초. 계속 사용하거나 갱신해도 이 세션의 종료 시각은 연장되지 않는다.
+- `JWT_TTL_SECONDS`: Access token 수명, 기본 1800초, 허용 범위 60~86400초.
+- `REFRESH_TTL_SECONDS`: 로그인 세션의 최종 수명, 기본 1800초, 허용 범위 30~2592000초. 계속 사용하거나 갱신해도 이 세션의 종료 시각은 연장되지 않는다.
 - `WEB_ORIGIN`: 실제 브라우저 접속 주소와 포트까지 일치해야 한다. 위 설정이면 `localhost` 대신 `127.0.0.1`로 접속한다.
 - `ITEM_IMAGE_DIR`: 업로드 이미지 저장 경로다. 상대 경로는 저장소 루트 기준이며 배포 시 영속 저장소를 지정해야 한다. DB에는 이미지 키가 저장되므로 DB만 복사하면 업로드 이미지는 복구되지 않는다.
 
-프로세스에 이미 지정된 환경변수가 파일보다 우선하며, 파일은 `.env.local`, `.env` 순으로 읽는다. 설정을 변경하면 서버를 재시작하고 새로 로그인한다. 기존 로그인 세션에는 생성 당시 만료 시각이 남는다.
+프로세스에 이미 지정된 환경변수가 파일보다 우선하며, 파일은 `.env.local`, `.env` 순으로 읽는다. 기존 설정값은 기본값보다 우선한다. 설정을 변경하면 서버를 재시작하고 새로 로그인한다. 기존 로그인 세션에는 생성 당시 만료 시각이 남는다.
 
 ## 3. 서버 실행
 
@@ -338,6 +338,8 @@ is_admin = await checker.is_admin(authenticated_user_id)
 관리자 내부 이동은 서버 HTML에서 본문을 가져와 교체한다. 배경 캐러셀, 헤더와 메뉴 DOM은 유지하고 제목과 선택 메뉴를 갱신한다. 본문별 이벤트를 다시 연결하며 이전 본문의 조회 요청은 중단한다. 이미 전송한 저장 요청은 취소하지 않고, 떠난 화면의 응답이 새 화면을 변경하지 않게 한다. CSV 다운로드와 로그아웃은 기존 동작을 유지한다.
 
 `scrollbar-gutter: stable`로 세로 스크롤바 공간을 확보한다. 미지원 브라우저에서는 `overflow-y: scroll`을 사용한다.
+
+본문 바로가기 대상의 전체 테두리는 숨기고, 링크와 입력창, 버튼의 키보드 포커스 표시는 유지한다.
 
 2026-11-09 Chromium에서 실제 템플릿과 정적 파일에 격리된 테스트 응답을 연결해 검증했다. 1280×900에서 공간 고정을 끄면 홈에서 아이템 생성 화면으로 이동할 때 본문의 가로 좌표가 7.5px 바뀌었고, 적용 후에는 0px였다. 캐러셀 DOM과 애니메이션 객체도 유지됐다.
 
