@@ -23,37 +23,6 @@ class DefinitionInfo:
     weight: int
     fishable: bool
 
-# 데코레이션이 없다면?
-# class DefinitionInfo:
-#     # 1. 생성자: 값을 받아 저장한다 (@dataclass가 자동으로 만들어 주는 것)
-#     def __init__(self, id: int, name: str, start_price: int) -> None:
-#         # frozen이라서 self.id = id 처럼 직접 대입하면 안 된다 (아래 __setattr__이 막는다)
-#         # 그래서 object의 대입 방법을 써서 값을 넣는다
-#         object.__setattr__(self, 'id', id)
-#         object.__setattr__(self, 'name', name)
-#         object.__setattr__(self, 'start_price', start_price)
-
-#     # 2. frozen: 만든 뒤 값을 바꾸려 하면 오류를 낸다
-#     def __setattr__(self, key, value):
-#         raise AttributeError(f'{key}는 바꿀 수 없다 (frozen)')
-
-#     def __delattr__(self, key):
-#         raise AttributeError(f'{key}는 지울 수 없다 (frozen)')
-
-#     # 3. 출력 모양: print(info) 했을 때 보이는 글자
-#     def __repr__(self) -> str:
-#         return f'DefinitionInfo(id={self.id!r}, name={self.name!r}, start_price={self.start_price!r})'
-
-#     # 4. 같은 값이면 같다고 본다 (==)
-#     def __eq__(self, other) -> bool:
-#         if other.__class__ is not self.__class__:
-#             return NotImplemented
-#         return (self.id, self.name, self.start_price) == (other.id, other.name, other.start_price)
-
-#     # 5. 딕셔너리 키나 set에 넣을 수 있게 한다 (frozen이면 같이 만들어 준다)
-#     def __hash__(self) -> int:
-#         return hash((self.id, self.name, self.start_price))
-
 # 개별 아이템 정보
 @dataclass(frozen=True)
 class ItemInfo:

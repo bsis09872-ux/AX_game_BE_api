@@ -84,6 +84,19 @@ class ItemDefinitionRepository:
         return None if row is None else _to_domain(row)
 
 
+    # [조회] 낚시 후보: fishable이고 weight가 0보다 큰 카탈로그 조회
+    async def find_fishable(self) -> list[ItemDefinition]:
+        rows = (
+            await self._session.execute(
+                select(ItemDefinitionModel)
+                # where에 쉼표로 넣으면 SQL의 AND
+                .where(ItemDefinitionModel.fishable.is_(True), ItemDefinitionModel.weight > 0)
+                # 순서가 매번 달라지면 같은 난수로 다른 결과가 나올 수 있어서 id로 고정
+                .order_by(ItemDefinitionModel.id)
+            )
+        ).scalars()
+        return [_to_domain(row) for row in rows]
+
     # [조회] 페이지 기준으로 목록 내역 및 total 조회
     async def find_all(
         # 별표 뒤의 인자는 이름을 붙여야만 넘길 수 있다 (값이 엉뚱하게 들어가지 않도록)
