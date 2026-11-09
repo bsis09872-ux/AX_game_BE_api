@@ -17,6 +17,10 @@ from users.application.admin_service import MemberAdminService
 
 
 def build_member_admin_service(session: AsyncSession) -> MemberAdminService:
+    # TODO(지갑 연동): users.application.contracts.MemberWalletProvisioner 구현이 반영되면
+    # 같은 session으로 주입한다. 회원 flush -> create_wallet -> 마지막 한 번 commit,
+    # 초기 지급 로그 확정은 commit 성공 후 연결한다. 지금은 회원 계정만 생성한다.
+    # 기존 회원의 지갑 누락 보정 정책은 지갑 담당과 별도로 합의해야 한다.
     return MemberAdminService(build_user_service(session), get_password_hasher(), session,
                               SqlAlchemySessionRepository(session))
 
