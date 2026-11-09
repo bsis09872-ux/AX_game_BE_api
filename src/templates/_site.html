@@ -14,8 +14,8 @@
 
 
 {# 보유 골드: 값이 없으면(지갑 없음, 팝업 안) 아무것도 보여 주지 않는다 #}
-{% macro gold_status(gold) -%}
-{% if gold is not none %}
-<div class="hud"><span class="gold" aria-label="보유 골드">{{ '{:,}'.format(gold) }} GOLD</span></div>
+{% macro gold_status(amount) -%}
+{% if amount is not none %}
+<div class="hud"><span class="gold" aria-label="보유 골드">{{ '{:,}'.format(amount) }} GOLD</span></div>
 {% endif %}
 {%- endmacro %}

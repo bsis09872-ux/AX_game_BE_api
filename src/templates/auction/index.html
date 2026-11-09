@@ -1,0 +1,52 @@
+{# [Claude] 이 파일은 Claude가 작성함 (검토 전) #}
+{# 경매장 목록: 진행 중(입찰 중) 매물을 카드로 보여 준다 #}
+{% extends "auction/_layout.html" %}
+{% from "inventory/_macros.html" import gold, item_icon %}
+{% from "auction/_macros.html" import clock %}
+{% block title %}경매장 | Catch &amp; Bid{% endblock %}
+
+{% block content %}
+<section aria-labelledby="auction-title">
+  <div class="auction-head">
+    <h1 id="auction-title" class="title-tab">경매장</h1>
+    {% if embed %}
+    <button type="button" class="btn red" data-auction-close>닫기 (Esc)</button>
+    {% else %}
+    <a class="btn gold" href="/inventory">내 아이템 올리기</a>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    {% if cards %}
+    <div class="grid">
+      {% for c in cards %}
+      <a class="card" href="{{ c.href }}">
+        <div class="card-top">
+          {{ item_icon(c.item, 48) }}
+          <div>
+            <strong>{{ c.item.name }}</strong>
+            <div class="muted">{{ c.item.category }}</div>
+            <span class="tag BIDDING">입찰 중</span>
+          </div>
+        </div>
+        <div class="card-price">{{ gold(c.price) }} <span class="muted">{{ '현재가' if c.has_bid else '시작가' }}</span></div>
+        <div class="card-foot">
+          <span class="muted">판매 {{ c.seller_name }} · {{ '입찰 있음' if c.has_bid else '입찰 없음' }}</span>
+          {{ clock(c.remaining_text, c.urgent) }}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p>진행 중인 경매가 없습니다.</p>
+    {% endif %}
+
+    {% if has_previous or has_next %}
+    <nav class="pager" aria-label="페이지 이동">
+      {% if has_previous %}<a href="{{ prev_url }}">이전</a>{% endif %}
+      {% if has_next %}<a href="{{ next_url }}">다음</a>{% endif %}
+    </nav>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

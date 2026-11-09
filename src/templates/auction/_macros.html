@@ -1,0 +1,8 @@
+{# [Claude] 이 파일은 Claude가 작성함 (검토 전) #}
+{# 경매장 화면들이 같이 쓰는 조각 #}
+
+
+{# 남은 시간 문구 (급하면 빨갛게) #}
+{% macro clock(text, urgent) -%}
+<span class="clock{% if urgent %} urgent{% endif %}">{{ text }}</span>
+{%- endmacro %}

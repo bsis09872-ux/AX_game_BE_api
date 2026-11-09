@@ -24,6 +24,73 @@ body.embed .main-content {
   background: var(--red);
 }
 
+/* 제목줄: 제목과 버튼 */
+.auction-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* 매물 카드 */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  color: var(--text);
+  background: var(--slot);
+  border: var(--px) solid var(--outline);
+  box-shadow: inset var(--px) var(--px) 0 var(--slot-in);
+}
+
+.card:hover {
+  background: #7a4f2f;
+  text-decoration: none;
+}
+
+.card-top {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.card-price {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.card-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.clock {
+  color: var(--water);
+  font-weight: 700;
+}
+
+.clock.urgent {
+  color: var(--pink);
+}
+
+/* 매물 상태 표시(.tag는 global.css) */
+.tag.BIDDING {
+  background: var(--green-dark);
+}
+
+.tag.QUEUED {
+  background: #2e5f8f;
+}
+
+.tag.FAILED {
+  background: var(--steel);
+  color: var(--outline);
+}
+
 /* 이전·다음 */
 .pager {
   display: flex;

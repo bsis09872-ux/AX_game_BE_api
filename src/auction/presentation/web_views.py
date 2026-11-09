@@ -6,7 +6,11 @@
 - embed=1은 팝업(iframe) 안에서 보일 때 붙는다. 팝업 안의 링크는 모두 이 파일의 함수로 만들어 embed를 유지한다
 """
 
+from dataclasses import dataclass
+from datetime import datetime
 from urllib.parse import urlencode
+
+from auction.domain.listings.entities import Listing
 
 
 # region [Claude] 주소 만들기
@@ -89,3 +93,67 @@ def alias_for(listing_id: int, bid_amount: int) -> tuple[int, str]:
 def format_clock(seconds: int) -> str:
     minutes, rest = divmod(max(seconds, 0), 60)
     return f'{minutes}:{rest:02d}'
+
+
+# region [Claude] 아이템 표시
+CATEGORY_LABELS = {'FISH': '물고기', 'GEM': '보석', 'MISC': '잡화'}
+
+
+# 화면에 보여 줄 아이템 정보. inventory/_macros.html의 item_icon이 icon·rarity를 읽는다
+@dataclass(frozen=True)
+class ItemView:
+    name: str
+    category: str
+    rarity: str
+    icon: str
+
+
+# 아이템을 못 읽을 때(지워진 아이템 등) 대신 보여 준다
+UNKNOWN_ITEM = ItemView(name='알 수 없는 아이템', category='', rarity='COMMON', icon='gift_box')
+
+
+# 인벤토리의 아이템 정보(ItemInfo)에서 화면에 필요한 값만 골라낸다
+def item_view(info) -> ItemView:
+    definition = info.definition
+    return ItemView(
+        name=definition.name,
+        category=CATEGORY_LABELS.get(definition.category, definition.category),
+        rarity=definition.rarity,
+        icon=definition.icon,
+    )
+# endregion
+
+
+# region [Claude] 경매장 목록 카드
+# 남은 시간이 이 값(초) 이하면 급하다는 표시를 한다
+URGENT_SECONDS = 60
+
+
+@dataclass(frozen=True)
+class ListingCard:
+    id: int
+    href: str
+    item: ItemView
+    seller_name: str
+    price: int  # 입찰이 없으면 시작가
+    has_bid: bool
+    remaining_seconds: int
+    remaining_text: str
+    urgent: bool
+
+
+def card_view(listing: Listing, item: ItemView, seller_name: str, now: datetime, embed: bool = False) -> ListingCard:
+    remaining = listing.remaining(now)
+    seconds = int(remaining.total_seconds()) if remaining is not None else 0
+    return ListingCard(
+        id=listing.id,
+        href=detail_url(listing.id, embed),
+        item=item,
+        seller_name=seller_name,
+        price=listing.current_bid_amount or listing.start_price,
+        has_bid=listing.has_bidder(),
+        remaining_seconds=seconds,
+        remaining_text=format_clock(seconds),
+        urgent=seconds <= URGENT_SECONDS,
+    )
+# endregion
