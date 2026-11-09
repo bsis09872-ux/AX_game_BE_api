@@ -10,6 +10,10 @@ from auth.application.dto import TokenPair
 from auth.application.service import AuthService
 from auth.domain.exceptions import AuthenticationError
 from auth.presentation.dependencies import get_auth_service
+from shared.core.exceptions import ForbiddenError
+from users.application.service import UserService
+from users.domain.exceptions import UserNotFoundError
+from users.presentation.dependencies import get_user_service
 
 
 @dataclass(frozen=True)
@@ -98,6 +102,24 @@ async def get_current_web_user_id(
         return (await service.authenticate(token)).user_id
     except AuthenticationError as exc:
         raise WebAuthenticationRequired() from exc
+
+
+async def get_current_web_admin_id(
+    request: Request,
+    user_id: int = Depends(get_current_web_user_id),
+    users: UserService = Depends(get_user_service),
+) -> int:
+    try:
+        user = await users.get_user_summary(user_id)
+    except UserNotFoundError as exc:
+        raise WebAuthenticationRequired() from exc
+    if not user.is_active:
+        raise WebAuthenticationRequired()
+    if user.role != "ADMIN":
+        raise ForbiddenError()
+    if request.method not in {"GET", "HEAD", "OPTIONS"}:
+        require_web_origin(request)
+    return user.id
 
 
 def register_web_auth_handlers(app) -> None:

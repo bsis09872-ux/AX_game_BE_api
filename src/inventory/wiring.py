@@ -58,7 +58,10 @@ def build_inventory_service(session: AsyncSession) -> InventoryService:
 
 # auth가 토큰으로 요청한 사람을 확인하는 기능
 def build_current_user_provider(session: AsyncSession) -> CurrentUserProvider:
-    return CurrentUserAdapter(build_auth_service(session))
+    return CurrentUserAdapter(
+        auth_service=build_auth_service(session),
+        user_service=build_user_service(session=session),
+    )
 
 
 # 낚시 쿨다운

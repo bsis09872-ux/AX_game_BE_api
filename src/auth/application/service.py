@@ -11,6 +11,7 @@ from auth.application.contracts import (
     UserReader,
     RefreshTokenCodec,
     SessionRepository,
+    RevokedSessions,
 )
 from auth.application.dto import (
     CreatedUser,
@@ -31,7 +32,8 @@ class AuthService:
         transaction: Transaction,
         sessions: SessionRepository,
         refresh_codec: RefreshTokenCodec,
-        refresh_ttl_seconds: int = 604800,
+        refresh_ttl_seconds: int = 1800,
+        revoked_sessions: RevokedSessions | None = None,
     ):
         self.password_hasher = password_hasher
         self.user_creator = user_creator
@@ -43,6 +45,11 @@ class AuthService:
         self.sessions = sessions
         self.refresh_codec = refresh_codec
         self.refresh_ttl_seconds = refresh_ttl_seconds
+        self.revoked_sessions = revoked_sessions
+
+    def _cache_revoked(self, session: LoginSession) -> None:
+        if self.revoked_sessions is not None:
+            self.revoked_sessions.add(session.id, session.expires_at)
 
     async def register_user(
         self, login_id: str, display_name: str, password: str
@@ -91,11 +98,13 @@ class AuthService:
             # 재사용 차단은 인증 실패에 따른 rollback보다 먼저 확정한다.
             await self.sessions.revoke(state.session.id, now)
             await self.transaction.commit()
+            self._cache_revoked(state.session)
             raise InvalidTokenError()
         user = await self.user_reader.find_by_id(state.session.user_id)
         if user is None or not user.is_active:
             await self.sessions.revoke(state.session.id, now)
             await self.transaction.commit()
+            self._cache_revoked(state.session)
             raise InvalidTokenError()
         refresh_token = self.refresh_codec.generate()
         await self.sessions.rotate(
@@ -107,6 +116,8 @@ class AuthService:
 
     async def authenticate(self, token: str) -> TokenClaims:
         claims = self.token_codec.decode(token)
+        if self.revoked_sessions is not None and self.revoked_sessions.contains(claims.session_id):
+            raise InvalidTokenError()
         session = await self.sessions.find(claims.session_id)
         if (session is None or session.user_id != claims.user_id
                 or session.revoked_at is not None
@@ -129,6 +140,7 @@ class AuthService:
             raise InvalidTokenError()
         await self.sessions.revoke(claims.session_id, datetime.now(timezone.utc))
         await self.transaction.commit()
+        self._cache_revoked(session)
 
     async def logout_session(self, refresh_token: str) -> None:
         state = await self.sessions.find_refresh_for_update(self.refresh_codec.digest(refresh_token))
@@ -136,3 +148,4 @@ class AuthService:
             raise InvalidTokenError()
         await self.sessions.revoke(state.session.id, datetime.now(timezone.utc))
         await self.transaction.commit()
+        self._cache_revoked(state.session)

@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth.application.dto import LoginSession, RefreshState
@@ -57,3 +57,8 @@ class SqlAlchemySessionRepository:
         )
         if row is not None and row.revoked_at is None:
             row.revoked_at = now
+
+    async def revoke_all_for_user(self, user_id: int, now: datetime) -> None:
+        await self._db.execute(update(LoginSessionModel).where(
+            LoginSessionModel.user_id == user_id, LoginSessionModel.revoked_at.is_(None)
+        ).values(revoked_at=now))

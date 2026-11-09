@@ -1,8 +1,3 @@
-/* Catch-and-Bid의 pixel.css 공통 테마를 가져왔다. 원본: uogji-lee/Catch-and-Bid, 9027dbb. */
-/* 낚시 경매장 픽셀 UI
- * 레벨(스케일) 규칙: 16×16 스프라이트는 정수배(2배 32px, 3배 48px, 4배 64px)로만 키우고
- * 항상 image-rendering: pixelated 로 그린다. 테두리 두께도 3px(=3배 스케일의 1px) 단위로 맞춘다.
- */
 @font-face {
     font-family: Galmuri11;
     font-weight: 400;
@@ -46,6 +41,15 @@ html, body {
     margin: 0;
 }
 
+html {
+    overflow-y: scroll;
+    scrollbar-gutter: stable;
+}
+
+@supports (scrollbar-gutter: stable) {
+    html { overflow-y: auto; }
+}
+
 body {
     isolation: isolate;
     background: var(--night);
@@ -61,7 +65,6 @@ body {
     -webkit-font-smoothing: none;
 }
 
-/* 체크무늬 위에서 로고 줄을 서로 다른 속도와 방향으로 순환한다. */
 .title-carousel {
     position: fixed;
     inset: 0;
@@ -174,7 +177,6 @@ img.px, .px {
     height: 96px;
 }
 
-/* ---------- 레이아웃 ---------- */
 .wrap {
     max-width: 1120px;
     margin: 0 auto;
@@ -218,7 +220,6 @@ img.px, .px {
     display: none !important;
 }
 
-/* ---------- 상단 바 ---------- */
 .topbar {
     position: sticky;
     top: 0;
@@ -251,7 +252,6 @@ img.px, .px {
     text-decoration: none;
 }
 
-/* 투명 로고의 원본 비율을 유지하고 공통 헤더 높이에 맞춘다. */
 .brand-logo {
     display: block;
     width: auto;
@@ -291,7 +291,6 @@ body.embed .topbar, body.embed .footer {
     display: none;
 }
 
-/* ---------- 나무 패널과 슬롯 ---------- */
 .panel {
     background: var(--wood);
     border: var(--px) solid var(--outline);
@@ -381,7 +380,6 @@ body.embed .topbar, body.embed .footer {
     box-shadow: inset var(--px) var(--px) 0 var(--green-dark);
 }
 
-/* ---------- 버튼과 입력 ---------- */
 .btn {
     display: inline-flex;
     align-items: center;
@@ -408,7 +406,6 @@ body.embed .topbar, body.embed .footer {
 }
 
 .btn.btn:disabled {
-    /* 색 버튼(.red, .gold, .wood)보다 우선 */
     background: var(--steel);
     box-shadow: none;
     cursor: not-allowed;
@@ -463,7 +460,6 @@ form.inline {
     align-items: flex-end;
 }
 
-/* ---------- 표, 태그와 탭 ---------- */
 table {
     width: 100%;
     border-collapse: collapse;
@@ -533,7 +529,6 @@ td.num, th.num {
     color: var(--text);
 }
 
-/* 공통 화면 틀: 짧은 화면에서도 하단 안내가 아래에 놓이도록 본문을 늘린다. */
 body {
     display: flex;
     flex-direction: column;
@@ -572,7 +567,6 @@ body {
     padding: 24px 16px;
 }
 
-/* 키보드 사용자는 공통 메뉴를 건너뛰고 본문으로 바로 이동할 수 있다. */
 .skip-link {
     position: absolute;
     top: 0;
@@ -591,6 +585,10 @@ body {
 :focus-visible {
     outline: var(--px) solid var(--water);
     outline-offset: 3px;
+}
+
+.main-content:focus-visible {
+    outline: none;
 }
 
 @media (max-width: 640px) {
