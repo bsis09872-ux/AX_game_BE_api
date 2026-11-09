@@ -108,9 +108,9 @@ class ListingService:
         await self.tx.commit()
         return saved
 
-    # [AUC-04] 매물·사용자 잠금 → 제한 확인 → 입찰 검사 → 사용 가능 금액 확인 → 저장 → 확정.
+    # [AUC-04] 매물·사용자 잠금 → 제한 확인 → 입찰 검사 → 지갑 자금 확인 → 저장 → 확정.
     # 사용자를 잠가 같은 사용자의 동시 입찰이 묶인 금액을 함께 계산하지 않게 한다.
-    # [TO DO] Wallet 계약이 정해지면 잔액 부족을 INSUFFICIENT_BALANCE로 맞춘다. (진행 전)
+    # 잔액 부족은 Wallet이 예외로 알리고, commit하지 않았으므로 get_db가 rollback한다.
     async def bid(
         self,
         listing_id: int,
@@ -134,12 +134,19 @@ class ListingService:
         ):
             raise BidBannedError()
 
+        # place_bid가 최고 입찰 정보를 덮어쓰므로 변경 전 값을 먼저 보관한다.
+        previous_bidder_id = listing.current_bidder_id
+        previous_bid_amount = listing.current_bid_amount
+
         listing.place_bid(bidder_id, amount, now)
 
-        # 다른 매물에 최고 입찰로 묶인 금액 + 이번 입찰액만큼 잔액이 있어야 한다.
-        tied = await self.listings.sum_leading_bids(bidder_id)
-        if not await self.wallets.has_balance(bidder_id, tied + amount):
-            raise BusinessRuleError("사용 가능한 골드가 부족합니다.")
+        # 예약 금액 계산과 지갑 잠금은 Wallet이 한다. 부족하면 예외가 그대로 올라간다.
+        await self.wallets.check_bid_funds(
+            bidder_id=bidder_id,
+            amount=amount,
+            current_bidder_id=previous_bidder_id,
+            current_bid_amount=previous_bid_amount,
+        )
 
         saved = await self.listings.save(listing)
         await self.tx.commit()
