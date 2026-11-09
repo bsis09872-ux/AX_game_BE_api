@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "inventory/_macros.html" import gold %}
+{% from "inventory/_macros.html" import gold, item_icon %}
 
 {% block title %}아이템 도감 | Catch &amp; Bid{% endblock %}
 
@@ -14,7 +14,7 @@
 </nav>
 {% endblock %}
 
-{# 거르기 링크 주소: 값이 있는 것만 붙인다 #}
+{# 필터 링크 주소: 값이 있는 것만 붙인다 #}
 {# - 는 공백 또는 줄바꿈을 지운다는 의미: 주소가 깨지지 않도록 한다#}
 {% macro href(c, r) -%}
 /item-catalogs{% if c or r %}?{% if c %}category={{ c }}{% endif %}{% if c and r %}&amp;{% endif %}{% if r %}rarity={{ r
@@ -27,14 +27,14 @@
 
     <div class="panel">
         <div class="filters">
-            <nav class="filter-group" aria-label="분류 거르기">
+            <nav class="filter-group" aria-label="분류 필터">
                 <span class="filter-label">분류</span>
                 <a href="{{ href(None, rarity) }}" {% if not category %} aria-current="true" {% endif %}>전체</a>
                 {% for c in categories %}
                 <a href="{{ href(c, rarity) }}" {% if category==c %} aria-current="true" {% endif %}>{{ c }}</a>
                 {% endfor %}
             </nav>
-            <nav class="filter-group" aria-label="희귀도 거르기">
+            <nav class="filter-group" aria-label="희귀도 필터">
                 <span class="filter-label">희귀도</span>
                 <a href="{{ href(category, None) }}" {% if not rarity %} aria-current="true" {% endif %}>전체</a>
                 {% for r in rarities %}
@@ -48,11 +48,11 @@
         {% if definitions %}
         <table class="table-fixed">
             <colgroup>
-                <col style="width: 20%">
+                <col style="width: 16%">
                 <col style="width: 10%">
                 <col style="width: 14%">
-                <col style="width: 36%">
-                <col style="width: 20%">
+                <col style="width: 46%">
+                <col style="width: 14%">
             </colgroup>
             <thead>
                 <tr>
@@ -66,7 +66,7 @@
             <tbody>
                 {% for d in definitions %}
                 <tr id="item-{{ d.id }}">
-                    <td>{{ d.name }}</td>
+                    <td>{{ item_icon(d) }}{{ d.name }}</td>
                     <td>{{ d.category }}</td>
                     <td>{{ d.rarity }}</td>
                     <td>{{ d.description }}</td>

@@ -7,6 +7,9 @@
 - GET /inventory/{item_id}: 내 아이템 상세 화면. 없는 아이템이거나 남의 아이템이면 JSON이 아니라 '찾을 수 없습니다' 화면을 404로 보여 준다 (존재 여부를 알려 주지 않는다). 그 밖의 오류는 404 화면으로 바꾸지 않는다
 - 번호 형식이 틀리면(0, 음수, 숫자 아님) 서비스를 부르지 않고 422(JSON)로 응답한다
 - GET /item-catalogs: 도감(아이템 카탈로그 목록) 화면. 로그인한 사용자만 보고, 한 페이지에 모두 보여 준다(page=1, size=100). 분류·희귀도로 거를 수 있고 값이 틀리면 422다. 줄마다 id="item-{번호}"가 있어 내 아이템 상세에서 해당 줄로 바로 이동한다
+- GET /inventory는 상태(status)·분류(category)·희귀도(rarity)·정렬(sort)로 거를 수 있고, 값은 서비스에 그대로 넘긴다. 값이 틀리면 서비스를 부르지 않고 422다
+- 필터 링크는 나머지 필터를 유지하고 쪽은 1쪽으로 돌아간다. 기본 정렬(최근 획득순)은 주소에 넣지 않는다. 이전·다음 링크는 필터와 정렬을 유지한다
+- 필터 줄과 주소를 만드는 도우미는 web_filters.py에 있다 (이 파일은 서비스 호출과 화면 데이터 연결만 한다)
 """
 
 from collections.abc import Awaitable, Callable
@@ -18,7 +21,8 @@ from fastapi.responses import HTMLResponse
 from inventory.application.service import InventoryService
 from inventory.domain.exceptions import ItemNotFoundError
 from inventory.presentation.dependencies import get_inventory_service
-from inventory.presentation.router import Category, Rarity
+from inventory.presentation.router import Category, Rarity, InventorySort, Status
+from inventory.presentation.web_filters import DEFAULT_SORT, filter_groups, inventory_href
 from inventory.presentation.schemas import (
     InventoryItemDetailResponse,
     InventoryItemResponse,
@@ -42,11 +46,15 @@ def create_inventory_web_router(
     @router.get('/inventory', response_class=HTMLResponse)
     async def get_inventory_page(
         request: Request,
+        status: Status | None=None,
+        category: Category | None=None,
+        rarity: Rarity | None=None,
+        sort: InventorySort = DEFAULT_SORT,
         page: int = Query(1, ge=1),
         user_id: int = Depends(current_user_id),
         service: InventoryService = Depends(get_inventory_service),
     ) -> HTMLResponse:
-        items, total = await service.list_my_items(user_id, page=page, size=PAGE_SIZE)
+        items, total = await service.list_my_items(user_id, status=status, category=category, rarity=rarity, sort=sort, page=page, size=PAGE_SIZE)
 
         # 전체 쪽 수 / 아이템이 없어도 1쪽 존재
         total_pages = max(1, -(-total // PAGE_SIZE))
@@ -59,7 +67,13 @@ def create_inventory_web_router(
                 'items': [InventoryItemResponse.from_info(item) for item in items],
                 'page': page,
                 'has_previous': page > 1,
-                'has_next': page < total_pages
+                'has_next': page < total_pages,
+                # 이전·다음 링크는 지금의 필터와 정렬 유지
+                'prev_url': inventory_href(status=status, category=category, rarity=rarity, sort=sort, page=page-1),
+                'next_url': inventory_href(status=status, category=category, rarity=rarity, sort=sort, page=page+1),
+                'filter_groups': filter_groups(status, category, rarity, sort),
+                # 필터가 있는데 결과가 없을 때와 원래 비어 있을 때의 안내
+                'filtered': bool(status or category or rarity)
             }
         )
 
@@ -122,7 +136,7 @@ def create_inventory_web_router(
                 'definitions': [ItemDefinitionResponse.from_info(d) for d in definitions],
                 'category': category,
                 'rarity': rarity,
-                # 거르기 링크에 쓸 허용값
+                # 필터 링크에 쓸 허용값
                 'categories': get_args(Category),
                 'rarities': get_args(Rarity)
             }

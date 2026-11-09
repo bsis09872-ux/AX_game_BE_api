@@ -1,6 +1,5 @@
 {% extends "base.html" %}
-{% from "inventory/_macros.html" import gold, moment %}
-
+{% from "inventory/_macros.html" import gold, moment, filter_group, item_icon %}
 {% block title %}내 인벤토리 | Catch &amp; Bid{% endblock %}
 
 {% block styles %}
@@ -20,15 +19,18 @@
 
   <div class="panel">
     {# 응답 모델이 골라낸 공개 값만 표시한다. 글자는 Jinja2가 자동으로 이스케이프한다 #}
+    <div class="filters">
+      {% for group in filter_groups %}{{ filter_group(group) }}{% endfor %}
+    </div>
     {% if items %}
     <table class="table-fixed">
       <colgroup>
-        <col style="width: 22%">
-        <col style="width: 10%">
-        <col style="width: 14%">
         <col style="width: 20%">
+        <col style="width: 10%">
+        <col style="width: 16%">
+        <col style="width: 26%">
         <col style="width: 12%">
-        <col style="width: 22%">
+        <col style="width: 16%">
       </colgroup>
       <thead>
         <tr>
@@ -43,7 +45,7 @@
       <tbody>
         {% for item in items %}
         <tr>
-          <td><a href="/inventory/{{ item.id }}">{{ item.definition.name }}</a></td>
+          <td>{{ item_icon(item.definition) }}<a href="/inventory/{{ item.id }}">{{ item.definition.name }}</a></td>
           <td>{{ item.definition.category }}</td>
           <td>{{ item.definition.rarity }}</td>
           <td>{{ moment(item.acquired_at) }}</td>
@@ -53,6 +55,8 @@
         {% endfor %}
       </tbody>
     </table>
+    {% elif filtered %}
+    <p>조건에 맞는 아이템이 없습니다.</p>
     {% else %}
     <p>아직 보유한 아이템이 없습니다.</p>
     {% endif %}
@@ -63,8 +67,8 @@
 
     {% if has_previous or has_next %}
     <nav aria-label="페이지 이동">
-      {% if has_previous %}<a href="?page={{ page-1 }}">이전</a>{% endif %}
-      {% if has_next %}<a href="?page={{ page+1 }}">다음</a>{% endif %}
+      {% if has_previous %}<a href="{{ prev_url }}">이전</a>{% endif %}
+      {% if has_next %}<a href="{{ next_url }}">다음</a>{% endif %}
     </nav>
     {% endif %}
   </div>
