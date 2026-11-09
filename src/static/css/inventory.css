@@ -1,0 +1,109 @@
+/* 인벤토리 화면들(내 인벤토리, 내 아이템 상세, 도감)이 같이 쓰는 스타일 */
+/* 팀 공통 테마는 global.css가 맡고, 여기서는 인벤토리 화면에만 필요한 것만 둔다 */
+
+/* 상세 화면에서 #item-번호로 들어왔을 때 해당 줄을 강조한다 */
+tr:target {
+    background: rgba(255, 220, 120, 0.25);
+}
+
+/* 표: 열 너비를 고정한다 (거르기를 바꿔 내용이 달라져도 열 위치가 흔들리지 않는다) */
+.table-fixed {
+    table-layout: fixed;
+}
+
+.table-fixed td,
+.table-fixed th {
+    overflow-wrap: anywhere;
+}
+
+/* 페이지 아래 링크 줄: 왼쪽에는 돌아가기, 오른쪽(.to-right)에는 도감으로 가는 링크 */
+.page-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin-top: 14px;
+}
+
+.page-links .to-right {
+    margin-left: auto;
+}
+
+/* 거르기: 항목 묶음(분류, 희귀도)마다 줄을 나누고 값은 버튼 모양으로 보여 준다 */
+.filters {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 2px solid var(--wood-dark);
+}
+
+.filter-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.filter-label {
+    min-width: 64px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+/* 버튼 너비는 모두 같게 고정한다: 값이 길든 짧든, 골랐든 안 골랐든 너비가 변하지 않는다 */
+.filter-group a {
+    position: relative;
+    display: inline-block;
+    min-width: 132px;
+    /* 양쪽 여백을 넓혀서 왼쪽의 체크 표시가 긴 글자(LEGENDARY)와 겹치지 않게 한다 */
+    padding: 4px 22px;
+    text-align: center;
+    color: var(--muted);
+    background: var(--wood-dark);
+    border: 2px solid var(--outline);
+}
+
+.filter-group a:hover {
+    color: var(--text);
+    background: var(--slot);
+    text-decoration: none;
+}
+
+/* 지금 고른 값: 색뿐 아니라 체크 표시로도 구분한다 */
+/* 글자 굵기를 바꾸거나 체크를 글자 앞에 끼우면 너비가 변하므로, 체크는 왼쪽에 띄워서 그린다 */
+.filter-group a[aria-current="true"] {
+    color: var(--night);
+    background: var(--gold);
+}
+
+.filter-group a[aria-current="true"]::before {
+    content: "✓";
+    position: absolute;
+    left: 8px;
+}
+
+/* 희귀도 버튼은 왼쪽 띠 색으로 등급을 구분한다 */
+.filter-group a[class^="rarity-"] {
+    border-left-width: 4px;
+}
+
+.filter-group .rarity-COMMON {
+    border-left-color: var(--steel);
+}
+
+.filter-group .rarity-UNCOMMON {
+    border-left-color: var(--green);
+}
+
+.filter-group .rarity-RARE {
+    border-left-color: var(--water);
+}
+
+.filter-group .rarity-EPIC {
+    border-left-color: var(--pink);
+}
+
+.filter-group .rarity-LEGENDARY {
+    border-left-color: var(--gold);
+}
