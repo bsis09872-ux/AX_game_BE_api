@@ -17,6 +17,8 @@ class User:
         role: str = "USER",
         auction_purchase_count: int = 0,
         auction_blocked_until: datetime | None = None,
+        manual_auction_blocked_until: datetime | None = None,
+        login_suspended_at: datetime | None = None,
         deleted_at: datetime | None = None,
         created_at: datetime | None = None,
         updated_at: datetime | None = None,
@@ -45,6 +47,8 @@ class User:
         self.role = role
         self.auction_purchase_count = auction_purchase_count
         self.auction_blocked_until = auction_blocked_until
+        self.manual_auction_blocked_until = manual_auction_blocked_until
+        self.login_suspended_at = login_suspended_at
         self.deleted_at = deleted_at
         self.created_at = created_at
         self.updated_at = updated_at
@@ -52,6 +56,29 @@ class User:
     # 탈퇴 시각이 없으면 활성 회원이다. 인증과 권한 검사는 이 상태를 참고한다.
     def is_active(self) -> bool:
         return self.deleted_at is None
+
+    def change_role(self, role: str) -> None:
+        if role not in ('USER', 'ADMIN'):
+            raise InvalidUserError('유효하지 않은 회원 역할입니다.')
+        self.role = role
+
+    def can_login(self) -> bool:
+        return self.is_active() and self.login_suspended_at is None
+
+    @property
+    def effective_auction_blocked_until(self) -> datetime | None:
+        deadlines = [value for value in (self.auction_blocked_until, self.manual_auction_blocked_until) if value is not None]
+        return max(deadlines) if deadlines else None
+
+    def suspend_login(self, suspended: bool, now: datetime) -> None:
+        if type(suspended) is not bool or now.utcoffset() is None:
+            raise InvalidUserError('로그인 정지 상태와 시각을 확인해 주세요.')
+        self.login_suspended_at = (self.login_suspended_at or now) if suspended else None
+
+    def restrict_bidding(self, until: datetime | None, now: datetime) -> None:
+        if until is not None and (until.utcoffset() is None or until <= now):
+            raise InvalidUserError('입찰 제한 종료 시각은 시간대가 있는 미래 시각이어야 합니다.')
+        self.manual_auction_blocked_until = until
 
     def update_auction_limit(self, purchase_count: int, blocked_until: datetime | None) -> None:
         if type(purchase_count) is not int or not 0 <= purchase_count <= 2147483647:
@@ -65,8 +92,9 @@ class User:
     def is_auction_blocked(self, now: datetime) -> bool:
         if now.utcoffset() is None:
             raise ValueError("현재 시각에 시간대 정보가 없습니다.")
-        if self.auction_blocked_until is None:
+        blocked_until = self.effective_auction_blocked_until
+        if blocked_until is None:
             return False
-        if self.auction_blocked_until.utcoffset() is None:
+        if blocked_until.utcoffset() is None:
             raise RuntimeError("입찰 제한 종료 시각에 시간대 정보가 없습니다.")
-        return now < self.auction_blocked_until
+        return now < blocked_until

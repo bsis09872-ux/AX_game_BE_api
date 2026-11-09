@@ -1,18 +1,31 @@
-# 회원 인증 로컬 실행과 검증
+# 회원 인증과 관리자 기능 실행 및 연동 안내
 
-팀원마다 자신의 PostgreSQL과 백엔드 서버를 실행한다. 다른 팀원의 DB 주소, 비밀번호나 JWT 비밀키를 공유할 필요는 없다. 이 문서는 PR #13의 실행 방법이며, 구현 과제나 자동 테스트 코드를 포함하지 않는다.
+기준: 2026-11-09, `feature/coco/admin-page`
+
+## 구현 및 연결 상태
+
+| 기능 | 현재 상태 | 범위와 제한 |
+| --- | --- | --- |
+| 회원가입, 로그인, 로그아웃, 본인 조회 | 연결됨 | 웹 쿠키와 API Bearer 인증 제공 |
+| 토큰 갱신과 세션 폐기 | 연결됨 | 갱신 토큰 교체, 재사용 감지, 고정 세션 만료 |
+| 관리자 권한 검사 | 연결됨 | 현재 DB 역할을 확인하며 회원 번호로 권한을 판단하지 않음 |
+| 아이템 관리 | 연결됨 | 기존 인벤토리 서비스로 카탈로그 생성/수정/삭제, 이미지 선택/업로드, 이력 조회, CSV 다운로드 |
+| 회원 목록, 계정 생성, 권한 변경 | 연결됨 | 일반 회원 계정 생성 후 별도로 관리자 권한 부여 |
+| 로그인 정지 | 연결됨 | 신규 로그인, 토큰 갱신과 기존 인증 차단, 대상 회원의 모든 세션 폐기 |
+| 관리자 입찰 제한 설정 | 저장/조회 연결됨 | 경매 요청에서 실제로 차단하는 어댑터 연결은 안 됨 |
+| 회원 생성 시 지갑 생성 | 미연동 | `MemberWalletProvisioner` 계약과 wiring TODO만 있으며 현재는 계정만 생성 |
+| 경매 관리, 지갑 관리 화면 | 미구현 | 관리자 홈의 준비 중 안내만 존재 |
+
+라우터 등록은 [main.py](../src/main.py), 회원 관리 동작은 [MemberAdminService](../src/users/application/admin_service.py), 미연동 계약은 [users contracts](../src/users/application/contracts.py)를 기준으로 확인한다.
 
 ## 1. 코드와 개인 DB 준비
 
-PR 병합 전에는 다음 브랜치에서 확인한다. 작업 중인 파일이 있으면 먼저 보존한다.
-
 ```powershell
-git fetch origin
-git switch feature/coco/users-auth-web
+git switch feature/coco/admin-page
 uv sync
 ```
 
-PR #12와 #13이 main에 병합된 이후에는 최신 main에서 실행해도 된다. Python 요구 버전은 3.13 이상이다.
+Python 요구 버전은 3.13 이상이다.
 
 이미 개인 PostgreSQL과 `ax_game` DB가 있으면 그대로 사용한다. 새 DB만 필요한 경우 PostgreSQL 관리 도구에서 `postgres` DB에 연결한 뒤 아래 SQL을 별도로 실행한다. 같은 이름의 DB가 이미 있으면 생성하지 않는다.
 
@@ -37,23 +50,25 @@ Copy-Item .env.example .env.local
 uv run python -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 
-출력된 무작위 값을 자신의 `JWT_SECRET_KEY`에 넣는다. `.env.example`에 아직 없는 두 설정은 `.env.local`에 직접 추가할 수 있다.
+출력된 무작위 값을 자신의 `JWT_SECRET_KEY`에 넣는다.
 
 ```dotenv
 DATABASE_URL=postgresql+asyncpg://postgres:CHANGE_ME@127.0.0.1:5432/ax_game
 JWT_SECRET_KEY=여기에_각자_생성한_무작위_값
 JWT_TTL_SECONDS=1800
-REFRESH_TTL_SECONDS=604800
+REFRESH_TTL_SECONDS=1800
 WEB_ORIGIN=http://127.0.0.1:8000
+ITEM_IMAGE_DIR=.local/item-images
 ```
 
 - `DATABASE_URL`: 자신이 만든 DB의 사용자, 비밀번호, 호스트 포트와 DB 이름을 사용한다. 비밀번호에 URL 예약 문자가 있으면 URL 인코딩한다.
 - `JWT_SECRET_KEY`: 32바이트 이상의 무작위 값이다. 저장소나 PR에 올리지 않는다.
-- `JWT_TTL_SECONDS`: Access token 수명, 60~86400초.
-- `REFRESH_TTL_SECONDS`: 로그인 세션의 최종 수명, 30~2592000초. 계속 사용하거나 갱신해도 이 세션의 종료 시각은 연장되지 않는다.
+- `JWT_TTL_SECONDS`: Access token 수명, 기본 1800초, 허용 범위 60~86400초.
+- `REFRESH_TTL_SECONDS`: 로그인 세션의 최종 수명, 기본 1800초, 허용 범위 30~2592000초. 계속 사용하거나 갱신해도 이 세션의 종료 시각은 연장되지 않는다.
 - `WEB_ORIGIN`: 실제 브라우저 접속 주소와 포트까지 일치해야 한다. 위 설정이면 `localhost` 대신 `127.0.0.1`로 접속한다.
+- `ITEM_IMAGE_DIR`: 업로드 이미지 저장 경로다. 상대 경로는 저장소 루트 기준이며 배포 시 영속 저장소를 지정해야 한다. DB에는 이미지 키가 저장되므로 DB만 복사하면 업로드 이미지는 복구되지 않는다.
 
-프로세스에 이미 지정된 환경변수가 파일보다 우선하며, 파일은 `.env.local`, `.env` 순으로 읽는다. 설정을 변경하면 서버를 재시작하고 새로 로그인한다. 기존 로그인 세션에는 생성 당시 만료 시각이 남는다.
+프로세스에 이미 지정된 환경변수가 파일보다 우선하며, 파일은 `.env.local`, `.env` 순으로 읽는다. 기존 설정값은 기본값보다 우선한다. 설정을 변경하면 서버를 재시작하고 새로 로그인한다. 기존 로그인 세션에는 생성 당시 만료 시각이 남는다.
 
 ## 3. 서버 실행
 
@@ -67,9 +82,17 @@ uv run uvicorn main:app --app-dir src --reload --host 127.0.0.1 --port 8000
 | `http://127.0.0.1:8000/register` | 회원가입 화면 |
 | `http://127.0.0.1:8000/login` | 로그인 화면 |
 | `http://127.0.0.1:8000/me` | 로그인한 본인 정보, 미인증이면 로그인으로 이동 |
+| `http://127.0.0.1:8000/admin` | 관리자 홈, ADMIN 계정 필요 |
+| `http://127.0.0.1:8000/admin/catalogs` | 아이템 카탈로그 목록 |
+| `http://127.0.0.1:8000/admin/catalogs/new` | 아이템 제작과 이미지 미리보기 |
+| `http://127.0.0.1:8000/admin/history` | 인벤토리 아이템 ID로 이력 조회 |
+| `http://127.0.0.1:8000/admin/members` | 회원 검색과 권한 필터, 상세 조회 |
+| `http://127.0.0.1:8000/admin/members/new` | 일반 회원 계정 생성 |
 | `http://127.0.0.1:8000/docs` | API 문서 |
 
-시작 시 없는 테이블을 생성한다. 기존 테이블의 컬럼이나 제약을 수정하는 마이그레이션 기능은 아니다. 실행 성공은 위 주소의 응답과 서버 시작 로그로 확인한다.
+시작 시 없는 테이블을 생성하고, [upgrade_member_controls](../src/users/infrastructure/schema.py)가 기존 `users` 테이블에 `login_suspended_at`, `manual_auction_blocked_until` 두 nullable 컬럼을 없을 때만 추가한다. 기존 회원 행은 유지한다. 모든 스키마 변경을 처리하는 범용 마이그레이션은 아니며 기존 DB에서 시작하려면 해당 컬럼을 추가할 권한이 필요하다. 실행 성공은 위 주소의 응답과 서버 시작 로그로 확인한다.
+
+일반 가입과 관리자 화면의 계정 생성 모두 `USER`로 생성한다. 첫 ADMIN 계정은 DB에서 별도로 설정한다. 이후에는 관리자 화면에서 권한을 변경할 수 있다.
 
 ## 4. 브라우저 검증 순서
 
@@ -115,7 +138,11 @@ REFRESH_TTL_SECONDS=90
 DBeaver 등에서 자신의 `ax_game` DB에 연결한다. 아래 `YOUR_TEST_LOGIN_ID`를 자신의 검증용 ID로 바꾼다. 비밀번호 해시와 토큰 원문/해시는 조회 결과나 공유 스크린샷에 포함하지 않는다.
 
 ```sql
-SELECT id, login_id, display_name, role, created_at, deleted_at
+SELECT id, login_id, display_name, role, created_at, deleted_at,
+       login_suspended_at, auction_purchase_count,
+       auction_blocked_until, manual_auction_blocked_until,
+       GREATEST(auction_blocked_until, manual_auction_blocked_until)
+           AS effective_auction_blocked_until
 FROM users
 WHERE login_id = 'YOUR_TEST_LOGIN_ID';
 
@@ -135,6 +162,8 @@ ORDER BY s.created_at DESC;
 - 로그아웃한 세션은 `revoked_at`이 채워지며, 해당 세션에서 발급한 모든 Access Token과 Refresh Token이 차단된다. 다른 로그인 세션은 유지된다.
 - 시간 만료만으로 `revoked_at`이 채워지는 것은 아니다. `expires_at`과 현재 시각을 비교해 만료를 판단한다.
 - 만료된 행과 사용된 refresh 기록은 삭제하지 않는다. 화면 이동이 DB 행 삭제를 의미하지 않는다.
+- 로그인 정지는 `deleted_at`과 별도로 `login_suspended_at`에 기록한다. 대상 회원의 모든 세션에 폐기 시각을 기록하며, 정지를 해제해도 이전 세션은 복구하지 않는다.
+- `auction_blocked_until`은 경매 자동 제한, `manual_auction_blocked_until`은 관리자 설정이다. 둘 중 더 늦은 시각을 최종 제한 종료로 제공한다. 이 값의 저장만으로 실제 경매 차단이 연결되지는 않는다.
 
 ### 기존 revoked_tokens 테이블을 사용하던 환경
 
@@ -167,8 +196,6 @@ Swagger에서 회원가입 후 `/v1/auth/token`의 `username`에 로그인 ID를
 | `POST /v1/auth/logout` | 현재 로그인 세션 폐기, 204 |
 | `POST /v1/auth/refresh/logout` | refresh token으로 세션 폐기, 204 |
 
-인증 응답을 공유할 때 토큰이나 쿠키 값을 캡처하지 않는다. 반복된 refresh 재사용, 동시 요청과 rollback은 로컬 자동 테스트에서도 검증했으며 테스트 소스는 이번 PR에 포함하지 않았다.
-
 | 증상 | 확인 |
 | --- | --- |
 | DB 접속 실패 | PostgreSQL 실행, 호스트 포트, 비밀번호, 실제 DB 생성 여부 |
@@ -177,7 +204,7 @@ Swagger에서 회원가입 후 `/v1/auth/token`의 `username`에 로그인 ID를
 | 서버 포트 충돌 | 기존 서버 확인 후 다른 포트를 쓰면 WEB_ORIGIN도 변경 |
 | 설정을 바꿨는데 기존 시간으로 만료 | 프로세스 환경변수 우선순위, 서버 재시작, 새 로그인 여부 |
 
-## 8. 실제 화면
+## 8. 기존 인증 화면과 과거 검증 기록
 
 2026-11-06, PR 구현 커밋 `887127d`에서 별도 임시 PostgreSQL과 8013 포트 서버로 확인했다. 사용 중인 개인 DB와 8000 서버는 변경하지 않았다.
 
@@ -225,6 +252,95 @@ Swagger에서 회원가입 후 `/v1/auth/token`의 `username`에 로그인 ID를
 
 관리자 웹 라우터에는 `auth.presentation.web_dependencies.get_current_web_admin_id`를 인증 의존성으로 사용할 수 있다. 이 함수는 access 쿠키를 검증하고 현재 DB 역할이 ADMIN인 회원 ID를 반환한다. 미로그인과 유효하지 않은 세션은 `/login`으로 이동하고 일반 회원은 403을 받는다. GET/HEAD/OPTIONS 이외의 요청은 `WEB_ORIGIN`과 Origin 헤더가 일치해야 한다. 인증 의존성이 반환하는 회원 ID는 정수다.
 
-관리자 화면, 관리자 계정 자동 생성과 역할 변경 API는 포함하지 않는다. 기존 계정의 역할을 임의로 변경하지 않으며 가입 요청의 역할 지정도 계속 거절한다. 실제 관리 대상으로 승인된 계정의 DB 역할이 ADMIN이어야 한다.
+### 아이템 제작과 이력
+
+아이템 관리 화면은 [관리자 라우터](../src/auth/presentation/admin_router.py)에서 기존 `InventoryService`를 호출한다. 생성 화면에서 이름, 코드, 분류, 희귀도, 설명, 거래시작가, 낚시 가중치, 획득 가능 여부와 이미지를 설정한다. 수정 화면에서는 이름, 코드, 분류와 희귀도는 변경하지 않는다. 카탈로그는 아이템 종류의 정의이며 생성만으로 회원에게 소유 아이템을 지급하지 않는다.
+
+기존 이미지 선택과 새 파일 업로드를 지원한다. 업로드는 PNG/JPEG/WebP 정지 이미지, 2MiB 이하, 가로와 세로 각각 2048px 이하로 제한하며 PNG로 다시 저장한다. 파일은 `ITEM_IMAGE_DIR`에, 카탈로그에는 이미지 키가 저장된다. 업로드 이미지 자동 정리 기능은 없다.
+
+| 관리자 요청 | 동작 |
+| --- | --- |
+| `GET /admin/item-catalogs` | 분류/희귀도 필터, 정렬과 페이지별 카탈로그 조회 |
+| `POST /admin/item-catalogs` | 카탈로그 생성, 201 |
+| `PATCH /admin/item-catalogs/{definition_id}` | 카탈로그 수정 |
+| `DELETE /admin/item-catalogs/{definition_id}` | 카탈로그 삭제, 204, 인벤토리 서비스 규칙 적용 |
+| `GET /admin/item-catalogs/export.csv` | 지정한 필터, 정렬과 페이지의 CSV, 전체 페이지 자동 수집 아님 |
+| `GET /admin/inventory/{item_id}/events` | 소유 아이템 ID의 이력, 카탈로그 ID와 구분 |
+| `GET /admin/item-images` | 기존 이미지와 업로드 이미지 목록 |
+| `POST /admin/item-images` | 파일 바이너리 본문 업로드, 201 |
+
+위 `/admin` 요청은 웹 로그인 쿠키를 사용한다. Bearer 인증만으로 호출하는 `/v1` API와 구분한다. 카탈로그 변경 로그는 저장 완료 후 응답의 백그라운드 작업으로 기록한다. 별도의 영속 감사 로그 저장소나 재시도 작업 큐는 아니다.
+
+### 회원 목록, 계정과 권한
+
+[회원 관리 라우터](../src/users/presentation/admin_router.py)는 로그인 ID/표시 이름 검색, USER/ADMIN 필터, 20명 단위 페이지와 상세 화면을 제공한다. 상세 화면에서 로그인 정지와 관리자 입찰 제한을 따로 관리한다.
+
+| 요청 | 입력과 동작 |
+| --- | --- |
+| `POST /admin/member-accounts` | `login_id`, `display_name`, `password`로 USER 생성, 201. 지갑은 생성하지 않음 |
+| `PATCH /admin/member-accounts/{member_id}/role` | `role`을 USER 또는 ADMIN으로 변경 |
+| `PATCH /admin/member-accounts/{member_id}/login-suspension` | `suspended`에 true/false 전달 |
+| `PATCH /admin/member-accounts/{member_id}/bid-restriction` | `until`에 시간대가 있는 미래 시각, 관리자 제한 해제는 null |
+
+계정 생성 시 역할 지정은 거절한다. 권한 변경은 별도 요청이며 현재 DB 값을 다음 요청부터 반영한다. 자기 관리자 권한 해제와 자기 로그인 정지는 막고, 로그인 가능한 마지막 관리자를 없애는 변경도 검사한다. 탈퇴한 회원의 관리 설정은 변경하지 않는다. 로그인 정지된 관리자의 권한 해제는 다른 정상 관리자가 수행할 수 있다.
+
+로그인 정지는 신규 로그인, refresh와 기존 access 인증에 반영된다. 정지와 대상 회원의 전체 세션 폐기는 같은 트랜잭션에서 처리한다. 정지 해제 후에는 다시 로그인해야 한다. 메모리 캐시는 확정된 세션 폐기만 보관하고 캐시 누락 시 DB를 검사하므로, 메모리에 없다는 이유로 인증을 허용하지 않는다.
+
+관리자 입찰 제한은 로그인 정지와 독립적인 값이다. 관리자 제한을 해제해도 기존 경매 자동 제한은 남는다. 날짜 입력은 브라우저의 시간대를 사용하고 상세의 저장 시각은 UTC로 표시한다. 실제 경매 요청의 차단은 아직 연결되지 않았다.
+
+### 다른 도메인에서 인증을 사용할 때
+
+- API: [dependencies.py](../src/auth/presentation/dependencies.py)의 `get_current_user_id`는 인증한 정수 ID, `get_current_user`와 `require_admin`은 `UserSummary`를 반환한다. `require_admin`을 정의했다고 모든 라우트에 자동 적용되는 것은 아니므로 필요한 라우트에 주입한다.
+- 웹: [web_dependencies.py](../src/auth/presentation/web_dependencies.py)의 `get_current_web_user_id`, `get_current_web_admin_id`는 정수 ID를 반환한다. 쓰기 요청에는 Origin 검사가 필요하며 관리자 의존성에 포함되어 있다.
+- 인벤토리 API의 `CurrentUserAdapter`는 이미 인증과 현재 회원 역할에 연결되어 있다. 회원 번호 1이나 JWT의 역할 정보로 관리자 권한을 우회하지 않는다.
+
+다른 도메인에서 관리자 여부만 필요하면 [AdminRoleChecker](../src/users/application/contracts.py)의 `is_admin(user_id) -> bool`을 사용한다. ADMIN이면서 탈퇴/로그인 정지 상태가 아닌 회원은 true, 그 외와 없는 회원은 false를 반환한다. DB 조회 오류는 예외로 전파한다. 토큰과 세션 인증은 auth에서 수행한다.
+
+호출 도메인의 wiring에서 요청 세션으로 구성하여 서비스에 주입한다.
+
+```python
+from users.wiring import build_admin_role_checker
+
+checker = build_admin_role_checker(session)
+is_admin = await checker.is_admin(authenticated_user_id)
+```
+
+계약과 구현, factory는 제공되어 있으며 다른 도메인의 호출부 연결은 각 담당자가 수행한다.
+
+### 미연동 계약과 담당자 연결 사항
+
+| 대상 | 준비된 코드 | 남은 연결 |
+| --- | --- | --- |
+| 경매의 회원 조회와 제한 저장 | [AuctionMemberGateway](../src/users/application/contracts.py), `UserService`의 조회/잠금/저장 구현 | 경매의 `AuctionUserGateway`에 맞는 어댑터와 서비스 주입 필요. 메서드와 DTO가 달라 그대로 교체할 수 없음 |
+| 실제 입찰 차단 | 회원 요약의 `effective_auction_blocked_until`, 관리자 제한 저장 | 경매의 입찰 허용 검사에서 최종 종료 시각을 사용하도록 연결 필요 |
+| 회원 생성 시 지갑 생성 | [MemberWalletProvisioner](../src/users/application/contracts.py)의 `create_wallet(user_id)` | 지갑 구현, 관리자 회원 생성 서비스의 호출과 주입 필요. 일반 회원가입도 현재 지갑을 생성하지 않으므로 별도 연결 필요 |
+| 경매/지갑 관리 화면 | 관리자 홈의 준비 중 안내 | 조회/운영 기능과 화면 구현 필요 |
+
+[users/wiring.py](../src/users/wiring.py)의 경매 TODO는 최종 제한 검사에 `effective_auction_blocked_until`, 자동 제한 정책 계산에는 기존 `auction_blocked_until`을 쓰도록 구분한다. 어댑터는 경매의 [계약](../src/auction/application/contract.py)에 맞춰 DTO와 메서드를 변환해야 한다. 없는 회원은 단건 조회에서 예외, 일괄 조회에서 결과 누락으로 전달되므로 경매 측 처리도 맞춰야 한다. 잠금 순서는 매물 → 아이템 → 회원 → 지갑이며 여러 회원은 ID 오름차순으로 잠근다. 같은 세션을 공유하고 `update_auction_limit`은 저장/flush까지만 수행하며 최종 commit은 호출자가 담당한다.
+
+[auth/wiring.py](../src/auth/wiring.py)의 지갑 TODO는 회원 flush → 지갑 생성 → 마지막 한 번 commit 순서다. 지갑 생성 실패는 전파하여 회원 생성도 rollback해야 한다. 초기 지급 로그는 commit 성공 후 연결하며, 기존 회원의 누락 지갑 처리 정책은 별도 합의가 필요하다. 현재 `MemberAdminService`는 지갑 계약을 주입받거나 호출하지 않는다.
+
+### 관리자 수동 확인 순서
+
+1. 일반 회원으로 `/admin` 접근 시 403, 로그아웃 상태에서는 로그인 화면 이동을 확인한다.
+2. ADMIN으로 아이템을 생성하고 기존 이미지 선택, 업로드, 미리보기와 저장 후 재조회를 확인한다. CSV는 현재 조회 페이지와 비교한다.
+3. 회원 목록에서 새 USER를 만들고 검색/상세 화면 및 DB 행을 확인한다.
+4. 테스트 회원을 ADMIN으로 변경하여 다음 요청부터 관리자 화면에 접근하는지 확인하고, USER로 되돌린 뒤 접근 거절을 확인한다.
+5. 별도 브라우저 세션에 로그인한 테스트 회원을 정지한다. 기존 인증과 새 로그인이 거절되는지, 정지 해제 후 새 로그인만 허용되는지 확인한다.
+6. 관리자 입찰 제한을 미래 시각으로 저장한 뒤 DB와 상세 화면을 대조한다. 해제 시 관리자 값만 비워지는지 확인한다.
+
+### 기존 관리자 인증 검증 기록
 
 2026-11-09 임시 PostgreSQL 18과 직접 ASGI 요청으로 36개 검증을 통과했다. 새 DB의 테이블 생성, OpenAPI 경로 등록, 일반 회원 1번의 관리자 작업 거절, 다른 번호 관리자의 카탈로그 작업, 아이템 소유권, 이력 조회, 쿠키 관리자 의존성, Origin 검사, 동일 토큰의 권한 강등/승격 반영, 탈퇴와 로그아웃 차단을 확인했다. 웹 의존성은 로컬 검증 전용 경로로 확인했으며 실제 브라우저 UI나 운영 배포 검증은 아니다. 테스트 코드는 `.private/`에만 보관하고 커밋하지 않는다.
+
+## 10. 관리자 화면 전환과 스크롤바
+
+관리자 내부 이동은 서버 HTML에서 본문을 가져와 교체한다. 배경 캐러셀, 헤더와 메뉴 DOM은 유지하고 제목과 선택 메뉴를 갱신한다. 본문별 이벤트를 다시 연결하며 이전 본문의 조회 요청은 중단한다. 이미 전송한 저장 요청은 취소하지 않고, 떠난 화면의 응답이 새 화면을 변경하지 않게 한다. CSV 다운로드와 로그아웃은 기존 동작을 유지한다.
+
+`scrollbar-gutter: stable`로 세로 스크롤바 공간을 확보한다. 미지원 브라우저에서는 `overflow-y: scroll`을 사용한다.
+
+본문 바로가기 대상의 전체 테두리는 숨기고, 링크와 입력창, 버튼의 키보드 포커스 표시는 유지한다.
+
+2026-11-09 Chromium에서 실제 템플릿과 정적 파일에 격리된 테스트 응답을 연결해 검증했다. 1280×900에서 공간 고정을 끄면 홈에서 아이템 생성 화면으로 이동할 때 본문의 가로 좌표가 7.5px 바뀌었고, 적용 후에는 0px였다. 캐러셀 DOM과 애니메이션 객체도 유지됐다.
+
+아이템 미리보기와 수정 후 이동, 회원 검색과 생성 후 상세 이동, 이력 조회, 뒤로/앞으로 가기, 빠른 탭 전환과 늦은 응답, 화면 요청 실패 후 재시도, 직접 URL 접근과 새로고침, 로그인 리다이렉트를 확인했다. 관리자 내부 전환 중 문서 전체 요청은 최초 1회였고 브라우저 JavaScript 오류는 없었다. 390×844에서도 가로 넘침이 없었다. 저장 응답은 테스트용이며 이 검증은 실제 DB 저장이나 운영 배포 검증을 포함하지 않는다. 검증 스크립트와 화면 캡처는 `.private/`에 보관한다.

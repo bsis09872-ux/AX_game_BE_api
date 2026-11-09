@@ -1,5 +1,5 @@
 # SQLAlchemy로 회원을 조회하거나 저장하고 결과를 도메인 User로 변환한다.
-from sqlalchemy import select
+from sqlalchemy import select, func, or_, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,6 +13,35 @@ class SqlAlchemyUserRepository(UserRepository):
     # 주입받은 세션을 공유한다. 세션 생성과 트랜잭션 확정은 호출 측에서 담당한다.
     def __init__(self, session: AsyncSession):
         self.session = session
+
+    async def lock_administration(self) -> None:
+        # 서로를 동시에 강등하는 관리자 요청을 한 트랜잭션씩 처리한다.
+        await self.session.execute(text('SELECT pg_advisory_xact_lock(731401, 1)'))
+
+    async def count_available_admins(self) -> int:
+        return await self.session.scalar(select(func.count()).select_from(UserModel).where(
+            UserModel.role == 'ADMIN', UserModel.deleted_at.is_(None), UserModel.login_suspended_at.is_(None)))
+
+    async def save_admin_settings(self, user: User) -> None:
+        row = await self.session.get(UserModel, user.id)
+        if row is None:
+            raise UserNotFoundError()
+        row.role = user.role
+        row.login_suspended_at = user.login_suspended_at
+        row.manual_auction_blocked_until = user.manual_auction_blocked_until
+        await self.session.flush()
+
+    async def list_members(self, query: str, role: str | None, page: int, size: int) -> tuple[list[User], int]:
+        conditions = []
+        if query:
+            conditions.append(or_(UserModel.login_id.icontains(query, autoescape=True),
+                                  UserModel.display_name.icontains(query, autoescape=True)))
+        if role:
+            conditions.append(UserModel.role == role)
+        total = await self.session.scalar(select(func.count()).select_from(UserModel).where(*conditions))
+        rows = (await self.session.scalars(select(UserModel).where(*conditions)
+                .order_by(UserModel.id.desc()).offset((page - 1) * size).limit(size))).all()
+        return [self._to_domain(row) for row in rows], total
 
     async def find_for_update_many(self, user_ids: list[int]) -> dict[int, User]:
         if not user_ids:
@@ -43,6 +72,8 @@ class SqlAlchemyUserRepository(UserRepository):
             user_id=model.id,
             auction_purchase_count=model.auction_purchase_count,
             auction_blocked_until=model.auction_blocked_until,
+            manual_auction_blocked_until=model.manual_auction_blocked_until,
+            login_suspended_at=model.login_suspended_at,
             created_at=model.created_at,
             updated_at=model.updated_at,
             role=model.role,
@@ -72,6 +103,11 @@ class SqlAlchemyUserRepository(UserRepository):
             return None
 
         return self._to_domain(user_model)
+
+    async def find_by_login_id_for_update(self, login_id: str) -> User | None:
+        statement = select(UserModel).where(UserModel.login_id == login_id).with_for_update().execution_options(populate_existing=True)
+        row = await self.session.scalar(statement)
+        return self._to_domain(row) if row else None
 
     # 신규 회원만 등록하며 기존 회원의 갱신은 처리하지 않는다.
     async def create(self, user: User) -> User:

@@ -16,3 +16,8 @@ class UserNotFoundError(NotFoundError):
 class LoginIdAlreadyExistsError(ConflictError):
     code: str = "LOGIN_ID_ALREADY_EXISTS"
     message: str = "이미 사용 중인 로그인 ID입니다."
+
+
+class AdminAccountProtectionError(ConflictError):
+    code = 'ADMIN_ACCOUNT_PROTECTED'
+    message = '관리 가능한 관리자 계정을 유지해야 합니다.'

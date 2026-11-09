@@ -1,0 +1,15 @@
+{% extends "auth/admin/layout.html" %}
+{% block admin_title %}계정 만들기{% endblock %}
+{% block admin_content %}
+<section class="panel admin-section">
+  <h2>새 회원 계정</h2><p>일반 회원(USER)으로 생성합니다. 관리자 권한은 생성 후 상세 화면에서 별도로 변경하세요.</p><p class="admin-hint">현재는 회원 계정만 생성하며 지갑 생성은 연동 준비 중입니다.</p>
+  <form id="member-create" class="admin-fields">
+    <label>로그인 아이디<input name="login_id" required minlength="4" maxlength="50" pattern="[a-z0-9_]{4,50}" autocomplete="off"></label>
+    <label>표시 이름<input name="display_name" required minlength="2" maxlength="50"></label>
+    <label>초기 비밀번호<input name="password" type="password" required maxlength="1024" autocomplete="new-password"></label>
+    <label>비밀번호 확인<input name="password_confirm" type="password" required maxlength="1024" autocomplete="new-password"></label>
+    <p class="admin-wide admin-hint">비밀번호는 저장 후 다시 볼 수 없습니다.</p>
+    <div class="admin-wide"><button class="btn">계정 생성</button> <a href="/admin/members">취소</a></div>
+  </form>
+</section>
+{% endblock %}

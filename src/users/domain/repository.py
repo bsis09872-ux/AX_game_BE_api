@@ -7,6 +7,26 @@ from users.domain.user import User
 # 조회와 생성 계약을 모두 구현한 자식 클래스만 인스턴스를 생성할 수 있다.
 class UserRepository(ABC):
     @abstractmethod
+    async def find_by_login_id_for_update(self, login_id: str) -> User | None:
+        pass
+
+    @abstractmethod
+    async def count_available_admins(self) -> int:
+        pass
+
+    @abstractmethod
+    async def save_admin_settings(self, user: User) -> None:
+        pass
+
+    @abstractmethod
+    async def lock_administration(self) -> None:
+        pass
+
+    @abstractmethod
+    async def list_members(self, query: str, role: str | None, page: int, size: int) -> tuple[list[User], int]:
+        pass
+
+    @abstractmethod
     async def find_for_update_many(self, user_ids: list[int]) -> dict[int, User]:
         pass
 

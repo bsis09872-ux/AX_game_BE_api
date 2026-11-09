@@ -16,6 +16,13 @@ class UserService:
     def __init__(self, repository: UserRepository):
         self.repository = repository
 
+    async def is_admin(self, user_id: int) -> bool:
+        user = await self.repository.find_by_id(user_id)
+        return user is not None and user.can_login() and user.role == 'ADMIN'
+
+    async def list_members(self, query: str = '', role: str | None = None, page: int = 1, size: int = 20):
+        return await self.repository.list_members(query, role, page, size)
+
     # ID에 해당하는 회원이 없으면 UserNotFoundError를 발생시키고, 저장소 오류는 그대로 전파한다.
     async def get_user(self, user_id: int) -> User:
         result = await self.repository.find_by_id(user_id=user_id)
@@ -28,6 +35,9 @@ class UserService:
     # 인증 어댑터가 로그인 ID로 조회하며 없는 계정의 처리는 인증 서비스가 결정한다.
     async def find_by_login_id(self, login_id: str) -> User | None:
         return await self.repository.find_by_login_id(login_id)
+
+    async def find_by_login_id_for_update(self, login_id: str) -> User | None:
+        return await self.repository.find_by_login_id_for_update(login_id)
 
     # 다른 도메인에 필요한 회원 상태만 전달하며 탈퇴 회원도 조회 결과에 포함한다.
     async def get_user_summary(self, user_id: int) -> UserSummary:
@@ -47,6 +57,8 @@ class UserService:
             display_name=user.display_name,
             is_active=user.is_active(),
             auction_blocked_until=user.auction_blocked_until,
+            manual_auction_blocked_until=user.manual_auction_blocked_until,
+            effective_auction_blocked_until=user.effective_auction_blocked_until,
             role=user.role,
             auction_purchase_count=user.auction_purchase_count,
         )

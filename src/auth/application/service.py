@@ -32,7 +32,7 @@ class AuthService:
         transaction: Transaction,
         sessions: SessionRepository,
         refresh_codec: RefreshTokenCodec,
-        refresh_ttl_seconds: int = 604800,
+        refresh_ttl_seconds: int = 1800,
         revoked_sessions: RevokedSessions | None = None,
     ):
         self.password_hasher = password_hasher
