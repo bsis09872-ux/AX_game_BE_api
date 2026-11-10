@@ -428,13 +428,42 @@ body.embed .main-content {
   margin: 0 0 6px;
 }
 
-/* 입찰 패널 안내 문구: 안내는 하늘색, 입찰이 막힌 경고는 붉은색 */
+/* 입찰 패널 안내 문구: 위 정보와 구분되는 말풍선(꼬리는 오른쪽 아래). 안내는 하늘색, 입찰이 막힌 경고는 붉은색 */
 .bid-message {
+  --bubble-line: rgba(255, 244, 224, 0.85);
+  position: relative;
+  margin: 10px 0 18px;
+  padding: 8px 12px;
   color: var(--water);
+  background: var(--night);
+  border: var(--px) solid var(--bubble-line);
 }
 
 .bid-message.warn {
+  --bubble-line: var(--pink);
   color: var(--pink);
+}
+
+/* 꼬리: 바깥(테두리색) 삼각형 위에 안쪽(배경색) 삼각형을 겹쳐 테두리가 이어진 모양으로 만든다 */
+.bid-message::before,
+.bid-message::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  border-style: solid;
+  border-color: transparent;
+}
+
+.bid-message::before {
+  right: 16px;
+  border-width: 11px 8px 0;
+  border-top-color: var(--bubble-line);
+}
+
+.bid-message::after {
+  right: 19px;
+  border-width: 8px 5px 0;
+  border-top-color: var(--night);
 }
 
 /* 입찰 폼: 입력 칸과 버튼을 한 줄에 같은 높이로 */
