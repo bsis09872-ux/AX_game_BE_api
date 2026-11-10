@@ -3,16 +3,12 @@
 service가 DB에서 읽은 값(잔액, 예약 합계, 매물의 현재 입찰 정보)을 넘기면
 여기서 판정만 한다. 잠금·저장·로그는 하지 않는다.
 
-예약 합계(held_amount)는 DB에서 계산한다:
-  내가 current_bidder_id인 BIDDING 매물들의 current_bid_amount 합계
-  (마감이 지나도 정산 전이면 포함)
+예약 합계(held_amount)는 경매가 제공하는 HeldAmountReader로 읽는다:
+  내가 최고 입찰자인 BIDDING 매물들의 입찰액 합계 (마감이 지나도 정산 전이면 포함)
 """
 from dataclasses import dataclass
 
 from wallet.domain.exceptions import BuyerBalanceShortError, InsufficientBalanceError
-
-# 거래 수수료(%) — 미정이라 0. 정해지면 이 값만 바꾼다. 1골드 미만은 버린다.
-FEE_PERCENT = 0
 
 # 가입 시 지급하는 초기 골드 (WALL-06). 초안 값, 회의에서 확정한다.
 INITIAL_BALANCE = 3_000
@@ -66,21 +62,16 @@ def check_bid_funds(*, balance: int, held_amount: int, extra: int) -> BidFundsCh
     return BidFundsCheck(required_extra=extra, available_before=before, available_after=before - extra)
 
 
-def fee_for(price: int) -> int:
-    """거래 수수료. 1골드 미만 버림."""
-    return price * FEE_PERCENT // 100
-
-
 @dataclass(frozen=True)
 class SettlementAmounts:
-    buyer_debit: int   # 구매자 잔액에서 뺄 금액
-    seller_credit: int  # 판매자 잔액에 더할 금액
-    fee: int
+    buyer_debit: int    # 구매자 잔액에서 뺄 금액 = 낙찰가
+    seller_credit: int  # 판매자 잔액에 더할 금액 = 낙찰가 (거래 수수료 없음)
 
 
 def settlement_amounts(*, price: int, buyer_balance: int) -> SettlementAmounts:
     """낙찰 정산 금액 (WALL-08)
 
+    수수료는 없다(팀 정책 확정). 구매자 -낙찰가, 판매자 +낙찰가.
     예약 규칙이 지켜졌다면 구매자 잔액은 항상 낙찰가 이상이다.
     아니면 데이터 불일치이므로 500으로 처리되는 예외를 던진다.
     """
@@ -88,5 +79,4 @@ def settlement_amounts(*, price: int, buyer_balance: int) -> SettlementAmounts:
         raise ValueError("낙찰가는 0보다 커야 합니다.")
     if buyer_balance < price:
         raise BuyerBalanceShortError()
-    fee = fee_for(price)
-    return SettlementAmounts(buyer_debit=price, seller_credit=price - fee, fee=fee)
+    return SettlementAmounts(buyer_debit=price, seller_credit=price)

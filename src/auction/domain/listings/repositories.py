@@ -53,6 +53,13 @@ class ListingRepository(ABC):
     ) -> list[Listing]:
         ...
 
+    # [AUC-01, AUC-06] 같은 아이템 종류의 공개 판단을 한 트랜잭션씩 처리하도록 잠근다.
+    # 입력: 아이템 종류 ID. 처리: 트랜잭션이 끝날 때까지 같은 종류의 다른 요청을 기다리게 한다.
+    # 반환값 없음. 잠금은 commit·rollback 시 자동으로 풀린다.
+    @abstractmethod
+    async def lock_definition(self, item_definition_id: int) -> None:
+        ...
+
     # [AUC-01, AUC-06] 대기 매물을 공개하기 전에 같은 종류의 진행 매물이 있는지 확인한다.
     @abstractmethod
     async def exists_bidding(self, item_definition_id: int) -> bool:
