@@ -181,3 +181,9 @@ a.slot {
   min-height: 0;
   overflow: hidden;
 }
+
+/* 상태·희귀도·정렬 버튼도 너비를 같게 (가장 긴 "희귀도 높은 순"이 한 줄에 들어가는 폭) */
+.bag-filters .filter-group a {
+  width: 92px;
+  padding: 2px 0;
+}
