@@ -188,7 +188,6 @@ inventory/
 구현 완료: 조회 API, 관리자 카탈로그 API, 이력 API, 낚시, 화면(내 인벤토리 목록·필터·정렬, 아이템 상세, 도감), 캐시, 접근 로그
 
 아직 연결되지 않은 것 (협의·확인 후 진행)
-- `main.py` 등록: 인벤토리 라우터, 화면 라우터(`create_inventory_web_router(get_current_web_user_id)`: 목록·상세·도감), 낚시 라우터(설정이 켜졌을 때)
 - 회원 탈퇴 시 아이템 처리: 보류
 - 인벤토리 화면의 메뉴·로그인 이동, 화면 소유: 화면 담당과 협의
 - 아이템 아이콘: 그림 파일은 `src/static/sprites/item_<icon>.png`(16×16)에 있고(`icon` 값 앞에 `item_`을 붙인 이름, 예: `fish_carp` → `item_fish_carp.png`), `icon` 값은 영문 소문자로 시작하는 영문 소문자·숫자·밑줄 1~50자만 허용합니다. 화면 적용은 진행 중입니다. 파일이 없는 `icon`(예: `default`)은 `item_gift_box.png`로 대체합니다
