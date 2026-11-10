@@ -75,6 +75,21 @@ class WalletService:
             updated_at=wallet.updated_at,
         )
 
+    async def get_available_balance(self, user_id: int) -> int:
+        """헤더 표시용 사용 가능 금액. 화면을 옮길 때마다 불리므로 지갑을 잠그지 않는다.
+
+        get_my_wallet은 FOR UPDATE로 잠가서, 자주 부르면 같은 지갑을 잠그는 입찰·정산이 기다리게 된다.
+        잠금 없이 읽으면 정산이 커밋되는 순간 잔액과 예약금이 서로 다른 시점 값일 수 있다.
+        표시용이라 다음 화면 전환에서 바로잡히고, 입찰 가능 여부는 check_bid_funds가 잠그고 다시 판단한다.
+        처음 조회면 지갑을 만들므로(WALL-06) 호출자가 commit한다.
+        """
+        wallet = await self.wallet_repo.get(user_id)
+        if wallet is None:
+            await self.ensure_wallet(user_id)  # 없는 회원이면 WalletNotFoundError
+            wallet = await self.get_wallet(user_id)
+        held = await self.held_reader.held_amount(user_id)
+        return rules.available_balance(wallet.balance.value, held)
+
 
     async def create_wallet(self, user_id: int) -> Wallet:
         """WALL-06 지갑 생성, 초기 골드 지급.
