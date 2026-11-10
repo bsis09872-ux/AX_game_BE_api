@@ -191,7 +191,7 @@ function initDetailLive({ root, signal, navigate }) {
     schedule(POLL_MS);
 }
 
-const LIST_POLL_MS = 5000; // 목록을 다시 읽는 간격
+const LIST_POLL_MS = 2000; // 목록을 다시 읽는 간격 (상세와 같다. 목록은 화면 전체를 읽어서 1초는 부담이 커진다)
 const FLASH_MS = 1300; // 바뀐 카드가 깜빡이는 시간
 const REFRESH_GAP_MS = 5000; // 탭이 다시 보일 때, 마지막 확인 뒤 이만큼 지났을 때만 다시 읽는다
 
