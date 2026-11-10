@@ -1,11 +1,7 @@
 # Contract: 경매가 외부에 요청하는 기능의 입력값과 반환값을 정의한다.
 # Protocol은 계약만 선언하며 실제 조회·저장·잠금은 구현체가 담당한다.
 # 외부 데이터는 dto.py의 형태로 전달받고 다른 도메인의 ORM에 의존하지 않는다.
-#
-# AuctionUserGateway: 사용자 조회와 낙찰 제한 상태 저장.
-# WalletGateway: 잔액 확인과 재화 이전.
-# InventoryGateway: 판매 예약·해제·소유권 이전과 아이템 정보 조회.
-# TransactionManager: 관련 변경의 확정과 되돌리기.
+# 구현체는 flush까지만 하며, commit은 호출하는 서비스가 한다.
 #
 # 합의한 잠금 순서: 매물 → 아이템 종류 → 다음 대기 매물 → 아이템 → 사용자 → 지갑.
 # 여러 사용자를 잠글 때는 사용자 ID 오름차순으로 처리한다.
@@ -37,7 +33,7 @@ class AuctionUserGateway(Protocol):
         ...
 
     # 사용자 ID와 계산된 낙찰 횟수·제한 종료 시각을 받아 저장 요청한다.
-    # 반환값 없음. commit은 트랜잭션 담당자가 수행한다.
+    # 반환값 없음.
     async def update_limit(
         self,
         user_id: int,
@@ -108,7 +104,7 @@ class InventoryGateway(Protocol):
         ...
 
     # 아이템·소유자·매물 ID와 처리 시각으로 예약을 해제한다.
-    # 반환값 없음. commit은 트랜잭션 담당자가 수행한다.
+    # 반환값 없음.
     async def release(
         self,
         inventory_item_id: int,
@@ -119,7 +115,7 @@ class InventoryGateway(Protocol):
         ...
 
     # 아이템·판매자·구매자·매물 ID와 처리 시각으로 예약 아이템을 이전한다.
-    # 반환값 없음. commit은 트랜잭션 담당자가 수행한다.
+    # 반환값 없음.
     async def transfer_reserved(
         self,
         inventory_item_id: int,

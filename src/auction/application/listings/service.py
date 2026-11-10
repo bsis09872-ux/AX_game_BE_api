@@ -2,7 +2,7 @@
 # 매물 규칙은 Listing에, DB 작업은 Repository에, 다른 도메인 작업은 Gateway에 맡긴다.
 # 변경 요청은 같은 세션에서 처리하고 마지막에 transaction.commit으로 확정한다.
 # 중간에 오류가 나면 commit하지 않고 올리며, get_db가 rollback한다.
-# 잠금 순서: 매물 → 아이템 → 사용자 → 지갑.
+# 잠금 순서: 매물 → 아이템 종류 → 다음 대기 매물 → 아이템 → 사용자 → 지갑.
 
 from datetime import datetime
 

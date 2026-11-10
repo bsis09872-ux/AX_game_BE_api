@@ -3,9 +3,10 @@
 # 소유권·상태·재판매 제한 검사는 인벤토리 도메인이 한다.
 # commit·rollback은 트랜잭션 담당자가 한다. 인벤토리 메서드도 flush까지만 한다.
 # 인벤토리 오류는 공통 오류를 상속하므로 그대로 올린다.
-# 단, 예약 해제(release)의 아이템 누락·상태·소유권 불일치는 내부 데이터 불일치로 보고
-# 경매의 InventoryMismatchError(500)로 변환한다.
-#
+# 단, 예약 해제(release)와 소유권 이전(transfer_reserved)의 아이템 누락·상태·소유권 불일치는
+# 내부 데이터 불일치로 보고 경매의 InventoryMismatchError(500)로 변환한다.
+# 소유권 이전에서 낙찰자 탈퇴·행 없음(OwnerNotFoundError)은 SettlementNotPossibleError로 변환한다.
+
 # [TO DO] 거래 기록 ID(trade_id)를 아이템 이력에 남길지 정산 순서와 함께 정한다. (진행 전)
 
 import logging
@@ -13,13 +14,14 @@ from datetime import datetime
 
 from auction.application.contract import InventoryGateway
 from auction.application.dto import ItemSummary
-from auction.domain.exceptions import InventoryMismatchError
+from auction.domain.exceptions import InventoryMismatchError, SettlementNotPossibleError
 from inventory.application.dto import ItemInfo
 from inventory.application.service import InventoryService
 from inventory.domain.exceptions import (
     InvalidStateError,
     ItemNotFoundError,
     NotOwnerError,
+    OwnerNotFoundError,
 )
 
 logger = logging.getLogger(__name__)
@@ -85,6 +87,9 @@ class InventoryGatewayAdapter(InventoryGateway):
 
     # 소유권 이전 (LISTED → 구매자 OWNED): 낙찰 정산
     # from_owner_id를 넘겨 현재 소유자가 판매자인지 인벤토리가 확인하게 한다.
+    # 낙찰자 탈퇴·행 없음은 자동 유찰 대상(SettlementNotPossibleError)으로 바꾼다.
+    # 아이템 누락·상태·소유권 불일치는 자동 유찰하지 않고 InventoryMismatchError(500)로 바꾼다.
+    # 두 경우 모두 원래 예외 유형과 ID를 로그로 남긴다. rollback은 호출 측이 한다.
     async def transfer_reserved(
         self,
         inventory_item_id: int,
@@ -93,13 +98,35 @@ class InventoryGatewayAdapter(InventoryGateway):
         listing_id: int,
         now: datetime,
     ) -> None:
-        await self._inventory_service.transfer_to(
-            inventory_item_id,
-            new_owner_id=to_user_id,
-            now=now,
-            listing_id=listing_id,
-            from_owner_id=from_user_id,
-        )
+        try:
+            await self._inventory_service.transfer_to(
+                inventory_item_id,
+                new_owner_id=to_user_id,
+                now=now,
+                listing_id=listing_id,
+                from_owner_id=from_user_id,
+            )
+        except OwnerNotFoundError as exc:
+            logger.warning(
+                "settlement_buyer_unavailable action=transfer error=%s "
+                "listing_id=%s inventory_item_id=%s buyer_id=%s",
+                type(exc).__name__,
+                listing_id,
+                inventory_item_id,
+                to_user_id,
+            )
+            raise SettlementNotPossibleError() from exc
+        except (ItemNotFoundError, InvalidStateError, NotOwnerError) as exc:
+            logger.error(
+                "inventory_mismatch action=transfer error=%s "
+                "listing_id=%s inventory_item_id=%s seller_id=%s buyer_id=%s",
+                type(exc).__name__,
+                listing_id,
+                inventory_item_id,
+                from_user_id,
+                to_user_id,
+            )
+            raise InventoryMismatchError() from exc
 
     # 거래 기록용 아이템 정보 조회
     async def get_summary(
