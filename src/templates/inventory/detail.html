@@ -65,7 +65,7 @@
         </div>
 
         <div class="page-links">
-            <a href="/inventory">← 내 가방</a>
+            <a href="/inventory?item={{ item.id }}">← 내 가방</a>{# [Claude] 방금 본 아이템이 가방의 선택 패널에 다시 뜨게 한다 #}
             <a class="to-right" href="/item-catalogs#item-{{ item.definition.id }}">아이템 도감 보기</a>
         </div>
     </div>
