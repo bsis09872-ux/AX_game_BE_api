@@ -5,6 +5,13 @@
 {% block title %}{{ d.item.name }} | 경매장 | Catch &amp; Bid{% endblock %}
 
 {% block content %}
+{% macro leader_figure() -%}
+<figure class="stage-npc stage-bidder{% if d.leader.label == '나' %} me{% endif %}">
+  <span class="tag lead">{{ d.leader.badge }}</span>
+  <img class="px" src="{{ url_for('static', path='/sprites/npc_bidder_' ~ d.leader.sprite ~ '.png') }}" alt="" width="112" height="112">
+  <figcaption>{{ d.leader.label }}</figcaption>
+</figure>
+{%- endmacro %}
 <section aria-labelledby="listing-title">
   <div class="auction-head">
     <a href="{{ d.list_href }}">← 경매장 목록</a>
@@ -44,9 +51,11 @@
             <div class="muted">경매 #{{ d.id }} · {{ d.item.category }}</div>
             {{ item_icon(d.item, 64) }}
             <h1 id="listing-title" class="stage-name">{{ d.item.name }}</h1>
-            <div class="price-label">{{ d.price_label }}</div>
-            <div class="stage-price">{{ gold(d.price) }}</div>
-            <div class="muted">
+            <div class="price-block">
+              <div class="price-label">{{ d.price_label }}</div>
+              <div class="stage-price">{{ '{:,}'.format(d.price) }}G</div>
+            </div>
+            <div class="muted card-time">
               {% if d.status == 'BIDDING' %}경매 마감까지 <span class="clock{% if d.timebar and d.timebar.urgent %} urgent{% endif %}">{{ d.remaining_text }}</span>
               {% elif d.status == 'QUEUED' %}순서를 기다리는 중
               {% else %}경매 마감{% endif %}
@@ -56,11 +65,14 @@
 
         <div class="stage-floor">
           {% if d.leader %}
-          <figure class="stage-npc stage-bidder">
-            <span class="tag lead">{{ d.leader.badge }}</span>
-            <img class="px" src="{{ url_for('static', path='/sprites/npc_bidder_' ~ d.leader.sprite ~ '.png') }}" alt="" width="96" height="96">
-            <figcaption>{{ d.leader.label }}</figcaption>
-          </figure>
+          {# 입찰자가 있으면 웅성거리는 사람들 속에 최고액 입찰자(또는 낙찰자)가 눈에 띄게 서 있다 #}
+          {% set half = d.crowd | length // 2 %}
+          <div class="crowd">
+            {% for n in d.crowd %}
+            {% if loop.index0 == half %}{{ leader_figure() }}{% endif %}
+            <img class="px crowd-npc" style="--i: {{ loop.index0 }}" src="{{ url_for('static', path='/sprites/npc_bidder_' ~ n ~ '.png') }}" alt="" width="64" height="64">
+            {% endfor %}
+          </div>
           {% else %}
           <p class="empty">{{ '아직 입찰자가 없어요' if d.status == 'BIDDING' else '입찰자가 없었어요' }}</p>
           {% endif %}
@@ -98,10 +110,10 @@
         <ol>
           <li>현재 최고가보다 높은 금액으로 입찰해요.</li>
           <li>마감 전까지 더 높게 부르면 최고액 입찰자가 바뀌어요.</li>
-          <li>최고액일 때만 G가 묶이고, 밀려나면 바로 풀려요.</li>
-          <li>마감 때 최고액 입찰자가 낙찰받고 G가 차감돼요. 입찰자가 없으면 유찰이고 아이템은 판매자에게 돌아가요.</li>
+          <li>최고액일 때만 입찰 금액이 묶이고, 밀려나면 바로 풀려요.</li>
+          <li>마감 때 최고액 입찰자가 낙찰받고 금액이 차감돼요. 입찰자가 없으면 유찰이고 아이템은 판매자에게 돌아가요.</li>
+          <li>내 매물에는 입찰할 수 없고, 최고액 입찰자는 연속으로 입찰할 수 없어요.</li>
         </ol>
-        <p class="muted">내 매물에는 입찰할 수 없고, 최고액 입찰자는 연속으로 입찰할 수 없어요.</p>
       </div>
     </div>
   </div>

@@ -232,6 +232,12 @@ def leader_view(listing: Listing, viewer_id: int, winner_name: str) -> Leader | 
     return Leader(sprite, '나' if is_me else alias, '최고액 입찰자', listing.current_bid_amount)
 
 
+# 무대 바닥에서 웅성거리는 다른 입찰자들 그림 번호 (경매 번호로 정해서 새로고침해도 같다). 최고액 입찰자의 그림은 뺀다
+def crowd_view(listing_id: int, leader_sprite: int) -> tuple[int, ...]:
+    sprites = [(listing_id * 3 + i * 5) % len(ALIASES) + 1 for i in range(len(ALIASES))]
+    return tuple(n for n in sprites if n != leader_sprite)
+
+
 @dataclass(frozen=True)
 class DetailView:
     id: int
@@ -247,6 +253,7 @@ class DetailView:
     remaining_text: str
     timebar: Timebar | None
     leader: Leader | None
+    crowd: tuple[int, ...]  # 입찰자가 있을 때만 채운다
     banner: Banner | None
     message: str  # 입찰 패널의 내 상태 안내
     can_bid: bool
@@ -280,7 +287,7 @@ def detail_view(
     elif is_seller:
         message = '내 매물이에요. 입찰할 수 없어요.'
     elif is_leader:
-        message = '지금 내가 최고액 입찰자예요! 다른 사람이 더 높게 부르면 밀려나요.'
+        message = '지금 내가 1등이에요!'
     elif blocked:
         message = f'연속 낙찰 제한 중이라 입찰할 수 없어요. (남은 시간 {format_clock(blocked_seconds)})'
     elif listing.has_bidder():
@@ -293,6 +300,7 @@ def detail_view(
     else:
         price_label = '현재가' if listing.has_bidder() else '시작가'
 
+    leader = leader_view(listing, viewer_id, winner_name)
     return DetailView(
         id=listing.id,
         item=item,
@@ -306,7 +314,8 @@ def detail_view(
         ends_at=listing.ends_at,
         remaining_text=format_clock(seconds) if bidding else '마감',
         timebar=timebar_view(seconds) if bidding else None,
-        leader=leader_view(listing, viewer_id, winner_name),
+        leader=leader,
+        crowd=crowd_view(listing.id, leader.sprite) if leader else (),
         banner=banner_view(listing, viewer_id, winner_name),
         message=message,
         can_bid=bidding and seconds > 0 and not is_seller and not is_leader and not blocked,
