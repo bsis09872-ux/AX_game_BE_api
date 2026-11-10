@@ -277,10 +277,10 @@ body.embed .main-content {
   border: var(--px) solid rgba(58, 35, 22, .8);
 }
 
-/* 입찰자가 있으면 흐린 바닥이 테두리 없이 무대 가장자리까지 덮는다. 위로 조금 더 올려도 경매사 연단은 가리지 않는다 (위 8 + 214 = 222로 높이를 맞춘다) */
+/* 입찰자가 있으면 흐린 바닥이 테두리 없이 무대 가장자리까지, 경매사 바로 아래부터 덮는다 (위 18 + 190 + 아래 14 = 222로 높이를 맞춘다) */
 .stage-floor.crowded {
-  margin: 8px 0 0;
-  height: 214px;
+  margin: 0;
+  height: 222px;
   border: 0;
 }
 
@@ -401,6 +401,7 @@ body.embed .main-content {
 /* "입찰 금액 (G)" 글자: 가방의 "경매 시작"과 같은 붉은 계열 (크기는 안내 문구와 같다) */
 .bid-label {
   color: var(--pink);
+  font-size: 20px;
 }
 
 .bid-row {
