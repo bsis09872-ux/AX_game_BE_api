@@ -54,9 +54,10 @@ from users.infrastructure.schema import upgrade_member_controls
 from inventory.presentation.admin_router import create_inventory_admin_router
 from inventory.presentation.router import router as inventory_router
 from inventory.presentation.dependencies import get_inventory_service
-from inventory.presentation.fishing_router import router as fishing_router
 from inventory.presentation.web_router import create_inventory_web_router
 from inventory.wiring import is_fishing_enabled
+from client.web_router import create_client_web_router, create_fishing_api_router, create_opening_router
+from world.presentation.router import router as world_router
 # endregion
 
 
@@ -82,6 +83,7 @@ import users.infrastructure.models  # noqa: F401
 import inventory.infrastructure.models  # noqa: F401
 import wallet.infrastructure.models  # noqa: F401
 import auction.infrastructure.listings.models  # noqa: F401 (임시)
+import world.infrastructure.models  # noqa: F401
 # endregion
 
 
@@ -155,7 +157,7 @@ app.include_router(create_user_web_router(get_current_web_user_id))
 # region 도메인 라우터: 인벤토리
 app.include_router(inventory_router, prefix=API_PREFIX)
 if is_fishing_enabled():
-    app.include_router(fishing_router, prefix=API_PREFIX)
+    app.include_router(create_fishing_api_router(get_current_user_id), prefix=API_PREFIX)
 # 가방 화면에 지갑 박스 읽기 함수를 넘긴다 (인벤토리가 wallet을 import하지 않게 main이 연결)
 app.include_router(create_inventory_web_router(get_current_web_user_id, read_wallet_box))
 # endregion
@@ -181,6 +183,12 @@ app.include_router(listing_router, prefix=API_PREFIX)
 app.include_router(trade_router, prefix=API_PREFIX)
 # 경매 화면(목록·상세·등록·입찰·취소·내 거래). 로그인과 출처 확인은 auth 함수를 넘긴다
 app.include_router(create_auction_web_router(get_current_web_user_id, require_web_origin))
+
+app.include_router(create_client_web_router(
+    get_current_web_user_id, require_web_origin, is_fishing_enabled,
+), prefix=API_PREFIX)
+app.include_router(world_router)
+app.include_router(create_opening_router())
 
 
 @app.get("/health")

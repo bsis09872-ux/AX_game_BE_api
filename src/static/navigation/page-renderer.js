@@ -101,11 +101,18 @@ export async function preparePageStyles(nextPage, signal) {
         throw error;
     }
 
-    return () => {
-        addedLinks.forEach((link) => {
-            link.removeAttribute("media");
-            link.removeAttribute("data-page-style-pending");
-        });
-        currentLinks.filter((link) => !nextUrls.has(link.href)).forEach((link) => link.remove());
+    return {
+        activate() {
+            addedLinks.forEach((link) => link.removeAttribute("media"));
+        },
+        finish() {
+            addedLinks.forEach((link) => link.removeAttribute("data-page-style-pending"));
+            currentLinks
+                .filter((link) => !nextUrls.has(link.href))
+                .forEach((link) => link.remove());
+        },
+        cancel() {
+            addedLinks.forEach((link) => link.remove());
+        },
     };
 }

@@ -278,6 +278,17 @@ class InventoryService:
     async def grant_item(
             self, definition_id: int, owner_id: int, origin: ItemOrigin, now:datetime, actor_id: int | None=None
     ) -> ItemInfo:
+        item = await self.grant_item_in_transaction(definition_id, owner_id, origin, now, actor_id)
+        await self._unit_of_work.commit()
+        logger.info('item_granted item_id=%s definition_id=%s owner_id=%s origin=%s',
+                    item.id, definition_id, owner_id, origin.value)
+        return item
+
+
+    async def grant_item_in_transaction(
+            self, definition_id: int, owner_id: int, origin: ItemOrigin, now: datetime, actor_id: int | None = None
+    ) -> ItemInfo:
+        """지급과 이력을 저장한다. 호출자가 다른 기록과 함께 commit/rollback한다."""
 
         # 1. 카탈로그가 있는지 
         definition = await self._definitions.find_by_id(definition_id)
@@ -293,13 +304,6 @@ class InventoryService:
 
         # 4. 저장
         await self._items.save(item)
-        await self._unit_of_work.commit()
-
-        # 5. 성공 로그
-        logger.info(
-            'item_granted item_id=%s definition_id=%s owner_id=%s origin=%s',
-            item.id, definition.id, owner_id, origin.value
-        )
         return _to_item_info(item)
 
     # ===== 옥션 도메인에게 공개하는 메서드 =====

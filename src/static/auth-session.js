@@ -1,3 +1,34 @@
+// 웹소켓 재연결도 공통 인증 갱신 잠금을 사용한다.
+export async function ensureSession(signal) {
+    async function renew() {
+        signal.throwIfAborted();
+        const requestSignal = AbortSignal.any([signal, AbortSignal.timeout(8000)]);
+        const current = await fetch("/session", {
+            credentials: "same-origin",
+            cache: "no-store",
+            signal: requestSignal,
+        });
+        if (!current.ok && current.status !== 401) throw new Error("session unavailable");
+        const status = current.ok ? await current.json() : null;
+        if (status && status.expires_in > 30) return status;
+
+        signal.throwIfAborted();
+        const response = await fetch("/session/refresh", {
+            method: "POST",
+            credentials: "same-origin",
+            cache: "no-store",
+            signal: requestSignal,
+        });
+        if (response.status === 401) return null;
+        if (!response.ok) throw new Error("refresh unavailable");
+        return response.json();
+    }
+
+    return navigator.locks
+        ? navigator.locks.request("ax-game-session-refresh", { signal }, renew)
+        : renew();
+}
+
 // 로그인 복구와 내 정보 화면의 자동 갱신을 담당한다.
 // 토큰 원문은 JavaScript에서 읽지 않고 브라우저가 HttpOnly 쿠키로 전달한다.
 export function initAuthSession({ signal, navigate }) {
@@ -50,56 +81,6 @@ export function initAuthSession({ signal, navigate }) {
         checkExpiry();
     }
 
-    // 현재 access token을 서버에서 검증하고 남은 유효 시간을 조회한다.
-    async function status() {
-        const response = await fetch("/session", {
-            credentials: "same-origin",
-            cache: "no-store",
-        });
-
-        // 인증 만료와 서버/통신 장애를 구분한다. 장애는 호출부에서 재시도한다.
-        if (response.status === 401) {
-            return null;
-        }
-
-        if (!response.ok) {
-            throw new Error("session unavailable");
-        }
-
-        return response.json();
-    }
-
-    // access token의 남은 시간이 30초 이하이면 refresh cookie로 새 토큰을 요청한다.
-    async function renewIfNeeded() {
-        // 탭 간 잠금을 얻은 뒤 다시 조회해야 다른 탭이 갱신한 쿠키도 반영된다.
-        const current = await status();
-
-        // 다른 페이지로 이동한 사이에는 이전 화면이 토큰 갱신을 시작하지 않는다.
-        if (ended) {
-            return null;
-        }
-
-        if (current && current.expires_in > 30) {
-            return current;
-        }
-
-        const response = await fetch("/session/refresh", {
-            method: "POST",
-            credentials: "same-origin",
-            cache: "no-store",
-        });
-
-        if (response.status === 401) {
-            return null;
-        }
-
-        if (!response.ok) {
-            throw new Error("refresh unavailable");
-        }
-
-        return response.json();
-    }
-
     // 인증 확인 결과에 따라 화면을 이동하거나 다음 확인을 예약한다.
     async function update() {
         // 백그라운드 타이머가 지연돼도 화면에 돌아오면 만료부터 확인한다.
@@ -120,9 +101,7 @@ export function initAuthSession({ signal, navigate }) {
             try {
                 // Web Locks 지원 브라우저는 여러 탭의 갱신도 순서대로 처리한다.
                 // 미지원 브라우저에서는 위 pending으로 탭 내부 중복만 막는다.
-                const result = navigator.locks
-                    ? await navigator.locks.request("ax-game-session-refresh", renewIfNeeded)
-                    : await renewIfNeeded();
+                const result = await ensureSession(signal);
 
                 // 요청을 기다리는 중 세션 만료 타이머가 실행됐다면 결과를 적용하지 않는다.
                 if (ended) {
