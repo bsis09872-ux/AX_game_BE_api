@@ -62,18 +62,15 @@ body.embed .main-content {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: 12px;
+  gap: 10px 12px;
   margin-bottom: 14px;
+  padding: 10px 14px;
 }
 
 .search-field {
   display: flex;
   flex-direction: column;
   gap: 4px;
-}
-
-.search-field.grow {
-  flex: 1 1 160px;
 }
 
 .search-field label {
@@ -87,8 +84,12 @@ body.embed .main-content {
   min-width: 0;
 }
 
+.search-field input[type="search"] {
+  width: 180px;
+}
+
 .search-field input[inputmode="numeric"] {
-  width: 110px;
+  width: 100px;
 }
 
 .search-actions {
