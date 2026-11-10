@@ -1,4 +1,6 @@
-"""낚시터 화면 라우터 (GET /play, Jinja2)
+"""낚시터 화면 라우터 (GET /play, GET /opening, Jinja2)
+
+- GET /opening: 오프닝 화면. 로그인 없이 볼 수 있고, PRESS START 뒤 /play로 들어간다 (static/game/opening.js, page_key "opening")
 
 - 로그인 확인(쿠키의 회원 번호)은 main에서 넘겨 받는다 (auth의 쿠키 구조를 모른다).
   로그인이 안 됐으면 auth의 핸들러가 /login으로 이동시킨다
@@ -37,5 +39,10 @@ def create_game_web_router(current_user_id: Callable[..., Awaitable[int]]) -> AP
         )
         response.headers["Cache-Control"] = "no-store"
         return response
+
+    @router.get("/opening", response_class=HTMLResponse, include_in_schema=False)
+    async def opening_page(request: Request) -> HTMLResponse:
+        # 오프닝은 로그인 없이 볼 수 있다. PRESS START 뒤 /play로 가면 그때 로그인을 확인한다
+        return request.app.state.templates.TemplateResponse(request=request, name="game/opening.html", context={})
 
     return router

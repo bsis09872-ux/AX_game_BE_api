@@ -29,6 +29,7 @@
 ### 4-1. 화면
 | 메서드 | 경로 | 로그인 | 설명 |
 |---|---|---|---|
+| GET | `/opening` | 없음 | 오프닝 화면. 커튼이 걷히고 로고가 낚여 올라온 뒤 PRESS START. 키·클릭으로 건너뛰고, PRESS START 뒤에는 `/play`로 들어간다 |
 | GET | `/play?map=world` | 쿠키 | 낚시터 화면. `map`은 `static/maps/{map}.tmj`(영문·숫자·`_`·`-` 32자, 틀리면 422). 로그인이 안 됐으면 `/login`으로 이동 |
 
 ### 4-2. 화면이 부르는 팀 API
@@ -80,13 +81,15 @@
 | `wiring.py` | 허브 하나·접속자 확인기 조립, `GAME_*` 설정 |
 | `templates/game/play.html` | 화면 틀(스크립트 없음) |
 | `static/game/play.js` | 화면 동작 `initPlayPage`. `pages.js`에 `play`로 등록 |
+| `templates/game/opening.html`, `static/game/opening.js`, `static/css/opening.css` | 오프닝 화면. 동작 `initOpeningPage`를 `pages.js`에 `opening`으로 등록. 캔버스 하나에 매 프레임 다시 그린다 |
 | `static/css/game.css` | 화면 CSS (`data-page-style`) |
 | `static/vendor/phaser/` | Phaser 4.2.1 (MIT, `LICENSE.md`). CDN 대신 파일로 둡니다 |
-| `static/sprites/characters/`, `static/sprites/ui/` | 캐릭터 6명×방향 3장, 낚시·버튼 UI 6장 (Kenney Tiny 팩 CC0 기반, `static/tiles/LICENSE-kenney.txt`) |
+| `static/sprites/characters/`, `static/sprites/ui/`, `static/sprites/audience/` | 캐릭터 6명×방향 3장과 경매사, 낚시·버튼·단상·망치 UI, 오프닝 관객 14장 (Kenney Tiny 팩 CC0 기반, `static/tiles/LICENSE-kenney.txt`) |
+| `static/images/catch-and-bid-logo-opening.png` | 오프닝용 로고 (원본에서 아래 물방울 2개를 지움) |
 
 ## 6. 연결에 필요한 공통 수정 (이 폴더만으로는 아직 화면이 뜨지 않습니다)
 - `main.py`: `create_game_web_router(get_current_web_user_id)` 등록, `create_world_router(lambda: get_web_settings().origin)`를 `/v1`로 등록
-- `static/pages.js`: `play: initPlayPage` 등록
+- `static/pages.js`: `play: initPlayPage`, `opening: initOpeningPage` 등록
 - `pyproject.toml`·`uv.lock`: `websockets` 추가 (uvicorn이 WebSocket을 열려면 필요)
 - `/v1` 로그인 확인이 쿠키도 받기(쓰기 요청은 Origin 확인), 쿨다운 429
 - 상단 메뉴에 `/play` 링크
