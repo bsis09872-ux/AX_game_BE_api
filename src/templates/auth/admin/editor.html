@@ -5,33 +5,70 @@
   <section class="panel admin-section" aria-labelledby="editor-title">
     <h2 id="editor-title">{{ item.name if item else '새 아이템' }}</h2>
     <p>아이템의 종류를 등록하는 화면입니다. 저장만으로 회원에게 지급되지는 않습니다.</p>
-    <fieldset class="admin-fields"><legend>기본 정보</legend>
+    <fieldset class="admin-fields">
+      <legend>기본 정보</legend>
       <label>이름<input name="name" required maxlength="100" placeholder="예: 복어" {% if item %}disabled{% endif %}></label>
-      <label>코드<input name="code" required pattern="[a-z][a-z0-9_]{2,49}" maxlength="50" placeholder="예: pufferfish" {% if item %}disabled{% endif %}></label>
-      <label>분류<select name="category" {% if item %}disabled{% endif %}><option>FISH</option><option>GEM</option><option>MISC</option></select></label>
-      <label>희귀도<select name="rarity" {% if item %}disabled{% endif %}>{% for value in ['COMMON','UNCOMMON','RARE','EPIC','LEGENDARY'] %}<option>{{ value }}</option>{% endfor %}</select></label>
-      <label class="admin-wide">설명<textarea name="description" rows="3" placeholder="아이템의 특징을 적어 주세요."></textarea></label>
+      <label>코드<input name="code" required pattern="[a-z][a-z0-9_]{2,49}" maxlength="50" placeholder="예: pufferfish" {%
+          if item %}disabled{% endif %}></label>
+      <label>분류<select name="category" {% if item %}disabled{% endif %}>
+          <option>FISH</option>
+          <option>GEM</option>
+          <option>MISC</option>
+        </select></label>
+      <label>희귀도<select name="rarity" {% if item %}disabled{% endif %}>{% for value in
+          ['COMMON','UNCOMMON','RARE','EPIC','LEGENDARY'] %}<option>{{ value }}</option>{% endfor %}</select></label>
+      <label class="admin-wide">설명<textarea name="description" rows="3"
+          placeholder="아이템의 특징을 적어 주세요."></textarea></label>
     </fieldset>
-    <fieldset class="admin-fields"><legend>거래 / 획득 설정</legend>
-      <label>거래시작가 (GOLD)<input name="start_price" type="number" min="1" max="2147483647" step="1" value="100" required></label>
+    <fieldset class="admin-fields">
+      <legend>거래 / 획득 설정</legend>
+      <label>거래시작가 (GOLD)<input name="start_price" type="number" min="1" max="2147483647" step="1" value="100"
+          required></label>
       <label>낚시 가중치<input name="weight" type="number" min="0" max="2147483647" step="1" value="10" required></label>
       <label class="admin-checkbox admin-wide"><input name="fishable" type="checkbox" checked>낚시로 획득 가능</label>
     </fieldset>
-    <fieldset class="admin-image-picker"><legend>아이템 이미지</legend>
+    <fieldset class="admin-image-picker">
+      <legend>아이템 이미지</legend>
       <input name="icon" type="hidden" value="fish_carp">
       <p>기존 그림을 선택하거나 새 이미지를 올려 주세요.</p>
       <div id="image-gallery" class="admin-image-gallery" aria-label="아이템 이미지 선택"></div>
-      <label class="admin-upload">새 이미지 파일<input id="image-upload" type="file" accept="image/png,image/jpeg,image/webp"></label>
+      <label class="admin-upload">새 이미지 파일<input id="image-upload" type="file"
+          accept="image/png,image/jpeg,image/webp"></label>
       <p class="admin-hint">PNG, JPG, WebP / 최대 2MB / 가로와 세로 각각 2048px 이하. 업로드한 이미지는 다시 선택할 수 있습니다.</p>
       <p id="image-message" role="status"></p>
     </fieldset>
     <p id="editor-hint">코드, 이름, 분류, 희귀도는 생성 후 변경할 수 없습니다.</p>
-    <div class="admin-editor-actions"><button class="btn" id="save-catalog">{{ '변경 저장' if item else '아이템 생성' }}</button><a class="btn wood" href="/admin/catalogs">목록으로</a></div>
+    <div class="admin-editor-actions"><button class="btn" id="save-catalog">{{ '변경 저장' if item else '아이템 생성'
+        }}</button><a class="btn wood" href="/admin/catalogs">목록으로</a></div>
   </section>
   <aside class="admin-preview-column" aria-label="아이템 미리보기">
-    <div class="panel admin-preview"><p class="admin-eyebrow">아이템 미리보기</p><h2 id="preview-name">새 아이템</h2>
-      <div id="preview-frame" class="admin-item-frame" data-rarity="COMMON"><img id="preview-image" alt="선택한 아이템 이미지" src="/static/sprites/item_fish_carp.png"><span class="image-fallback" hidden>?</span></div>
-      <dl><div><dt>분류</dt><dd id="preview-category">FISH</dd></div><div><dt>희귀도</dt><dd id="preview-rarity">COMMON</dd></div><div><dt>설명</dt><dd id="preview-description">설명을 입력해 주세요.</dd></div><div><dt>거래시작가</dt><dd id="preview-price">100 GOLD</dd></div><div><dt>낚시 획득</dt><dd id="preview-fishable">가능</dd></div></dl>
+    <div class="panel admin-preview">
+      <p class="admin-eyebrow">아이템 미리보기</p>
+      <h2 id="preview-name">새 아이템</h2>
+      <div id="preview-frame" class="admin-item-frame" data-rarity="COMMON"><img id="preview-image" alt="선택한 아이템 이미지"
+          src="/static/sprites/item_fish_carp.png"><span class="image-fallback" hidden>?</span></div>
+      <dl>
+        <div>
+          <dt>분류</dt>
+          <dd id="preview-category">FISH</dd>
+        </div>
+        <div>
+          <dt>희귀도</dt>
+          <dd id="preview-rarity">COMMON</dd>
+        </div>
+        <div>
+          <dt>설명</dt>
+          <dd id="preview-description">설명을 입력해 주세요.</dd>
+        </div>
+        <div>
+          <dt>거래시작가</dt>
+          <dd id="preview-price">100 GOLD</dd>
+        </div>
+        <div>
+          <dt>낚시 획득</dt>
+          <dd id="preview-fishable">가능</dd>
+        </div>
+      </dl>
     </div>
     <p class="admin-hint">획득경로, 획득시각, 거래상태와 재판매 가능 시각은 실제 보유 아이템에 따라 정해집니다.</p>
   </aside>
