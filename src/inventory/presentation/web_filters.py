@@ -16,7 +16,7 @@ from inventory.presentation.router import Category, InventorySort, Rarity, Statu
 DEFAULT_SORT = 'acquired_desc'
 CATEGORY_LABELS = {'FISH': '물고기', 'GEM': '보석', 'MISC': '잡화'}
 STATUS_LABELS = {'OWNED': '보관 중', 'LISTED': '경매 중'}
-SORT_LABELS = {'acquired_desc': '최근 획득순', 'rarity_desc': '희귀도 높은 순', 'name_asc': '이름 오름차순'}
+SORT_LABELS = {'acquired_desc': '최근 획득 순', 'rarity_desc': '희귀도 높은 순', 'name_asc': '이름 오름차순'}
 
 
 # 내 인벤토리 주소: 값이 있는 것만 붙인다
@@ -59,5 +59,5 @@ def filter_groups(status, category, rarity, sort) -> list[dict]:
             + [option('category', v, CATEGORY_LABELS.get(v, v)) for v in get_args(Category)]},
         {'label': '희귀도', 'options': [option('rarity', None, '전체')]
             + [option('rarity', v, v, f'rarity-{v}') for v in get_args(Rarity)]},
-        {'label': '정렬', 'options': [option('sort', v, SORT_LABELS[v]) for v in get_args(InventorySort)]},
+        {'label': '정렬', 'options': [option('sort', v, SORT_LABELS[v], 'equal-width' if v == DEFAULT_SORT else '') for v in get_args(InventorySort)]},
     ]
