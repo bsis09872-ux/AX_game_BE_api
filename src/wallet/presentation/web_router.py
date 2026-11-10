@@ -59,10 +59,11 @@ def create_wallet_web_router(
 
         로그인 쿠키는 HttpOnly라 JS가 /v1 API(Bearer)를 부를 수 없어서 쿠키 인증 경로를 따로 둔다.
         로그인이 안 되어 있으면 auth 처리대로 /login으로 리다이렉트된다.
+        화면 전환마다 불리므로 지갑을 잠그지 않는 조회(get_available_balance)를 쓴다.
         """
-        view = await service.get_my_wallet(user_id)
+        available = await service.get_available_balance(user_id)
         await session.commit()  # 처음 조회면 지갑이 만들어진다 (WALL-06)
         response.headers["Cache-Control"] = "no-store"
-        return WalletBalanceResponse.model_validate(view)
+        return WalletBalanceResponse(available_balance=available)
 
     return router
