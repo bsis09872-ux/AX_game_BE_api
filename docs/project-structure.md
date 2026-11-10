@@ -36,7 +36,7 @@ AX_game_BE_api/
 | --- | --- |
 | [auth](../src/auth/README.md) | 로그인, 로그아웃과 토큰 관리. 담당 [@Cocode96](https://github.com/Cocode96) |
 | [users](../src/users/README.md) | 회원 정보와 상태. 담당 [@Cocode96](https://github.com/Cocode96) |
-| [inventory](../src/inventory/) | 아이템·소유권·예약 |
+| [inventory](../src/inventory/README.md) | 아이템 카탈로그·소유권·소유 이력, 경매의 예약·해제·이전 제공, 낚시. 담당 [@eeseuju](https://github.com/eeseuju) |
 | [wallet](../src/wallet/) | 지갑·잔액 |
 | [auction](../src/auction/) | 경매장 매물·거래 |
 
@@ -80,7 +80,7 @@ sequenceDiagram
 
 | 경로 | 용도·현재 상태 |
 | --- | --- |
-| [main.py](../src/main.py) | 앱, /health, lifespan, 로깅과 예외 처리, 도메인 라우터 등록. 시작 시 테이블과 회원 제어 컬럼 준비, 종료 시 엔진 정리 |
+| [main.py](../src/main.py) | 앱, /health, lifespan, 로깅과 예외 처리, 도메인 라우터 등록. 시작 시 테이블과 회원 제어 컬럼 준비와 경매 마감 스케줄러 시작, 종료 시 스케줄러 중지와 엔진 정리. import·모델 등록·라우터 등록은 도메인별 `# region`으로 구분하고, 낚시 라우터는 `DEMO_FISHING_ENABLED`(기본 켜짐)일 때만 등록 |
 | [database.py](../src/database.py) | 비동기 엔진·세션·Base·get_db 및 예외 시 롤백. DATABASE_URL 환경변수 필요 |
 | [exceptions.py](../src/shared/core/exceptions.py) | 공통 업무 예외 |
 | [exception_handlers.py](../src/shared/core/exception_handlers.py) | 업무 오류 400·404·409와 예상 밖 500 응답 변환 |
@@ -99,9 +99,13 @@ sequenceDiagram
 - application이 domain과 저장소를 사용해 작업을 조율하고, infrastructure는 계약을 구현합니다.
 - 저장소는 전체 작업을 임의로 커밋하지 않습니다. 여러 도메인 변경은 동일 트랜잭션으로 조율합니다.
 - 다른 도메인의 내부 데이터를 직접 변경하지 않고 합의한 기능으로 협업합니다.
+- 도메인 사이의 호출은 **소비하는 쪽이 계약(Protocol)을 정하고**, 제공하는 쪽의 application 기능에 연결하는 어댑터가 구현합니다. 예: 경매의 `InventoryGateway`(예약·해제·이전·조회)를 `auction/infrastructure/adapters/inventory_gateway.py`가 인벤토리의 서비스에 연결합니다.
+- 다른 도메인의 `infrastructure`는 import하지 않습니다. 어댑터는 상대 도메인의 application·domain·`wiring`만 사용하고, ORM 모델 등록과 스키마 보강은 `main.py`만 합니다.
+- 여러 행을 잠글 때는 합의한 순서를 따릅니다: 매물 → 아이템 종류 → 다음 대기 매물 → 아이템 → 사용자 → 지갑. 여러 사용자는 ID 오름차순으로 잠급니다. commit·rollback은 호출하는 쪽(트랜잭션 담당)이 합니다.
+- 화면 라우터는 현재 사용자 확인 함수를 `main.py`에서 넘겨 받습니다(`create_..._web_router(get_current_web_user_id, ...)`). 라우터가 다른 도메인의 인증 구조나 지갑 코드를 직접 알지 않게 하기 위해서입니다.
 - 공통 파일 변경은 담당자와 협의하고 계층 간 순환 참조를 피합니다.
 
-실행 방법: [README의 개발 서버 실행](../README.md#개발-서버-실행).
+실행 방법: [README의 실행 방법](../README.md#실행-방법).
 
 ## 관리자 화면과 도메인 연결
 
@@ -185,6 +189,38 @@ Chromium이 없으면 먼저 `uv run --with playwright playwright install chromi
 
 ![관리자 거래 내역의 필터와 페이지 이동 검증](screenshots/admin-auctions/trades-desktop.png)
 
+## 인벤토리·경매 화면
+
+**인벤토리 화면과 경매 화면: [@eeseuju](https://github.com/eeseuju)**
+
+일반 사용자 화면입니다. 화면 라우터는 서비스 호출과 화면 데이터 준비만 하고 업무 판정은 서비스·도메인이 합니다. 개인 화면이라 `Cache-Control: no-store`로 응답합니다.
+
+| 화면 | 경로 | 코드 위치 |
+| --- | --- | --- |
+| 내 가방 | `/inventory` | `inventory/presentation/web_router.py` |
+| 아이템 상세 | `/inventory/{item_id}` | 같은 파일 |
+| 도감 | `/item-catalogs` | 같은 파일 |
+| 경매장 목록(검색·페이지) | `/auctions` | `auction/presentation/web_router.py` |
+| 경매 상세 | `/auctions/{listing_id}` | 같은 파일 |
+| 경매 등록 | `/auctions/new` (GET 화면, POST 등록) | 같은 파일 |
+| 입찰·취소 | `POST /auctions/{listing_id}/bid`, `/cancel` | 같은 파일 |
+| 내 거래(낙찰·판매) | `/auctions/trades` | 같은 파일 |
+| 상태 확인(화면 갱신용 JSON) | `GET /auctions/{listing_id}/state` | 같은 파일 |
+
+**연결**
+- `main.py`가 `get_current_web_user_id`(쿠키 인증)를 두 화면 라우터에 넘깁니다. 경매의 POST 화면은 `require_web_origin`(출처 검사)도 받습니다.
+- 가방의 지갑 박스(잔액·묶인 골드·사용 가능 골드)는 지갑 쪽 읽기 함수 `read_wallet_box`를 `main.py`가 넘겨서 채웁니다. 인벤토리는 wallet을 import하지 않습니다. 헤더의 사용 가능 금액은 공통 헤더의 `static/wallet-balance.js`가 채웁니다.
+- 게임 클라이언트의 팝업(iframe)에서는 `?embed=1`을 붙입니다. 헤더를 숨기고 보유 골드를 읽지 않으며, `static/auction-embed.js`가 닫기를 `auction:close` 메시지로 바깥 화면에 알립니다.
+
+**화면 갱신**
+- 경매 상세의 남은 시간과 진행 바는 서버가 준 남은 초를 기준으로 브라우저가 1초마다 직접 계산합니다.
+- 입찰·가격·최고 입찰자·결과 같은 서버 상태는 `/auctions/{listing_id}/state`를 2초마다 확인하고, 마감 후 정산을 기다리는 동안은 1초마다 확인합니다. 바뀌었을 때만 화면을 다시 불러오며, 탭이 숨겨지면 확인을 멈추고 화면을 떠나면 `signal`로 정리합니다.
+- 경매 목록은 카드의 남은 시간을 직접 세고 2초마다 목록을 다시 읽어 바뀐 카드만 갈아 끼웁니다.
+- 낙찰·유찰 정산은 서버의 마감 스케줄러가 합니다(5초 주기). 그래서 마감 뒤 결과가 화면에 보이기까지 수 초가 걸릴 수 있습니다.
+- 동작은 `static/auction-live.js`에 있고 `pages.js`에 `auction`·`inventory` 키로 등록되어 있습니다.
+
+**API**: 인벤토리 조회·이력·카탈로그 API와 낚시 API(`POST /v1/fishing-results`)는 [inventory README](../src/inventory/README.md)를 참고하세요. 낚시는 `DEMO_FISHING_ENABLED`가 켜져 있을 때만 등록되며 기본은 켜짐입니다.
+
 ## 공통 웹 화면
 
 `templates/base.html`은 배경, 헤더, 본문과 푸터를 구성합니다. `static/app.js`는 최초 로드에 한 번 실행됩니다. 내부 링크와 GET 검색 폼은 서버 HTML을 받아 `#main-content`의 내용만 바꿉니다. 관리자 화면 내부에서는 `#admin-view`를 교체해 관리자 탭도 유지합니다.
@@ -204,6 +240,9 @@ Chromium이 없으면 먼저 `uv run --with playwright playwright install chromi
 | 관리자 기능 조립 | `static/admin.js` |
 | 카탈로그 목록, 편집, 이미지, 이력 | `static/admin/`의 해당 파일 |
 | 회원 관리 폼 | `static/admin-members.js` |
+| 경매·가방 화면의 시간 계산과 상태 확인 | `static/auction-live.js` |
+| 헤더의 사용 가능 금액 | `static/wallet-balance.js` |
+| 경매 팝업(iframe) 닫기 알림 | `static/auction-embed.js` |
 
 ### 새 페이지 연결
 
