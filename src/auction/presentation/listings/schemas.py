@@ -1,9 +1,7 @@
 # 매물 요청과 응답의 형태를 정의한다. 입찰 가능 여부는 domain이 판단한다.
 # [TO DO] 등록 요청의 inventory_item_id와 시작가 입력 정책을 팀과 확정한다.
-# [TO DO] 목록 page 검증과 응답 스키마를 현재 Repository 계약에 맞춘다.
-# [TO DO] 검색·필터는 Repository에 아직 없으므로 지원한다고 표시하지 않는다.
-# [TO DO] 목록·상세 응답의 ID·상태·가격·종료 시각과 외부 이름 조회 계약을 정한다.
-# [TO DO] 입찰자 ID 공개 여부와 취소 응답 형식을 합의한다.
+# [TO DO] 목록·상세 응답에 아이템·판매자 이름을 함께 보여 줄지 정한다.
+# [TO DO] 입찰자 ID 공개 여부를 합의한다.
 # 시간은 UTC ISO 8601로 반환한다. KST 표시는 화면 담당자가 변환한다.
 
 from datetime import datetime

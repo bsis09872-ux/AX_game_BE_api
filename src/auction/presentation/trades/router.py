@@ -1,7 +1,7 @@
 # 내 낙찰·판매 내역과 입찰 제한 상태 요청을 application으로 전달한다.
-# [TO DO] 인증 사용자 ID를 서비스에 전달한다. 다른 사용자의 상태를 임의 조회하지 않는다.
+# 사용자 ID는 CurrentUserId로만 받는다. 다른 사용자의 상태를 임의 조회하지 않는다.
+# 제한 중에도 조회는 허용한다. 새 입찰 거절은 매물 입찰 흐름에서 처리한다.
 # [TO DO] 내역 조회와 제한 상태 조회 URI를 팀과 합의하고 공통 응답을 적용한다.
-# [TO DO] 제한 중에도 조회를 허용한다. 새 입찰 거절은 매물 입찰 흐름에서 처리한다.
 
 from datetime import datetime, timezone
 from typing import Annotated

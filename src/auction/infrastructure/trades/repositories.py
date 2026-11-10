@@ -2,8 +2,6 @@
 # 세션은 외부에서 받으며 commit·rollback은 트랜잭션 담당자가 처리한다.
 # save는 신규 거래만 저장하고 ID가 반영된 새 Trade를 반환한다.
 #
-# [TO DO] 정산·Trade 저장·User 제한 상태 갱신을 같은 트랜잭션으로 연결한다.
-# [TO DO] 같은 사용자의 낙찰 처리를 직렬화할 잠금 계약을 합의한다.
 # [TO DO] 페이지 크기와 응답 형식을 application·presentation과 맞춘다.
 # [TO DO] 기간 조회 경계·중복 거래·rollback을 실제 PostgreSQL에서 테스트한다.
 
