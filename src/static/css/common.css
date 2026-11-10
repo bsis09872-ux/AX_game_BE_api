@@ -4,3 +4,43 @@ h1, h2, h3, strong, b, th,
 .brand, .hud .gold, .title-tab, .slot .count, .btn {
   font-weight: 400;
 }
+
+/* 인덱스 탭: 제목 탭(.title-tab) 옆에 놓는 분류 탭 줄. 패널 윗선에 걸치게 내린다 */
+.tab-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tab-row .title-tab {
+  margin: 0;
+  font-size: 16px;
+}
+
+.index-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  position: relative;
+  top: var(--px);
+}
+
+.index-tabs a {
+  padding: 4px 12px;
+  color: var(--muted);
+  background: var(--wood-dark);
+  border: var(--px) solid var(--outline);
+  border-bottom: none;
+}
+
+.index-tabs a:hover {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.index-tabs a.on {
+  color: var(--text);
+  background: var(--wood);
+}

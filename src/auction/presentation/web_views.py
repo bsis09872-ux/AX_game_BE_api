@@ -109,7 +109,7 @@ class ItemView:
 
 
 # 아이템을 못 읽을 때(지워진 아이템 등) 대신 보여 준다
-UNKNOWN_ITEM = ItemView(name='알 수 없는 아이템', category='', rarity='COMMON', icon='gift_box')
+UNKNOWN_ITEM = ItemView(name='알 수 없는 아이템', category='', rarity='COMMON', icon='unknown')
 
 
 # 인벤토리의 아이템 정보(ItemInfo)에서 화면에 필요한 값만 골라낸다
