@@ -9,15 +9,16 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 from auction.domain.listings.entities import Listing
+from auction.presentation.params import BIGINT_MAX
 
 # [AUC-01] 매물 등록 요청: 판매자 ID는 토큰에서 받으므로 본문에 넣지 않는다.
 # [TO DO] 시작가 입력 주체(D-4)가 정해지면 start_price 유지 여부를 정한다. (진행 전)
 class ListingCreateRequest(BaseModel):
-    inventory_item_id: int = Field(gt=0)
+    inventory_item_id: int = Field(gt=0, le=BIGINT_MAX)
 
 # [AUC-04] 입찰 요청: 시작가·최고가 비교는 엔티티가 한다.
 class BidRequest(BaseModel):
-    amount: int = Field(gt=0)
+    amount: int = Field(gt=0, le=BIGINT_MAX)
 
 
 # [관리자] 강제 취소 응답: 안내 메시지만 반환한다.

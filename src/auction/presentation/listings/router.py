@@ -18,6 +18,7 @@ from auction.presentation.listings.schemas import (
     ListingPageResponse,
     ListingResponse,
 )
+from auction.presentation.params import ListingIdPath, OptionalIdQuery, PageQuery
 
 
 router = APIRouter(prefix="/listings", tags=["listings"])
@@ -27,7 +28,7 @@ router = APIRouter(prefix="/listings", tags=["listings"])
 @router.get("", response_model=ListingPageResponse, summary="매물 목록 조회")
 async def get_listings(
     service: ListingServiceDep,
-    page: Annotated[int, Query(ge=1)] = 1,
+    page: PageQuery = 1,
 ) -> ListingPageResponse:
     listings = await service.get_listing_list(page)
     return ListingPageResponse(
@@ -46,10 +47,10 @@ async def get_listings(
 async def get_admin_listings(
     user_id: CurrentUserId,
     service: ListingServiceDep,
-    page: Annotated[int, Query(ge=1)] = 1,
-    listing_id: Annotated[int | None, Query(gt=0)] = None,
-    item_definition_id: Annotated[int | None, Query(gt=0)] = None,
-    inventory_item_id: Annotated[int | None, Query(gt=0)] = None,
+    page: PageQuery = 1,
+    listing_id: OptionalIdQuery = None,
+    item_definition_id: OptionalIdQuery = None,
+    inventory_item_id: OptionalIdQuery = None,
     listing_status: Annotated[
         ListingStatus | None, Query(alias="status")
     ] = None,
@@ -77,7 +78,7 @@ async def get_admin_listings(
     tags=["auction-management"],
 )
 async def admin_cancel_listing(
-    listing_id: int,
+    listing_id: ListingIdPath,
     user_id: CurrentUserId,
     service: ListingServiceDep,
 ) -> AdminCancelResponse:
@@ -91,7 +92,7 @@ async def admin_cancel_listing(
 # [AUC-03] 매물 상세 조회
 @router.get("/{listing_id}", response_model=ListingResponse, summary="매물 상세 조회")
 async def get_listing(
-    listing_id: int,
+    listing_id: ListingIdPath,
     service: ListingServiceDep,
 ) -> ListingResponse:
     listing = await service.get_listing_detail(listing_id)
@@ -120,7 +121,7 @@ async def register_listing(
 # [AUC-04] 입찰
 @router.post("/{listing_id}/bids", response_model=ListingResponse, summary="입찰")
 async def place_bid(
-    listing_id: int,
+    listing_id: ListingIdPath,
     body: BidRequest,
     user_id: CurrentUserId,
     service: ListingServiceDep,
@@ -141,7 +142,7 @@ async def place_bid(
     summary="매물 등록 취소",
 )
 async def cancel_listing(
-    listing_id: int,
+    listing_id: ListingIdPath,
     user_id: CurrentUserId,
     service: ListingServiceDep,
 ) -> None:

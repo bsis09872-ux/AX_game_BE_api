@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends
 
 from auction.presentation.dependencies import ListingServiceDep
 from auction.presentation.listings.schemas import AdminCancelResponse
+from auction.presentation.params import ListingIdPath
 
 
 # 관리자 웹 화면용 라우터를 만든다.
@@ -27,7 +28,7 @@ def create_listing_admin_web_router(
         summary="관리자 매물 강제 취소 (웹)",
     )
     async def admin_cancel_listing_web(
-        listing_id: int,
+        listing_id: ListingIdPath,
         service: ListingServiceDep,
         admin_id: int = Depends(current_admin_id),
     ) -> AdminCancelResponse:
