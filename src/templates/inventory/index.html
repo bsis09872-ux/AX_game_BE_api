@@ -1,14 +1,16 @@
 {# [Claude] 이 파일은 Claude가 작성함 (검토 전) #}
 {# 내 가방: 아이템 칸을 누르면 오른쪽 패널에 선택해서 경매에 올릴 수 있다 (표에서 칸 격자로 바꿈) #}
 {% extends "base.html" %}
-{% from "inventory/_macros.html" import gold, filter_group, item_icon, category_name %}
+{% block page_key %}inventory{% endblock %}
+{% block body_attributes %}data-session-protected="true"{% endblock %}
 {% from "_site.html" import site_nav, gold_status %}
+{% from "inventory/_macros.html" import gold, moment, filter_group, item_icon, category_name %}
 {% block title %}내 가방 | Catch &amp; Bid{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', path='/css/inventory.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', path='/css/common.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', path='/css/bag.css') }}">
+<link data-page-style rel="stylesheet" href="{{ url_for('static', path='/css/inventory.css') }}">
+<link data-page-style rel="stylesheet" href="{{ url_for('static', path='/css/common.css') }}">
+<link data-page-style rel="stylesheet" href="{{ url_for('static', path='/css/bag.css') }}">
 {% endblock %}
 
 {% block navigation %}{{ site_nav('inventory') }}{% endblock %}
@@ -22,7 +24,8 @@
       <div class="tab-row">
         <h1 id="inventory-title" class="title-tab">내 가방</h1>
         <nav class="index-tabs" aria-label="분류">
-          {% for o in cat.options %}<a {% if o.current %}class="on" aria-current="true" {% endif %}href="{{ o.href }}">{{ o.text }}</a>{% endfor %}
+          {% for o in cat.options %}<a {% if o.current %}class="on" aria-current="true" {% endif
+            %}href="{{ o.href }}">{{ o.text }}</a>{% endfor %}
         </nav>
       </div>
       <div class="panel">
@@ -34,8 +37,9 @@
         {# 응답 모델이 골라낸 공개 값만 표시한다. 글자는 Jinja2가 자동으로 이스케이프한다 #}
         <div class="slots bag-slots">
           {% for s in slots %}
-          <a class="slot rarity-{{ s.item.definition.rarity }}{% if s.listed %} listed{% endif %}{% if s.selected %} sel{% endif %}" href="{{ s.href }}"
-             {% if s.selected %}aria-current="true"{% endif %} title="{{ s.item.definition.name }}{% if s.listed %} (경매중){% endif %}">
+          <a class="slot rarity-{{ s.item.definition.rarity }}{% if s.listed %} listed{% endif %}{% if s.selected %} sel{% endif %}"
+            href="{{ s.href }}" {% if s.selected %}aria-current="true" {% endif %}
+            title="{{ s.item.definition.name }}{% if s.listed %} (경매중){% endif %}">
             {{ item_icon(s.item.definition, 48) }}
             <span class="slot-name">{{ s.item.definition.name }}</span>
             {% if s.listed %}<span class="badge">경매중</span>{% endif %}
@@ -68,9 +72,12 @@
       <div class="panel wallet-box">
         <img class="px" src="{{ url_for('static', path='/sprites/ui_wallet.png') }}" alt="" width="64" height="64">
         <dl>
-          <dt>전체 자산</dt><dd>{{ gold(wallet.balance) }}</dd>
-          <dt>가용 자산</dt><dd class="gold-text">{{ gold(wallet.available) }}</dd>
-          <dt>계류 자산</dt><dd>{{ gold(wallet.held) }}</dd>
+          <dt>전체 자산</dt>
+          <dd>{{ gold(wallet.balance) }}</dd>
+          <dt>가용 자산</dt>
+          <dd class="gold-text">{{ gold(wallet.available) }}</dd>
+          <dt>계류 자산</dt>
+          <dd>{{ gold(wallet.held) }}</dd>
         </dl>
         <p class="muted wallet-note">전체 자산 = 가용 자산 + 계류 자산(입찰로 묶인 G)</p>
       </div>

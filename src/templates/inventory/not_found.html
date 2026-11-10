@@ -1,5 +1,7 @@
 {# [Claude] 헤더를 경매장 화면과 같은 주 메뉴·골드 조각으로 맞춤 #}
 {% extends "base.html" %}
+{% block page_key %}inventory{% endblock %}
+{% block body_attributes %}data-session-protected="true"{% endblock %}
 {% from "_site.html" import site_nav, gold_status %}
 
 {% block title %}아이템을 찾을 수 없습니다 | Catch &amp; Bid{% endblock %}

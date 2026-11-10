@@ -8,17 +8,56 @@
   <p>{{ member.login_id }} / 조회 결과 {{ total }}개</p>
   <a href="/admin/members/{{ member.id }}">← 회원 상세</a>
   <form method="get" action="/admin/members/{{ member.id }}/inventory" class="admin-filters">
-    <label>거래 상태<select name="status"><option value="">전체</option>{% for value, label in states.items() %}<option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
-    <label>분류<select name="category"><option value="">전체</option>{% for value in ['FISH','GEM','MISC'] %}<option {% if category == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></label>
-    <label>희귀도<select name="rarity"><option value="">전체</option>{% for value in ['COMMON','UNCOMMON','RARE','EPIC','LEGENDARY'] %}<option {% if rarity == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></label>
+    <label>거래 상태<select name="status">
+        <option value="">전체</option>{% for value, label in states.items() %}<option value="{{ value }}" {% if
+          status==value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select></label>
+    <label>분류<select name="category">
+        <option value="">전체</option>{% for value in ['FISH','GEM','MISC'] %}<option {% if category==value %}selected{%
+          endif %}>{{ value }}</option>{% endfor %}
+      </select></label>
+    <label>희귀도<select name="rarity">
+        <option value="">전체</option>{% for value in ['COMMON','UNCOMMON','RARE','EPIC','LEGENDARY'] %}<option {% if
+          rarity==value %}selected{% endif %}>{{ value }}</option>{% endfor %}
+      </select></label>
     <button class="btn wood">조회</button><a href="/admin/members/{{ member.id }}/inventory">초기화</a>
   </form>
-  <div class="admin-table-scroll"><table class="admin-inventory-table"><thead><tr><th>아이템 / 이력</th><th>분류</th><th>희귀도</th><th>획득 경로</th><th>획득 시각 (UTC)</th><th>거래 상태</th><th>거래시작가</th><th>재판매 가능 (UTC)</th></tr></thead><tbody>
-    {% for item in items %}<tr>
-      <td><div class="admin-item-name"><span class="admin-item-frame small" data-rarity="{{ item.definition.rarity }}"><img data-inventory-icon="{{ item.definition.icon }}" alt="" hidden><span class="image-fallback">?</span></span><a href="/admin/history?item_id={{ item.id }}">{{ item.definition.name }} #{{ item.id }}</a></div></td>
-      <td>{{ item.definition.category }}</td><td>{{ item.definition.rarity }}</td><td>{{ origins.get(item.origin, item.origin) }}</td><td>{{ item.acquired_at.strftime('%Y-%m-%d %H:%M') }}</td><td>{{ states.get(item.status, item.status) }}</td><td>{{ '{:,}'.format(item.definition.start_price) }} GOLD</td><td>{{ item.resale_available_at.strftime('%Y-%m-%d %H:%M') if item.resale_available_at else '제한 없음' }}</td>
-    </tr>{% else %}<tr><td colspan="8">조회할 보유 아이템이 없습니다.</td></tr>{% endfor %}
-  </tbody></table></div>
-  <div class="admin-pagination">{% if page > 1 %}<a class="btn wood" href="{{ prev_url }}">이전</a>{% endif %}<span>{{ page }} 페이지</span>{% if has_next %}<a class="btn wood" href="{{ next_url }}">다음</a>{% endif %}</div>
+  <div class="admin-table-scroll">
+    <table class="admin-inventory-table">
+      <thead>
+        <tr>
+          <th>아이템 / 이력</th>
+          <th>분류</th>
+          <th>희귀도</th>
+          <th>획득 경로</th>
+          <th>획득 시각 (UTC)</th>
+          <th>거래 상태</th>
+          <th>거래시작가</th>
+          <th>재판매 가능 (UTC)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}<tr>
+          <td>
+            <div class="admin-item-name"><span class="admin-item-frame small"
+                data-rarity="{{ item.definition.rarity }}"><img data-inventory-icon="{{ item.definition.icon }}" alt=""
+                  hidden><span class="image-fallback">?</span></span><a href="/admin/history?item_id={{ item.id }}">{{
+                item.definition.name }} #{{ item.id }}</a></div>
+          </td>
+          <td>{{ item.definition.category }}</td>
+          <td>{{ item.definition.rarity }}</td>
+          <td>{{ origins.get(item.origin, item.origin) }}</td>
+          <td>{{ item.acquired_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td>{{ states.get(item.status, item.status) }}</td>
+          <td>{{ '{:,}'.format(item.definition.start_price) }} GOLD</td>
+          <td>{{ item.resale_available_at.strftime('%Y-%m-%d %H:%M') if item.resale_available_at else '제한 없음' }}</td>
+        </tr>{% else %}<tr>
+          <td colspan="8">조회할 보유 아이템이 없습니다.</td>
+        </tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="admin-pagination">{% if page > 1 %}<a class="btn wood" href="{{ prev_url }}">이전</a>{% endif %}<span>{{
+      page }} 페이지</span>{% if has_next %}<a class="btn wood" href="{{ next_url }}">다음</a>{% endif %}</div>
 </section>
 {% endblock %}
