@@ -8,7 +8,9 @@
 from wallet.wiring import build_wallet_service
 
 # 호출자의 세션을 그대로 넘기고, 예약 금액 조회기(경매 제공)를 반드시 주입한다
-wallet_service = build_wallet_service(session, held_reader=AuctionHeldAmountReader(...))
+from auction.wiring import build_held_amount_reader
+
+wallet_service = build_wallet_service(session, held_reader=build_held_amount_reader(session))
 ```
 
 - `held_reader`는 필수다. 기본값이나 listings 직접 조회 같은 우회 경로는 없다.
@@ -47,32 +49,30 @@ wallet_service = build_wallet_service(session, held_reader=AuctionHeldAmountRead
 - 구매자 잔액 < 낙찰가면 잔액을 바꾸기 전에 `BuyerBalanceShortError`. 경매는 정산 전체를 rollback한다. 지갑은 유찰 처리하지 않는다.
 - 이중 정산은 경매의 매물 잠금·상태 확인과 `trades.listing_id` UNIQUE가 막는다. 지갑 함수만으로는 막지 않는다.
 
-### 경매 `WalletGateway` 연결 예시
-경매 contract.py의 `has_balance` / `transfer` 이름을 그대로 두고 어댑터에서 연결할 수 있다.
+### 경매 `WalletGateway` 연결 (현재 구현)
+경매의 `WalletGatewayAdapter`가 지갑 메서드를 같은 이름·같은 인자로 그대로 전달한다.
 
 ```python
 # auction/infrastructure/adapters/wallet_gateway.py
 class WalletGatewayAdapter(WalletGateway):
     def __init__(self, wallet_service: WalletService) -> None:
-        self._wallet = wallet_service
+        self._wallet_service = wallet_service
 
-    async def has_balance(self, user_id: int, amount: int) -> bool:
-        # amount = 이번 입찰액만 (묶인 금액은 지갑이 계산한다)
-        # 재입찰 금지 규칙 → 항상 새 입찰자. 부족하면 InsufficientBalanceError(400)가 그대로 올라간다.
-        await self._wallet.check_bid_funds(
-            bidder_id=user_id, amount=amount, current_bidder_id=None, current_bid_amount=None)
-        return True
+    async def check_bid_funds(self, *, bidder_id, amount, current_bidder_id, current_bid_amount) -> None:
+        # amount = 이번 입찰액만, current_* = 매물의 변경 전 값
+        # 정상 종료하면 통과. 부족하면 InsufficientBalanceError(400)가 그대로 올라간다.
+        await self._wallet_service.check_bid_funds(
+            bidder_id=bidder_id, amount=amount,
+            current_bidder_id=current_bidder_id, current_bid_amount=current_bid_amount)
 
-    async def transfer(self, from_user_id: int, to_user_id: int, amount: int) -> None:
-        await self._wallet.settle_sale(buyer_id=from_user_id, seller_id=to_user_id, price=amount)
+    async def settle_sale(self, *, buyer_id, seller_id, price) -> None:
+        # 반환값은 쓰지 않는다. 실패하면 예외가 올라가 경매가 전체 rollback한다.
+        await self._wallet_service.settle_sale(buyer_id=buyer_id, seller_id=seller_id, price=price)
 
-# auction/wiring.py
+# auction/wiring.py (build_listing_service, build_auction_service)
 #   wallets=WalletGatewayAdapter(
-#       build_wallet_service(session, held_reader=AuctionHeldAmountReader(<listing repo>))),
+#       build_wallet_service(session, held_reader=build_held_amount_reader(session))),
 #   build_held_amount_reader(session) -> AuctionHeldAmountReader  # main.py가 지갑 API에도 주입
-
-# auction/application/listings/service.py (bid)
-#   await self.wallets.has_balance(bidder_id, amount)   # tied + amount 아님
 ```
 
 ## 공통 규칙
