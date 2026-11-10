@@ -8,7 +8,7 @@
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from auction.wiring import build_inventory_service, build_user_gateway, build_wallet_service
+from auction.wiring import build_held_amount_reader, build_inventory_service, build_user_gateway, build_wallet_service
 from database import get_db
 from shared.core.exceptions import AppError
 
@@ -25,9 +25,14 @@ def get_inventory_reader(session: AsyncSession = Depends(get_db)):
 
 # 헤더에 보여 줄 보유 골드. 지갑을 잠그지 않는 조회라 어느 화면에서나 부를 수 있다
 # 지갑이 없으면 None(헤더에 아무것도 안 보여 줌)
+# [Claude] 지갑 조립에는 예약금 조회기(경매가 제공)가 꼭 필요하다 (main 합치기에서 바뀐 계약)
+def wallet_service(session: AsyncSession):
+    return build_wallet_service(session, held_reader=build_held_amount_reader(session))
+
+
 async def read_balance(session: AsyncSession, user_id: int) -> int | None:
     try:
-        wallet = await build_wallet_service(session).get_wallet(user_id)
+        wallet = await wallet_service(session).get_wallet(user_id)
     except AppError:
         return None
     return wallet.balance.value
@@ -36,7 +41,7 @@ async def read_balance(session: AsyncSession, user_id: int) -> int | None:
 # 가방의 지갑 박스(잔액, 묶인 골드, 사용 가능 골드). 지갑을 잠그고 읽고, 처음 조회면 지갑이 만들어지므로 commit한다
 async def read_wallet_box(session: AsyncSession, user_id: int) -> dict | None:
     try:
-        view = await build_wallet_service(session).get_my_wallet(user_id)
+        view = await wallet_service(session).get_my_wallet(user_id)
         await session.commit()
     except AppError:
         return None
