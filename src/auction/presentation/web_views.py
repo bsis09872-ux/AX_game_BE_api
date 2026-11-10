@@ -207,7 +207,9 @@ def banner_view(listing: Listing, viewer_id: int, winner_name: str) -> Banner | 
     if listing.status == ListingStatus.FAILED:
         return Banner('fail', '유찰…', '입찰자가 없어서 아이템이 판매자에게 돌아갔어요')
     if listing.status == ListingStatus.CANCELLED:
-        return Banner('cancel', '경매 취소', '판매자가 경매를 취소했어요')
+        # 관리자가 강제로 취소한 매물은 사유(내부 기록용)를 보여 주지 않고 누가 취소했는지만 알린다
+        who = '관리자가' if listing.admin_cancelled_by is not None else '판매자가'
+        return Banner('cancel', '경매 취소', f'{who} 경매를 취소했어요')
     if listing.status == ListingStatus.QUEUED:
         return Banner('queued', '대기 중', '같은 아이템이 경매 중이라 순서를 기다려요')
     return None
