@@ -60,10 +60,12 @@
               <div class="stage-price">{{ '{:,}'.format(d.price) }}G</div>
             </div>
             <div class="muted card-time">
-              {% if d.status == 'BIDDING' %}경매 마감까지 <span
+              {# 진행 중이면 남은 시간, 시간이 끝났으면 "경매 마감", 끝난 경매는 결과를 괄호로 보여 준다 #}
+              {% if d.status == 'BIDDING' and not d.closing %}경매 마감까지 <span
                 class="clock{% if d.timebar and d.timebar.urgent %} urgent{% endif %}">{{ d.remaining_text }}</span>
+              {% elif d.status == 'BIDDING' %}경매 마감 (정산 중)
               {% elif d.status == 'QUEUED' %}순서를 기다리는 중
-              {% else %}경매 마감{% endif %}
+              {% else %}경매 마감 ({{ d.status_label }}){% endif %}
             </div>
           </div>
         </div>
@@ -88,7 +90,7 @@
             </div>
           </div>
           {% else %}
-          <p class="empty">{{ '아직 입찰자가 없어요' if d.status == 'BIDDING' else '입찰자가 없었어요' }}</p>
+          <p class="empty">{{ '아직 입찰자가 없어요' if d.status == 'BIDDING' and not d.closing else '입찰자가 없었어요' }}</p>
           {% endif %}
         </div>
       </div>

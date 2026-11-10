@@ -160,7 +160,7 @@ def card_view(listing: Listing, item: ItemView, seller_name: str, now: datetime,
         price=listing.current_bid_amount or listing.start_price,
         has_bid=listing.has_bidder(),
         remaining_seconds=seconds,
-        remaining_text=format_clock(seconds),
+        remaining_text=format_clock(seconds) if seconds > 0 else '마감',
         urgent=seconds <= URGENT_SECONDS,
     )
 # endregion
@@ -328,6 +328,7 @@ class DetailView:
     banner: Banner | None
     message: str  # 입찰 패널의 내 상태 안내
     message_warn: bool  # 입찰이 막힌 경고 안내(제한 중)면 붉게, 나머지는 파랗게 보여 준다
+    closing: bool  # 마감 시각이 지났지만 아직 정산(낙찰·유찰) 전
     can_bid: bool
     can_cancel: bool
     is_seller: bool
@@ -355,8 +356,11 @@ def detail_view(
     blocked = bidding and blocked_seconds is not None and blocked_seconds > 0
 
     warn = blocked and not is_seller and not is_leader
+    closing = bidding and seconds <= 0
     if not bidding:
         message = ''
+    elif closing:
+        message = '경매 시간이 끝났어요. 곧 결과가 나와요.'
     elif is_seller:
         message = '내 매물이에요. 입찰할 수 없어요.'
     elif is_leader:
@@ -393,6 +397,7 @@ def detail_view(
         banner=banner_view(listing, viewer_id, winner_name),
         message=message,
         message_warn=warn,
+        closing=closing,
         can_bid=bidding and seconds > 0 and not is_seller and not is_leader and not blocked,
         can_cancel=listing.status == ListingStatus.QUEUED and is_seller,
         is_seller=is_seller,
