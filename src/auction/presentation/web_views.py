@@ -168,40 +168,23 @@ STATUS_LABELS = {
     ListingStatus.CANCELLED: '취소',
 }
 
-# 진행 바에 점을 찍는 중요한 지점 (남은 시간, 초): 절반, 마감 임박, 마감
-TIMEBAR_MARKS = (180, 60, 0)
-
-
-@dataclass(frozen=True)
-class TimebarMark:
-    left: float  # 바 왼쪽 끝에서의 위치(%). 남은 시간이 이 지점이면 채워진 부분의 끝이 여기에 닿는다
-    passed: bool  # 남은 시간이 이 지점에 이르렀거나 지났는지
-    label: str
-
-
 @dataclass(frozen=True)
 class Timebar:
     percent: float  # 채워진 부분(남은 시간 비율)
     urgent: bool
     remaining: int
     total: int
-    marks: tuple[TimebarMark, ...]
 
 
 # 남은 시간(초)으로 진행 바를 만든다. 바는 남은 시간만큼 채워져 점점 줄어든다
 def timebar_view(remaining_seconds: int) -> Timebar:
     total = int(AUCTION_DURATION.total_seconds())
     remaining = min(max(remaining_seconds, 0), total)
-    marks = tuple(
-        TimebarMark(left=round(mark / total * 100, 2), passed=remaining <= mark, label=format_clock(mark))
-        for mark in TIMEBAR_MARKS
-    )
     return Timebar(
         percent=round(remaining / total * 100, 2),
         urgent=remaining <= URGENT_SECONDS,
         remaining=remaining,
         total=total,
-        marks=marks,
     )
 
 
@@ -230,7 +213,7 @@ def banner_view(listing: Listing, viewer_id: int, winner_name: str) -> Banner | 
     return None
 
 
-# 무대에 서는 1등(입찰 중) 또는 낙찰자(낙찰). 입찰 중에는 익명 별명, 내가 1등이면 "나"
+# 무대에 서는 최고액 입찰자(입찰 중) 또는 낙찰자(낙찰). 입찰 중에는 익명 별명, 내가 최고액이면 "나"
 @dataclass(frozen=True)
 class Leader:
     sprite: int
@@ -245,8 +228,8 @@ def leader_view(listing: Listing, viewer_id: int, winner_name: str) -> Leader | 
     sprite, alias = alias_for(listing.id, listing.current_bid_amount)
     is_me = listing.current_bidder_id == viewer_id
     if listing.status == ListingStatus.SOLD:
-        return Leader(sprite, '나' if is_me else winner_name, '낙찰!', listing.current_bid_amount)
-    return Leader(sprite, '나' if is_me else alias, '1등', listing.current_bid_amount)
+        return Leader(sprite, '나' if is_me else winner_name, '낙찰자', listing.current_bid_amount)
+    return Leader(sprite, '나' if is_me else alias, '최고액 입찰자', listing.current_bid_amount)
 
 
 @dataclass(frozen=True)
@@ -297,11 +280,11 @@ def detail_view(
     elif is_seller:
         message = '내 매물이에요. 입찰할 수 없어요.'
     elif is_leader:
-        message = '지금 내가 1등이에요! 다른 사람이 더 높게 부르면 밀려나요.'
+        message = '지금 내가 최고액 입찰자예요! 다른 사람이 더 높게 부르면 밀려나요.'
     elif blocked:
         message = f'연속 낙찰 제한 중이라 입찰할 수 없어요. (남은 시간 {format_clock(blocked_seconds)})'
     elif listing.has_bidder():
-        message = '지금은 다른 입찰자가 1등이에요.'
+        message = '지금은 다른 입찰자가 최고액이에요.'
     else:
         message = '아직 입찰이 없어요. 첫 입찰을 해 보세요!'
 

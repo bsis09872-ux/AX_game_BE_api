@@ -157,18 +157,40 @@ body.embed .main-content {
   margin-top: 14px;
 }
 
-/* 경매 상세: 진행 바 (남은 시간만큼 채워져 줄어든다, 점은 남은 3:00·1:00·0:00) */
+/* 경매 상세 무대: 벽, 바닥, 경매사, 아이템 카드, 최고액 입찰자 */
+.stage-col {
+  flex: 2 1 480px;
+}
+
+.auction-stage {
+  position: relative;
+  padding: 0;
+  overflow: hidden;
+  background:
+    linear-gradient(#6b3d2c 0 58%, #3a2316 58% 60%, #9a6a3f 60% 100%);
+}
+
+/* 바닥 널빤지 줄무늬 */
+.auction-stage::before {
+  content: "";
+  position: absolute;
+  inset: 60% 0 0;
+  background: repeating-linear-gradient(90deg, rgba(0, 0, 0, .1) 0 2px, transparent 2px 56px);
+  pointer-events: none;
+}
+
+/* 진행 바: 남은 시간만큼 채워져 줄어든다 */
 .timebar {
   position: relative;
   height: 16px;
-  margin: 4px 8px 0;
-  background: var(--slot-in);
+  margin: 14px 14px 0;
+  background: var(--night);
   border: var(--px) solid var(--outline);
 }
 
 .timebar-fill {
   height: 100%;
-  background: var(--green);
+  background: var(--pink);
   transition: width .4s;
 }
 
@@ -176,48 +198,14 @@ body.embed .main-content {
   background: var(--red);
 }
 
-.timebar-dot {
-  position: absolute;
-  top: 50%;
-  width: 12px;
-  height: 12px;
-  margin: -6px 0 0 -6px;
-  background: var(--text);
-  border: 2px solid var(--outline);
-  border-radius: 50%;
-}
-
-.timebar-dot.passed {
-  background: var(--steel);
-}
-
-.timebar-labels {
+.stage-top {
   position: relative;
-  height: 18px;
-  margin: 2px 8px 10px;
-  padding: 0;
-  list-style: none;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.timebar-labels li {
-  position: absolute;
-  transform: translateX(-50%);
-}
-
-.timebar-labels li:first-child {
-  transform: translateX(-50%);
-}
-
-/* 무대: 경매사, 아이템 카드, 1등 */
-.stage {
   display: flex;
   align-items: flex-end;
-  justify-content: space-around;
-  gap: 8px;
+  justify-content: center;
+  gap: 24px;
   flex-wrap: wrap;
-  padding: 14px 8px 8px;
+  padding: 30px 14px 0;
 }
 
 .stage-npc {
@@ -229,25 +217,56 @@ body.embed .main-content {
   text-align: center;
 }
 
+.stage-top .stage-npc {
+  margin-bottom: 10px;
+}
+
 .stage-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 12px 18px;
+  min-width: 200px;
+  padding: 14px 22px;
   text-align: center;
   background: var(--night);
   border: var(--px) solid var(--outline);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, .35);
 }
 
-.stage-card h1 {
-  margin: 0;
+.stage-name {
   font-size: 20px;
+}
+
+.price-label {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--muted);
 }
 
 .stage-price {
   color: var(--gold);
-  font-size: 22px;
+  font-size: 28px;
+  line-height: 1.1;
+}
+
+/* 바닥 위: 최고액 입찰자가 서는 자리 */
+.stage-floor {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  min-height: 150px;
+  margin: 18px 14px 14px;
+  padding: 10px;
+  background: rgba(58, 35, 22, .55);
+  border: var(--px) solid rgba(58, 35, 22, .8);
+}
+
+.stage-floor .empty {
+  align-self: center;
+  margin: 0;
+  color: var(--muted);
 }
 
 .tag.lead {
@@ -255,25 +274,49 @@ body.embed .main-content {
   color: var(--outline);
 }
 
-.side .panel + .panel {
+.side .title-tab,
+.side .panel + .title-tab {
+  margin: 0;
+  font-size: 16px;
+}
+
+.side .panel + .panel,
+.side .panel + .title-tab {
   margin-top: 16px;
 }
 
+.rules h2 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
 .rules ol {
-  margin: 0;
+  margin: 0 0 8px;
   padding-left: 20px;
+}
+
+.rules p {
+  margin: 0;
+}
+
+.bid-meta {
+  margin: 0 0 6px;
 }
 
 /* 결과 배너 (낙찰, 유찰, 취소, 대기) */
 .banner {
-  position: relative;
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  margin: 8px auto;
   padding: 10px 24px;
-  max-width: 420px;
+  width: max-content;
+  max-width: 90%;
   text-align: center;
   background: var(--steel);
   color: var(--outline);
@@ -300,9 +343,9 @@ body.embed .main-content {
 }
 
 @keyframes banner-pop {
-  0% { transform: scale(.6); opacity: 0; }
-  70% { transform: scale(1.08); opacity: 1; }
-  100% { transform: scale(1); }
+  0% { transform: translateX(-50%) scale(.6); opacity: 0; }
+  70% { transform: translateX(-50%) scale(1.08); opacity: 1; }
+  100% { transform: translateX(-50%) scale(1); }
 }
 
 /* 낙찰 이펙트: 위에서 떨어지는 조각 (CSS만 사용) */
