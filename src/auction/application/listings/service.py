@@ -12,6 +12,7 @@ from auction.application.contract import (
     TransactionManager,
     WalletGateway,
 )
+from auction.application.listings.queue import lock_next_queued
 from auction.domain.exceptions import BidBannedError
 from auction.domain.listings.entities import Listing, ListingStatus
 from auction.domain.listings.repositories import ListingRepository
@@ -169,6 +170,50 @@ class ListingService:
         await self.inventory.release(
             saved.inventory_item_id, saved.seller_id, saved.id, now
         )
+        await self.tx.commit()
+        return saved
+
+    # [관리자] 대기·진행 중인 매물을 강제 취소한다.
+    # 입력: 관리자 ID(토큰)·매물 ID·사유·처리 시각. 반환: 취소된 매물.
+    # 처리: 권한 확인 → 매물 잠금 → 취소 → (진행 중이었으면) 종류·다음 매물 잠금
+    #       → 저장 → 아이템 예약 해제 → 다음 매물 공개 → 확정.
+    # 잠금 순서: 매물 → 종류 → 다음 대기 매물 → 아이템. 마감 처리와 같은 순서다.
+    # 403 권한 없음, 404 매물 없음, 409 취소 불가 상태. 중간 실패 시 commit하지 않아 전체 rollback된다.
+    async def admin_cancel(
+        self,
+        admin_id: int,
+        listing_id: int,
+        reason: str,
+        now: datetime,
+    ) -> Listing:
+        if not await self.users.is_admin(admin_id):
+            raise ForbiddenError("관리자만 매물을 강제 취소할 수 있습니다.")
+
+        listing = await self._get_for_update(listing_id)
+
+        # 취소 후에는 상태가 바뀌므로, 진행 중이었는지 먼저 기록한다.
+        was_bidding = listing.status == ListingStatus.BIDDING
+        listing.cancel_by_admin(admin_id, reason, now)
+
+        # 진행 중 매물이 빠지면 같은 종류의 다음 대기 매물을 공개해야 한다.
+        # 등록·마감 처리와 공개 판단이 겹치지 않게 종류를 잠근 뒤 다음 매물을 잠근다.
+        next_listing = None
+        if was_bidding:
+            await self.listings.lock_definition(listing.item_definition_id)
+            next_listing = await lock_next_queued(
+                self.listings, listing.item_definition_id
+            )
+
+        saved = await self.listings.save(listing)
+        await self.inventory.release(
+            saved.inventory_item_id, saved.seller_id, saved.id, now
+        )
+
+        # 취소 매물을 먼저 저장해야 "종류별 BIDDING 1개" 제약에 걸리지 않는다.
+        if next_listing is not None:
+            next_listing.start(now)
+            await self.listings.save(next_listing)
+
         await self.tx.commit()
         return saved
 
