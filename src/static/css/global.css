@@ -604,3 +604,8 @@ body {
         margin-left: 0;
     }
 }
+
+/* 헤더의 슬롯은 DOM 갱신 단위이며 별도 레이아웃 상자를 만들지 않는다. */
+.shell-slot {
+    display: contents;
+}

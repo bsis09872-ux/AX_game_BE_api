@@ -11,7 +11,7 @@
     {% block styles %}{% endblock %}
     {% block head %}{% endblock %}
 </head>
-<body {% block body_attributes %}{% endblock %}>
+<body data-page-navigation="true" data-page="{% block page_key %}default{% endblock %}" {% block body_attributes %}{% endblock %}>
     <div class="title-carousel" aria-hidden="true">
         <div class="title-carousel__rows">
             {% for _ in range(12) %}
@@ -30,23 +30,31 @@
 
     <header class="topbar">
         <div class="wrap">
-            {% block brand %}
-                <div class="brand">
-                    <img
-                        class="brand-logo"
-                        src="{{ url_for('static', path='/images/catch-and-bid-logo.png') }}"
-                        alt="Catch &amp; Bid"
-                        width="1774"
-                        height="887"
-                    >
-                </div>
-            {% endblock %}
+            <div class="shell-slot" data-shell-slot="brand">
+                {% block brand %}
+                    <div class="brand">
+                        <img
+                            class="brand-logo"
+                            src="{{ url_for('static', path='/images/catch-and-bid-logo.png') }}"
+                            alt="Catch &amp; Bid"
+                            width="1774"
+                            height="887"
+                        >
+                    </div>
+                {% endblock %}
+            </div>
 
             {# 메뉴와 회원 표시는 화면별로 연결하며 공통 레이아웃은 인증 상태를 판단하지 않는다. #}
-            {% block navigation %}{% endblock %}
-            {% block header_status %}{% endblock %}
+            <div class="shell-slot" data-shell-slot="navigation">
+                {% block navigation %}{% endblock %}
+            </div>
+            <div class="shell-slot" data-shell-slot="status">
+                {% block header_status %}{% endblock %}
+            </div>
         </div>
     </header>
+
+    <p id="navigation-message" class="wrap" role="alert" hidden></p>
 
     <main id="main-content" class="wrap main-content" tabindex="-1">
         {% block content %}{% endblock %}
@@ -57,6 +65,7 @@
         <a href="{{ url_for('static', path='/fonts/LICENSE-galmuri-OFL.txt') }}">Galmuri11 (OFL)</a>
     </footer>
 
+    <script type="module" src="{{ url_for('static', path='/app.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -2,16 +2,48 @@
 {% block admin_title %}회원 / 권한{% endblock %}
 {% block admin_content %}
 <section class="panel admin-section">
-  <div class="admin-heading"><h2>회원 목록</h2><a class="btn" href="/admin/members/new">+ 계정 만들기</a></div>
+  <div class="admin-heading">
+    <h2>회원 목록</h2><a class="btn" href="/admin/members/new">+ 계정 만들기</a>
+  </div>
   <form action="/admin/members" method="get" class="admin-filters">
     <label>아이디 / 표시 이름<input name="q" maxlength="100" value="{{ q }}" placeholder="회원 검색"></label>
-    <label>권한<select name="role"><option value="">전체</option><option value="USER" {% if role == 'USER' %}selected{% endif %}>USER</option><option value="ADMIN" {% if role == 'ADMIN' %}selected{% endif %}>ADMIN</option></select></label>
+    <label>권한<select name="role">
+        <option value="">전체</option>
+        <option value="USER" {% if role=='USER' %}selected{% endif %}>USER</option>
+        <option value="ADMIN" {% if role=='ADMIN' %}selected{% endif %}>ADMIN</option>
+      </select></label>
     <button class="btn wood">검색</button><a href="/admin/members">전체 보기</a>
   </form>
-  <div class="admin-table-scroll"><table><thead><tr><th>ID</th><th>로그인 아이디</th><th>표시 이름</th><th>권한</th><th>회원 상태</th><th>가입 시각 (UTC)</th></tr></thead><tbody>
-    {% for member in members %}<tr><td>{{ member.id }}</td><td><a href="/admin/members/{{ member.id }}">{{ member.login_id }}</a></td><td>{{ member.display_name }}</td><td>{{ member.role }}</td><td>{{ '탈퇴' if not member.is_active else '로그인 정지' if member.login_suspended_at else '정상' }}</td><td>{{ member.created_at.strftime('%Y-%m-%d %H:%M') }}</td></tr>
-    {% else %}<tr><td colspan="6">조건에 맞는 회원이 없습니다.</td></tr>{% endfor %}
-  </tbody></table></div>
-  <div class="admin-pagination">{% if page > 1 %}<a class="btn wood" href="{{ request.url.include_query_params(page=page-1) }}">이전</a>{% endif %}<span>{{ page }} / {{ pages }} 페이지, {{ total }}명</span>{% if page < pages %}<a class="btn wood" href="{{ request.url.include_query_params(page=page+1) }}">다음</a>{% endif %}</div>
+  <div class="admin-table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>로그인 아이디</th>
+          <th>표시 이름</th>
+          <th>권한</th>
+          <th>회원 상태</th>
+          <th>가입 시각 (UTC)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for member in members %}<tr>
+          <td>{{ member.id }}</td>
+          <td><a href="/admin/members/{{ member.id }}">{{ member.login_id }}</a></td>
+          <td>{{ member.display_name }}</td>
+          <td>{{ member.role }}</td>
+          <td>{{ '탈퇴' if not member.is_active else '로그인 정지' if member.login_suspended_at else '정상' }}</td>
+          <td>{{ member.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        </tr>
+        {% else %}<tr>
+          <td colspan="6">조건에 맞는 회원이 없습니다.</td>
+        </tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="admin-pagination">{% if page > 1 %}<a class="btn wood"
+      href="{{ request.url.include_query_params(page=page-1) }}">이전</a>{% endif %}<span>{{ page }} / {{ pages }} 페이지, {{
+      total }}명</span>{% if page < pages %}<a class="btn wood"
+      href="{{ request.url.include_query_params(page=page+1) }}">다음</a>{% endif %}</div>
 </section>
 {% endblock %}
