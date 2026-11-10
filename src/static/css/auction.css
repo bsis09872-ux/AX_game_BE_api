@@ -270,11 +270,18 @@ body.embed .main-content {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  min-height: 190px;
+  height: 190px;  /* 입찰자가 있든 없든 무대 높이는 같다 */
   margin: 18px 14px 14px;
   padding: 10px;
   background: rgba(58, 35, 22, .55);
   border: var(--px) solid rgba(58, 35, 22, .8);
+}
+
+/* 입찰자가 있으면 흐린 바닥이 테두리 없이 무대 가장자리까지 덮는다 (위 18 + 190 + 아래 14 = 222로 높이를 맞춘다) */
+.stage-floor.crowded {
+  margin: 18px 0 0;
+  height: 204px;
+  border: 0;
 }
 
 .stage-floor .empty {
@@ -303,7 +310,7 @@ body.embed .main-content {
 
 /* 뒷줄: 더 작고 더 어둡게 앞줄 사이사이에 보인다 */
 .crowd-row.back {
-  margin-bottom: -22px;
+  margin-bottom: -40px;
 }
 
 .crowd-row.back .crowd-npc {
@@ -389,6 +396,12 @@ body.embed .main-content {
   margin-bottom: 4px;
 }
 
+/* "입찰 금액 (G)" 글자: 가방의 "경매 시작"과 같은 붉은 계열, 크게 */
+.bid-label {
+  color: var(--pink);
+  font-size: 18px;
+}
+
 .bid-row {
   display: flex;
   align-items: stretch;
@@ -406,15 +419,6 @@ body.embed .main-content {
   flex: none;
 }
 
-/* 최소 입찰 금액: 가방의 "경매 시작"과 같은 붉은 계열, 크게 */
-.bid-hint {
-  margin: 8px 0 0;
-}
-
-.bid-min {
-  color: var(--pink);
-  font-size: 18px;
-}
 
 /* 결과 배너 (낙찰, 유찰, 취소, 대기) */
 .banner {

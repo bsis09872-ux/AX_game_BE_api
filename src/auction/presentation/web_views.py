@@ -238,9 +238,11 @@ CROWD_SPRITES = 16
 
 
 def crowd_view(listing_id: int, leader_sprite: int) -> tuple[tuple[int, ...], tuple[int, ...]]:
-    front = [(listing_id * 3 + i * 5) % CROWD_SPRITES + 1 for i in range(8)]
-    back = [(listing_id * 7 + i * 3 + 8) % CROWD_SPRITES + 1 for i in range(10)]
-    return tuple(n for n in front if n != leader_sprite), tuple(back)
+    # 앞줄은 후보 9명 중 최고액 입찰자 그림을 빼고 8명만 쓴다 (왼쪽 4명, 오른쪽 4명이라 최고액 입찰자가 정가운데)
+    candidates = [(listing_id * 3 + i * 5) % CROWD_SPRITES + 1 for i in range(9)]
+    front = tuple(n for n in candidates if n != leader_sprite)[:8]
+    back = tuple((listing_id * 7 + i * 3 + 8) % CROWD_SPRITES + 1 for i in range(10))
+    return front, back
 
 
 @dataclass(frozen=True)

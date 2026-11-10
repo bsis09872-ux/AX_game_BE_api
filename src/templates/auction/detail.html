@@ -63,7 +63,7 @@
           </div>
         </div>
 
-        <div class="stage-floor">
+        <div class="stage-floor{% if d.leader %} crowded{% endif %}">
           {% if d.leader %}
           {# 입찰자가 있으면 웅성거리는 사람들 속에 최고액 입찰자(또는 낙찰자)가 눈에 띄게 서 있다 #}
           {% set half = d.crowd_front | length // 2 %}
@@ -96,13 +96,13 @@
 
         {% if d.can_bid %}
         <form method="post" action="{{ d.bid_action }}" class="bid-form">
-          <label for="bid-amount">입찰 금액 (G)</label>
+          <label for="bid-amount" class="bid-label">입찰 금액 (G)</label>
           <div class="bid-row">
             <input id="bid-amount" name="amount" type="number" inputmode="numeric" min="{{ d.min_bid }}" value="{{ d.min_bid }}" required>
             <button type="submit" class="btn gold">입찰하기</button>
           </div>
         </form>
-        <p class="bid-hint"><span class="bid-min">{{ '{:,}'.format(d.min_bid) }}G</span> 이상으로 입찰할 수 있어요.</p>
+        <p class="muted">{{ gold(d.min_bid) }} 이상으로 입찰할 수 있어요.</p>
         {% endif %}
 
         {% if d.can_cancel %}
@@ -118,7 +118,7 @@
           <li>현재 최고가보다 높은 금액으로 입찰해요.</li>
           <li>마감 전까지 더 높게 부르면 최고액 입찰자가 바뀌어요.</li>
           <li>최고액일 때만 입찰 금액이 묶이고,<br>밀려나면 바로 풀려요.</li>
-          <li>마감 때 최고액 입찰자가 낙찰받고 금액이 차감돼요.<br>입찰자가 없으면 유찰이고 아이템은 판매자에게 돌아가요.</li>
+          <li>마감 때 최고액 입찰자가 낙찰받고 금액이 차감돼요.<br>입찰자가 없으면 유찰, 아이템은 판매자에게 돌아가요.</li>
           <li>내 매물에는 입찰할 수 없고,<br>최고액 입찰자는 연속으로 입찰할 수 없어요.</li>
         </ol>
       </div>
