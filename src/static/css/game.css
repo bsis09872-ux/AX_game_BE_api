@@ -1,0 +1,52 @@
+/* 낚시터 화면 전용 CSS (templates/game/play.html, data-page-style)
+   버튼·패널·슬롯 같은 공통 모양은 global.css를 쓰고, 여기에는 낚시터에만 있는 것만 둔다 */
+
+main.wrap { max-width: none; } /* 낚시터만 페이지 폭 제한을 풀어 화면을 창에 맞게 키운다 */
+
+.game { position: relative; margin: 0 auto; border: var(--px) solid var(--outline); background: #84c669; overflow: hidden; }
+.game canvas { display: block; image-rendering: pixelated; }
+
+/* 화면 위 버튼줄 */
+.game .hudbar { position: absolute; left: 0; right: 0; top: 0; display: flex; gap: 6px; padding: 8px; align-items: center; pointer-events: none; }
+.game .hudbar > * { pointer-events: auto; }
+.game .hudbar .gold { background: var(--slot-in); border: var(--px) solid var(--outline); padding: 2px 10px 2px 4px; display: flex; align-items: center; gap: 4px; color: var(--gold); font-weight: 700; }
+.game .net { background: rgba(36, 26, 31, .85); border: var(--px) solid var(--outline); padding: 2px 8px; font-size: 12px; white-space: nowrap; }
+.game .net.on::before { content: '●'; color: #7bd88f; margin-right: 4px; }
+
+/* 아래 안내문 */
+.game .prompt { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); background: rgba(36, 26, 31, .85); border: var(--px) solid var(--outline); padding: 4px 12px; font-weight: 700; white-space: nowrap; pointer-events: none; }
+
+/* 낚은 결과 창: 톡 튀어나온다 */
+.game .catch { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; min-width: 260px; }
+.game .catch:not(.hidden) { animation: pop .3s cubic-bezier(.3, 1.6, .6, 1); }
+.game .catch-slot { width: 96px; height: 96px; margin: 8px auto; cursor: default; }
+.game .catch-name { font-size: 20px; font-weight: 700; }
+.game .catch-actions { display: flex; gap: 6px; justify-content: center; margin-top: 10px; }
+@keyframes pop { from { transform: translate(-50%, -50%) scale(.5); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+
+/* 다른 사람 닉네임 (글자가 흐려지지 않게 캔버스 위 HTML로 띄운다) */
+.game .names { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.game .names div { position: absolute; transform: translate(-50%, -100%); font-size: 12px; white-space: nowrap; color: #fff; text-shadow: 1px 0 var(--outline), -1px 0 var(--outline), 0 1px var(--outline), 0 -1px var(--outline); }
+
+/* 캐릭터 고르기 */
+.game .skins { position: absolute; left: 8px; top: 52px; display: grid; grid-template-columns: repeat(3, auto); gap: 6px; padding: 8px; }
+.game .skins .btn { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 12px; }
+
+/* 게임 안 웹 창 (가방·경매장) */
+.overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, .6); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.overlay .win { width: min(1000px, 100%); height: min(680px, 100%); display: flex; flex-direction: column; }
+.overlay .bar { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--wood-dark); border: var(--px) solid var(--outline); border-bottom: none; }
+.overlay iframe { flex: 1; border: var(--px) solid var(--outline); background: var(--night); width: 100%; }
+
+/* 페이지 전환 원. 스크립트가 그리기 전에는 통째로 덮어 둔다 */
+
+
+@media (max-width: 600px) {
+  .game .hudbar { flex-wrap: wrap; gap: 4px; padding: 4px; }
+  .game .hudbar > * { flex-shrink: 0; white-space: nowrap; }
+  .game .hudbar .btn { font-size: 12px; padding: 4px; }
+  .game .hudbar .spacer { display: none; }
+  .game .hudbar img { width: 20px; height: 20px; }
+  .game .skins { top: 90px; max-width: calc(100% - 16px); }
+  .game .prompt { white-space: normal; text-align: center; width: max-content; max-width: calc(100% - 16px); font-size: 12px; }
+}

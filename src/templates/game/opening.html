@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block page_key %}opening{% endblock %}
+{% block title %}Catch &amp; Bid{% endblock %}
+
+{% block styles %}
+<link data-page-style rel="stylesheet" href="{{ url_for('static', path='/css/opening.css') }}">
+{% endblock %}
+
+{% block navigation %}
+<nav class="nav" aria-label="주 메뉴">
+  <a href="/v1/play">낚시터</a>
+  <a href="/inventory">내 인벤토리</a>
+  <a href="/me">내 정보</a>
+</nav>
+{% endblock %}
+
+{% block content %}
+{# 동작은 static/game/opening.js의 initOpeningPage가 맡는다 (pages.js에 "opening"으로 등록). 이 템플릿에는 스크립트를 두지 않는다 #}
+<section class="opening" aria-labelledby="opening-title">
+  <h1 id="opening-title" class="sr-only">Catch &amp; Bid</h1>
+  <div class="opening-stage" id="opening-stage" role="img" tabindex="0"
+       aria-label="빨간 커튼이 양옆으로 걷히고, 낚싯줄에 걸린 Catch & Bid 로고가 호수에서 튀어 올랐다 무대 가운데로 떨어지는 오프닝">
+    <canvas id="opening-cv"></canvas>
+  </div>
+  <p class="opening-hint">아무 키나 누르거나 무대를 클릭하면 건너뛰고, PRESS START가 뜬 뒤에는 낚시터로 들어가요.
+    <a href="/v1/play">바로 낚시터로</a></p>
+</section>
+{% endblock %}

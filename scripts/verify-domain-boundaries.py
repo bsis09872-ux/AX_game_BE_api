@@ -10,7 +10,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / 'src'
-DOMAINS = {'auth', 'users', 'auction', 'inventory', 'wallet'}
+DOMAINS = {path.name for path in SRC.iterdir() if (path / 'domain').is_dir()}
 
 
 def main():

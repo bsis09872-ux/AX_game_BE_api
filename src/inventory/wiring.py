@@ -2,7 +2,7 @@
 
 - 다른 도메인의 wiring을 이용해 어댑터를 조립한다 (다른 도메인의 infrastructure를 직접 import하지 않는다)
 - 세션은 호출자가 만들고 닫는다 (같은 세션이면 한 트랜잭션으로 묶인다)
-- 낚시 쿨다운과 난수 발생기는 하나만 만들어 계속 쓴다 (쿨다운을 요청마다 새로 만들면 기록이 사라진다)
+- 낚시 쿨다운은 DB에서 공유하고 난수 발생기는 하나만 만들어 계속 쓴다
 - 카탈로그 캐시는 하나만 만들어 계속 쓴다 (요청마다 새로 만들면 항상 비어 있다). 만료 시간은 CACHE_TTL_SECONDS 설정 적용
 - 업무 규칙을 두지 않는다
 """
@@ -25,7 +25,7 @@ from inventory.infrastructure.user_lookup import UserLookupAdapter
 from inventory.infrastructure.current_user import CurrentUserAdapter
 
 from inventory.application.fishing_service import FishingService
-from inventory.infrastructure.fishing_cooldown import InMemoryFishingCooldown
+from inventory.infrastructure.shared_fishing_cooldown import SharedFishingCooldown
 from inventory.infrastructure.cache import TtlCache
 
 from auth.wiring import build_auth_service
@@ -64,12 +64,6 @@ def build_current_user_provider(session: AsyncSession) -> CurrentUserProvider:
     )
 
 
-# 낚시 쿨다운
-@lru_cache
-def get_fishing_cooldown() -> InMemoryFishingCooldown:
-    return InMemoryFishingCooldown()
-
-
 # 난수 발생기
 @lru_cache
 def get_fishing_rng() -> random.SystemRandom:
@@ -80,7 +74,7 @@ def get_fishing_rng() -> random.SystemRandom:
 def build_fishing_service(session: AsyncSession) -> FishingService:
     return FishingService(
         definitions=ItemDefinitionRepository(session),
-        cooldown=get_fishing_cooldown(),
+        cooldown=SharedFishingCooldown(session),
         inventory=build_inventory_service(session),
         rng=get_fishing_rng()
     )

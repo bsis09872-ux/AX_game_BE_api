@@ -21,6 +21,7 @@ dependencies = [
     "python-multipart>=0.0.32",
     "sqlalchemy>=2.1.6",
     "uvicorn>=0.54.0",
+    "websockets>=17.4",
 ]
 
 [tool.uv]

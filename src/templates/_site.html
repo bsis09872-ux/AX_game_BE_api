@@ -4,6 +4,7 @@
 {# active는 'auction', 'inventory', 'trades', 'wallet', 'me', 'admin' 중 하나 (지금 화면의 메뉴 강조). admin이 참이면 관리자 메뉴가 붙는다 #}
 {% macro site_nav(active, admin=false) -%}
 <nav class="nav" aria-label="주 메뉴">
+  <a {% if active == 'play' %}class="on" aria-current="page" {% endif %}href="/v1/play">낚시터</a>
   <a {% if active == 'auction' %}class="on" aria-current="page" {% endif %}href="/auctions">경매장</a>
   <a {% if active == 'inventory' %}class="on" aria-current="page" {% endif %}href="/inventory">내 가방</a>
   <a {% if active == 'trades' %}class="on" aria-current="page" {% endif %}href="/auctions/trades">내 거래</a>

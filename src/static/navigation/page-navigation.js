@@ -1,6 +1,6 @@
 import { preparePageStyles, renderPage } from "./page-renderer.js";
 
-export function createPageNavigation(initializePage) {
+export function createPageNavigation(initializePage, preparePage = () => null) {
     let requestController;
     let activeController = null; // 지금 진행 중인 이동(fetch부터 렌더링 끝까지). 자동 갱신이 사용자의 이동을 끊지 않게 구분한다
     let pageController;
@@ -8,12 +8,13 @@ export function createPageNavigation(initializePage) {
 
     const message = document.getElementById("navigation-message");
 
-    function mountPage() {
-        pageController = new AbortController();
+    function mountPage(controller = new AbortController(), prepared = null) {
+        pageController = controller;
         initializePage({
             root: document.getElementById("main-content"),
             signal: pageController.signal,
             navigate,
+            prepared,
         });
     }
 
@@ -51,6 +52,11 @@ export function createPageNavigation(initializePage) {
         activeController = controller;
         submitting = isSubmission;
 
+        const nextController = new AbortController();
+        const cancelPreparation = () => nextController.abort();
+        controller.signal.addEventListener("abort", cancelPreparation, { once: true });
+        let styles,
+            committed = false;
         const main = document.getElementById("main-content");
         if (!background) {
             main.setAttribute("aria-busy", "true");
@@ -95,13 +101,23 @@ export function createPageNavigation(initializePage) {
                 return false;
             }
 
-            const applyStyles = await preparePageStyles(nextPage, controller.signal);
+            styles = await preparePageStyles(nextPage, controller.signal);
             controller.signal.throwIfAborted();
 
             const nextUrl = new URL(response.url);
             if (!response.redirected) {
                 nextUrl.hash = url.hash;
             }
+
+            styles.activate();
+            const prepared = await preparePage({
+                page: nextPage,
+                root: nextMain,
+                url: nextUrl,
+                signal: nextController.signal,
+                navigate,
+            });
+            controller.signal.throwIfAborted();
 
             if (options.fromHistory || options.replace) {
                 history.replaceState(null, "", nextUrl);
@@ -111,10 +127,13 @@ export function createPageNavigation(initializePage) {
 
             // 이전 화면의 이벤트와 타이머를 정리한 뒤 새 화면을 연결한다.
             pageController.abort();
+            prepared?.attach();
             const focusTarget = renderPage(nextPage);
-            applyStyles();
+            styles.finish();
+            controller.signal.removeEventListener("abort", cancelPreparation);
+            committed = true;
             submitting = false;
-            mountPage();
+            mountPage(nextController, prepared);
 
             if (background) {
                 return true;
@@ -146,7 +165,12 @@ export function createPageNavigation(initializePage) {
             showError(text);
             return false;
         } finally {
-            // 자신이 최신 요청일 때만 이동 중 상태를 푼다
+            controller.signal.removeEventListener("abort", cancelPreparation);
+            if (!committed) {
+                nextController.abort();
+                styles?.cancel();
+            }
+            // 최신 요청만 이동 상태를 해제한다.
             if (activeController === controller) {
                 activeController = null;
             }
@@ -192,6 +216,10 @@ export function createPageNavigation(initializePage) {
         }
 
         event.preventDefault();
+        // 현재 메뉴를 다시 눌러도 장면과 입력 상태를 파괴하지 않는다.
+        if (url.href === location.href) {
+            return;
+        }
         void navigate(url);
     }
 

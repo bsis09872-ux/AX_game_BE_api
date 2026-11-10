@@ -158,6 +158,7 @@ uv run uvicorn main:app --reload
 | 주소                              | 내용              |
 | --------------------------------- | ----------------- |
 | `http://127.0.0.1:8000/login`     | 로그인과 회원가입 |
+| `http://127.0.0.1:8000/v1/play`   | 낚시 클라이언트   |
 | `http://127.0.0.1:8000/inventory` | 내 가방           |
 | `http://127.0.0.1:8000/auctions`  | 경매장            |
 | `http://127.0.0.1:8000/docs`      | API 문서(Swagger) |
@@ -168,3 +169,5 @@ uv run uvicorn main:app --reload
 ```bash
 PYTHONPATH=src uv run python -m inventory.infrastructure.seed
 ```
+
+낚시 화면과 서버 연결은 [클라이언트 README](src/client/README.md), CORS와 요청 로그 설정은 [공통 미들웨어 문서](src/shared/core/README.md)를 확인합니다.

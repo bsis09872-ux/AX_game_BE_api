@@ -322,6 +322,8 @@ async def main():
         await seed(db, seller, buyer, other_id)
         from verify_admin_cancel import verify_migration, verify_cancellation
         await verify_migration(db, env)
+        # 공통 헤더가 최초 방문 때 만드는 관리자 지갑을 조회 비교 전에 준비한다.
+        assert (await admin.get('/wallet/balance')).status_code == 200
         before = await snapshot(db)
         await http_checks(guest, member, admin, buyer, seller)
         await browser_checks(base, admin, buyer, seller)
