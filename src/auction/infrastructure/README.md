@@ -36,7 +36,7 @@ infrastructure/
 | 소유권 이전 중 낙찰자 탈퇴·행 없음 | `OwnerNotFoundError` | `SettlementNotPossibleError` (자동 유찰) |
 | 아이템 누락·상태·소유권 불일치 (이전·해제) | `ItemNotFoundError`·`InvalidStateError`·`NotOwnerError` | `InventoryMismatchError` (500) |
 
-변환할 때 원래 예외 유형과 관련 ID를 로그로 남긴다.
+변환할 때 원래 예외 유형과 관련 ID를 로그로 남긴다. Wallet 예외는 그대로 전달한다. Users의 회원 없음은 `None`(이름 조회는 생략)으로 바꿔 서비스가 판단하게 한다.
 
 ## 연결 규칙
 
@@ -58,6 +58,6 @@ infrastructure/
 
 ## 더 보기
 
-- [도메인 역할과 경계](../domain/README.md)
+- [경매 전체 안내](../README.md) · [도메인 역할과 경계](../domain/README.md)
 - [매물 모델](listings/models.py) · [매물 Repository](listings/repositories.py)
 - [거래 모델](trades/models.py) · [거래 Repository](trades/repositories.py)
