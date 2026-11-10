@@ -153,6 +153,11 @@ a.slot {
 }
 
 /* 상자 없는 글자 버튼: "아이템 도감 보기" 링크처럼 보이되 색은 붉은 계열 */
+/* 올릴 수 없는 이유 문구도 같은 색 */
+.block-reason {
+  color: var(--pink);
+}
+
 .link-btn {
   padding: 0;
   font: inherit;
