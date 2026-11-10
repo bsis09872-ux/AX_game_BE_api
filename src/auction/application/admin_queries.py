@@ -2,11 +2,11 @@ from auction.application.listings.service import ListingService
 from auction.application.trades.service import TradeService
 from auction.domain.listings.entities import Listing, ListingStatus
 from auction.domain.trades.entities import Trade
-from auth.application.admin_dto import AdminListing, AdminListingStatus, AdminTrade
+from auction.application.admin_dto import AdminListing, AdminListingStatus, AdminTrade
 from shared.core.exceptions import NotFoundError
 
 
-class AdminAuctionReaderAdapter:
+class AdminAuctionQueries:
     def __init__(self, listings: ListingService, trades: TradeService):
         self.listings = listings
         self.trades = trades

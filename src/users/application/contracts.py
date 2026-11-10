@@ -12,15 +12,6 @@ class AdminRoleChecker(Protocol):
     async def is_admin(self, user_id: int) -> bool: ...
 
 
-class MemberWalletProvisioner(Protocol):
-    """회원 생성 트랜잭션에서 지갑 담당 구현에 요청할 계약."""
-
-    # TODO(지갑 담당): 현재 기준 브랜치에는 구현이 없다. 같은 요청 세션으로 지갑을
-    # 생성하고 flush까지만 수행해야 한다. 실패는 전파해 회원과 함께 rollback한다.
-    # 반환값은 지갑 담당의 객체이며 회원 기능에서는 내용을 해석하지 않는다.
-    async def create_wallet(self, user_id: int) -> object: ...
-
-
 class AuctionMemberGateway(Protocol):
     """회원 서비스가 경매에 제공하는 조회, 잠금과 자동 제한 저장 계약."""
 

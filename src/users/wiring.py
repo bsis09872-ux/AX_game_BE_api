@@ -1,6 +1,8 @@
 # 회원 서비스와 SQLAlchemy 저장소를 연결한다.
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from users.application.admin_contracts import PasswordHasher, SessionRevoker
+from users.application.admin_service import MemberAdminService
 from users.application.contracts import AdminRoleChecker
 from users.application.service import UserService
 from users.infrastructure.repositories import SqlAlchemyUserRepository
@@ -21,3 +23,13 @@ def build_admin_role_checker(session: AsyncSession) -> AdminRoleChecker:
     # TODO(지갑 담당): 충전 권한 검사 계약에 이 checker를 연결한다. 없는 회원도 False이며
     # USER, 탈퇴, 로그인 정지 회원은 거절하고 DB 조회 실패는 예외로 전달한다.
     return build_user_service(session)
+
+
+def build_member_admin_service(
+    session: AsyncSession, *, passwords: PasswordHasher, sessions: SessionRevoker,
+) -> MemberAdminService:
+    # 인증 구현은 앱 조립부에서 주입한다. Users는 Auth를 import하지 않는다.
+    return MemberAdminService(
+        users=build_user_service(session), passwords=passwords,
+        transaction=session, sessions=sessions,
+    )

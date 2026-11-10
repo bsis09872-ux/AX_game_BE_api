@@ -19,6 +19,8 @@ AX_game_BE_api/
 │   ├── shared/
 │   ├── templates/
 │   ├── static/
+│   ├── composition.py
+│   ├── web_router.py
 │   ├── main.py
 │   └── database.py
 ├── .gitignore
@@ -32,8 +34,8 @@ AX_game_BE_api/
 
 | 경로 | 역할 |
 | --- | --- |
-| [auth](../src/auth/) | 로그인·로그아웃·토큰 관리 |
-| [users](../src/users/) | 회원 정보·상태 |
+| [auth](../src/auth/README.md) | 로그인, 로그아웃과 토큰 관리. 담당 [@Cocode96](https://github.com/Cocode96) |
+| [users](../src/users/README.md) | 회원 정보와 상태. 담당 [@Cocode96](https://github.com/Cocode96) |
 | [inventory](../src/inventory/) | 아이템·소유권·예약 |
 | [wallet](../src/wallet/) | 지갑·잔액 |
 | [auction](../src/auction/) | 경매장 매물·거래 |
@@ -78,7 +80,7 @@ sequenceDiagram
 
 | 경로 | 용도·현재 상태 |
 | --- | --- |
-| [main.py](../src/main.py) | 앱·/health·lifespan·로깅·예외 처리 연결. 등록된 메타데이터로 테이블 생성, 종료 시 엔진 정리. 도메인 라우터 연결은 아직 없음 |
+| [main.py](../src/main.py) | 앱, /health, lifespan, 로깅과 예외 처리, 도메인 라우터 등록. 시작 시 테이블과 회원 제어 컬럼 준비, 종료 시 엔진 정리 |
 | [database.py](../src/database.py) | 비동기 엔진·세션·Base·get_db 및 예외 시 롤백. DATABASE_URL 환경변수 필요 |
 | [exceptions.py](../src/shared/core/exceptions.py) | 공통 업무 예외 |
 | [exception_handlers.py](../src/shared/core/exception_handlers.py) | 업무 오류 400·404·409와 예상 밖 500 응답 변환 |
@@ -100,6 +102,88 @@ sequenceDiagram
 - 공통 파일 변경은 담당자와 협의하고 계층 간 순환 참조를 피합니다.
 
 실행 방법: [README의 개발 서버 실행](../README.md#개발-서버-실행).
+
+## 관리자 화면과 도메인 연결
+
+**관리자 화면/연동과 조립 구조 정리: [@Cocode96](https://github.com/Cocode96)**
+
+이 절은 여러 도메인에 걸친 관리자 기능의 연결을 설명합니다. 인증 자체의 계약은 [Auth README](../src/auth/README.md), 회원 관리의 규칙과 API는 [Users README](../src/users/README.md)를 참고하세요.
+
+| 커밋된 작업 | 기여자 | 대표 커밋 |
+| --- | --- | --- |
+| 관리자 아이템 제작/이미지/회원 보유 아이템 화면 연결 | [@Cocode96](https://github.com/Cocode96) | `6f965b9`, `138822a`, `4702a7d` |
+| 관리자 전체 매물 필터와 거래 내역 연결 | [@Cocode96](https://github.com/Cocode96) | `aef8bc8` |
+| 관리자 기능의 도메인별 이동과 Auth 순환 참조 제거 | [@Cocode96](https://github.com/Cocode96) | `877ba38` |
+| PR #35 취소 API의 웹 연결과 회귀 검증 | [@Cocode96](https://github.com/Cocode96) | `76ca092`, `bf39e47` |
+
+대표 커밋은 이 문서가 포함된 브랜치의 실제 작성 이력을 기준으로 확인했습니다. 기여 표는 관리자 화면과 연동 작업을 기록합니다. 경매의 취소 업무 로직과 [PR #35](https://github.com/bsis09872-ux/AX_game_BE_api/pull/35)의 쿠키 인증 API는 Auction 담당자의 구현을 사용합니다.
+
+관리자 기능은 기존 업무 도메인이 소유하며 별도의 Admin 도메인은 만들지 않습니다. 같은 FastAPI 앱에서 아래 라우터를 등록하므로 서버나 브라우저 주소가 분리되지 않습니다.
+
+| 책임 | 코드 위치 |
+| --- | --- |
+| 쿠키 인증, 관리자 권한, 변경 요청의 Origin 검사 | `auth/presentation/web_dependencies.py` |
+| 회원 생성, 역할, 로그인 정지와 입찰 제한 | `users/presentation/admin_router.py`, `users/application/admin_service.py` |
+| 카탈로그, 이미지와 보유 아이템 관리 | `inventory/presentation/admin_router.py` |
+| 전체 매물, 상세와 거래 내역 HTML | `auction/presentation/admin_router.py` |
+| 쿠키 인증 강제 취소 API | `auction/presentation/listings/admin_web_router.py` |
+| 인증 부품과 회원 관리 서비스 연결 | 앱 조립부 `composition.py` |
+| 관리 홈과 공통 템플릿 | `web_router.py`, `templates/admin/` |
+
+`main.py`가 각 관리자 라우터에 인증 의존성을 주입합니다. `composition.py`는 Auth가 제공한 비밀번호 해시와 세션 폐기 부품을 Users의 팩터리에 넘깁니다. 같은 DB 세션을 공유하므로 회원 정지와 로그인 세션 폐기는 함께 확정됩니다. Users는 Auth를 import하지 않습니다. 회원 생성 시 별도 지갑 생성은 호출하지 않으며 Wallet의 기존 지연 생성 정책을 유지합니다. 사용되지 않던 `MemberWalletProvisioner` 계약과 완료된 연동 TODO는 제거했습니다.
+
+경매 화면용 `AdminAuctionQueries`는 Auction 내부에서 `ListingService`와 `TradeService`의 조회 결과를 DTO로 바꿉니다. 기존 Auth의 조회 Protocol/어댑터를 같은 도메인 안에서 중복 유지하지 않습니다. 조회 조립은 `auction/wiring.py`가 담당하고, 웹 인증과 경매 서비스가 현재 관리자 권한을 검사합니다.
+
+Auth가 Auction을 조립하던 연결을 제거해 `Auth → Auction → Inventory → Auth` 순환 참조를 해소했습니다. 현재 도메인 간 참조는 Auction에서 Inventory/Wallet/Users로, Inventory에서 Auth/Users로, Auth와 Wallet에서 Users로 향합니다. 함수 내부 import로 참조를 숨기지 않습니다.
+
+### 관리자 경매 조회
+
+| 경로 | 검색 조건 |
+| --- | --- |
+| `/admin/auctions` | `listing_id`, `item_definition_id`, `inventory_item_id`, `status`, `page` |
+| `/admin/auctions/{listing_id}` | 매물 상세. 목록의 검색 조건과 페이지를 쿼리로 보존해 복귀 |
+| `/admin/auction-trades` | `listing_id`, `buyer_id`, `seller_id`, `page` |
+
+비워 둔 조건은 전체 조회이며 지정한 조건은 AND로 적용합니다. 상태는 `QUEUED`, `BIDDING`, `SOLD`, `FAILED`, `CANCELLED`를 지원합니다. 페이지는 1부터 시작하고 경매 서비스 기준 한 번에 20건입니다. 매물은 등록 시각, 거래는 체결 시각의 내림차순이며 같은 시각이면 ID 내림차순입니다. 금액은 GOLD, 시각은 UTC로 표시합니다. 거래의 이름과 낙찰가는 현재 정보가 아닌 체결 당시 스냅샷입니다.
+
+기존 `/admin/auctions?listing_id=...`는 해당 매물로 필터한 목록을 표시하며 상세 주소는 위 경로로 분리했습니다. 없는 상세는 HTML 404, 잘못된 조건은 422입니다. 로그인하지 않으면 로그인 화면으로 이동하고 일반 회원은 403을 받습니다. 조회 응답은 `no-store`이며 상태 변경이나 commit을 수행하지 않습니다. 마감 스케줄러는 선행 PR #35에서 앱 lifespan에 연결되어 서버 시작/종료와 함께 동작합니다. 관리자 조회 요청은 스케줄러를 별도로 실행하지 않습니다.
+
+템플릿은 `templates/admin/layout.html`을 상속합니다. 검색, 탭과 상세 링크는 아래 공통 페이지 전환을 사용하므로 별도 JavaScript 이벤트를 추가하지 않습니다. 검색 입력과 페이지 링크는 `auction_macros.html`, 조건 검증과 URL 생성은 `auction/presentation/admin_queries.py`에서 공유합니다.
+
+### 관리자 강제 취소
+
+대기/진행 매물 상세에서 확인 창을 거쳐 취소합니다. PR #35의 `POST /admin/listings/{listing_id}/cancel`을 사용하며 요청 본문은 없습니다. HttpOnly 쿠키 인증, 현재 관리자 권한과 Origin을 검사하고 관리자 ID와 처리 시각은 서버에서 정합니다. 잘못된 ID는 422, 일반 회원과 허용하지 않은 Origin은 403, 없는 매물은 404, 이미 종료된 매물은 409입니다.
+
+Auction의 웹 라우터가 `ListingService.admin_cancel(admin_id, listing_id, now)`에 위임합니다. Auction이 취소 기록, Inventory 예약 해제, 다음 대기 매물 공개와 commit을 담당하며 예외 시 요청의 `get_db`가 rollback합니다. 별도의 환불은 하지 않고 취소된 입찰 예약 금액만 제외됩니다. Auth에 별도 취소 계약/어댑터/요청 모델을 두지 않으며, 웹 취소 경로는 `/admin/listings/{listing_id}/cancel`로 통일합니다. Bearer 인증 `/v1/listings/management/{listing_id}/cancel`도 같은 서비스를 사용하며 요청 본문은 없습니다.
+
+성공 후 공통 page-renderer로 상세를 다시 조회합니다. 처리 중 중복 제출을 막고 통신 실패 시 자동 재전송하지 않습니다. 응답만 유실됐을 수 있으므로 상세를 다시 조회해 상태를 확인합니다. 상세에서 취소 관리자와 종료 시각(`closed_at`, UTC)을 확인할 수 있습니다. 취소 사유는 입력하거나 저장하지 않습니다. 일반 경매 API 응답에는 관리자 ID를 추가하지 않습니다. Inventory 이력의 처리자는 V1 계약에 따라 판매자이며, 실제 취소 관리자는 Auction 기록으로 확인합니다.
+
+기존 DB에는 서버를 새 버전으로 시작하기 전에 다음 명령을 한 번 실행합니다. 신규 DB는 모델에서 컬럼이 생성됩니다.
+
+```powershell
+uv run --frozen python scripts/migrate-auction-admin-cancel.py
+```
+
+이 명령은 현재 `DATABASE_URL` 대상의 `listings`에 `admin_cancelled_by BIGINT NULL`만 추가합니다. 이전 버전의 `admin_cancel_reason` 컬럼과 기록이 있으면 그대로 보존하며 신규 DB에는 만들지 않습니다. 기존 행과 취소 기록을 유지하고 재실행을 허용합니다. 이미 있는 컬럼의 타입이 다르거나 테이블 잠금을 5초 내 얻지 못하면 실패하며 해당 실행의 변경은 rollback됩니다. 서버 시작 시 자동 실행하지 않습니다.
+
+### 관리자 조회와 취소 검증
+
+구조 검증은 함수 내부 import를 포함한 도메인 간 순환 참조, domain/application의 프레임워크 의존, 초기 import 순서와 관리자 라우트 소유권/중복을 검사합니다. 통합 검증에는 `verify_admin_domains.py`의 기존 페이지 권한, 카탈로그 CRUD/필터/CSV, 회원 생성/권한/입찰 제한, 로그인 정지와 세션 폐기, 도메인 간 관리자 탭 이동도 포함합니다.
+
+```powershell
+uv run --frozen python scripts/verify-domain-boundaries.py
+uv run --frozen --with httpx --with playwright python scripts/verify-admin-auctions.py
+```
+
+Chromium이 없으면 먼저 `uv run --with playwright playwright install chromium`을 실행합니다. `.env.local` 또는 환경변수의 `DATABASE_URL` 계정에 DB 생성 권한이 필요합니다. 검증은 무작위 이름의 임시 PostgreSQL DB, 별도 서버와 테스트 계정을 만들고 종료 시 제거합니다. 기존 DB의 데이터는 변경하지 않으며 결과 이미지와 로그는 Git에서 제외된 `.private/admin-auction-qa/`에 저장합니다.
+
+2026-11-10 실행에서 전체 상태, 복합 필터, 페이지 경계와 조건 유지, 상세 404, 입력 검증, 큰 정수 ID, 스냅샷 HTML 이스케이프, 로그인/관리자 권한과 강등 후 차단을 확인했습니다. 실제 Chromium에서 뒤로/앞으로 가기, 본문 전환 시 공통 DOM 유지, 추가 문서 요청과 JavaScript 오류 없음, 390px 모바일 표 스크롤, JavaScript 없는 폼 제출을 검증했습니다. 조회 전후 매물, 거래, 인벤토리와 지갑 데이터가 동일했습니다. 선행 PR #35의 스케줄러 시작/종료 연결을 유지한 상태에서 검증했습니다. 만료 매물의 자동 정산 전체와 운영 배포는 이번 관리자 회귀 검증 범위에 포함하지 않습니다.
+
+취소 검증은 `scripts/verify_admin_cancel.py`를 함께 실행합니다. 실제 쿠키/Bearer 인증, Origin, 입력과 상태 오류, 취소 기록, 재고 반환, FIFO 공개, 잔액 유지와 예약 금액 해제, 동시 취소의 단일 처리, 다음 매물 저장 실패 시 전체 rollback을 확인했습니다. 브라우저에서는 확인 창 닫기/승인, 중복 제출 방지, 완료 기록, 오래된 화면의 409와 성공 응답 유실 후 재조회 복구를 검증했습니다. 기존 구조의 임시 테이블에 컬럼 추가와 재실행, 데이터 보존도 확인했습니다. 강제 취소 조작에는 JavaScript가 필요합니다.
+
+![관리자 강제 취소 후 기록 확인](screenshots/admin-auctions/cancel-mobile.png)
+
+![관리자 거래 내역의 필터와 페이지 이동 검증](screenshots/admin-auctions/trades-desktop.png)
 
 ## 공통 웹 화면
 

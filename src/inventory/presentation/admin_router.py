@@ -7,7 +7,6 @@ from typing import Literal
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Path, Query, Request, Response
 from fastapi.responses import HTMLResponse, StreamingResponse
 
-from auth.presentation.web_dependencies import get_current_web_admin_id
 from inventory.application.service import InventoryService
 from inventory.presentation.schemas import (
     AdminDefinitionResponse, DefinitionCreateRequest, DefinitionUpdateRequest,
@@ -32,25 +31,25 @@ def csv_cell(value) -> str:
     return text
 
 
-def create_admin_router(inventory_dependency) -> APIRouter:
+def create_inventory_admin_router(current_admin_id, inventory_dependency) -> APIRouter:
     """관리자 웹의 표현 계층. 카탈로그 업무는 기존 공개 서비스에 위임한다."""
     router = APIRouter(prefix="/admin", tags=["admin-web"])
 
     async def render_page(request, users, user_id, template, section, **context):
         user = UserMeResponse.from_user(await users.get_user(user_id))
         return request.app.state.templates.TemplateResponse(
-            request=request, name=f'auth/admin/{template}.html',
+            request=request, name=f'admin/{template}.html',
             context={'user': user, 'section': section, **context},
             headers={'Cache-Control': 'no-store'},
         )
 
     @router.get('/item-images')
-    async def available_images(response: Response, user_id: int = Depends(get_current_web_admin_id)):
+    async def available_images(response: Response, user_id: int = Depends(current_admin_id)):
         response.headers['Cache-Control'] = 'no-store'
         return await asyncio.to_thread(list_images)
 
     @router.post('/item-images', status_code=201)
-    async def upload_image(request: Request, response: Response, user_id: int = Depends(get_current_web_admin_id)):
+    async def upload_image(request: Request, response: Response, user_id: int = Depends(current_admin_id)):
         data = bytearray()
         async for chunk in request.stream():
             if len(data) + len(chunk) > MAX_UPLOAD_BYTES:
@@ -63,34 +62,26 @@ def create_admin_router(inventory_dependency) -> APIRouter:
         response.headers['Cache-Control'] = 'no-store'
         return result
 
-    @router.get("", response_class=HTMLResponse)
-    async def dashboard(
-        request: Request,
-        user_id: int = Depends(get_current_web_admin_id),
-        users: UserService = Depends(get_user_service),
-    ):
-        return await render_page(request, users, user_id, 'home', 'home')
-
     @router.get('/catalogs', response_class=HTMLResponse)
-    async def catalog_page(request: Request, user_id: int = Depends(get_current_web_admin_id),
+    async def catalog_page(request: Request, user_id: int = Depends(current_admin_id),
                            users: UserService = Depends(get_user_service)):
         return await render_page(request, users, user_id, 'catalogs', 'catalogs')
 
     @router.get('/catalogs/new', response_class=HTMLResponse)
-    async def new_catalog_page(request: Request, user_id: int = Depends(get_current_web_admin_id),
+    async def new_catalog_page(request: Request, user_id: int = Depends(current_admin_id),
                               users: UserService = Depends(get_user_service)):
         return await render_page(request, users, user_id, 'editor', 'editor', item=None)
 
     @router.get('/catalogs/{definition_id}/edit', response_class=HTMLResponse)
     async def edit_catalog_page(request: Request, definition_id: int = Path(ge=1),
-                               user_id: int = Depends(get_current_web_admin_id),
+                               user_id: int = Depends(current_admin_id),
                                users: UserService = Depends(get_user_service),
                                inventory: InventoryService = Depends(inventory_dependency)):
         item = AdminDefinitionResponse.from_info(await inventory.get_definition(definition_id))
         return await render_page(request, users, user_id, 'editor', 'editor', item=item.model_dump())
 
     @router.get('/history', response_class=HTMLResponse)
-    async def history_page(request: Request, user_id: int = Depends(get_current_web_admin_id),
+    async def history_page(request: Request, user_id: int = Depends(current_admin_id),
                            users: UserService = Depends(get_user_service)):
         return await render_page(request, users, user_id, 'events', 'events')
 
@@ -101,7 +92,7 @@ def create_admin_router(inventory_dependency) -> APIRouter:
         category: Literal['', 'FISH', 'GEM', 'MISC'] = '',
         rarity: Literal['', 'COMMON', 'UNCOMMON', 'RARE', 'EPIC', 'LEGENDARY'] = '',
         page: int = Query(1, ge=1, le=2147483647),
-        user_id: int = Depends(get_current_web_admin_id),
+        user_id: int = Depends(current_admin_id),
         users: UserService = Depends(get_user_service),
         inventory: InventoryService = Depends(inventory_dependency),
     ):
@@ -126,7 +117,7 @@ def create_admin_router(inventory_dependency) -> APIRouter:
         rarity: Literal["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY"] | None = None,
         sort: Literal["rarity_desc", "name_asc"] = "rarity_desc",
         page: int = Query(1, ge=1), size: int = Query(20, ge=1, le=100),
-        user_id: int = Depends(get_current_web_admin_id),
+        user_id: int = Depends(current_admin_id),
         inventory: InventoryService = Depends(inventory_dependency),
     ):
         rows, total = await inventory.list_definitions(
@@ -143,7 +134,7 @@ def create_admin_router(inventory_dependency) -> APIRouter:
         rarity: Literal["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY"] | None = None,
         sort: Literal["rarity_desc", "name_asc"] = "rarity_desc",
         page: int = Query(1, ge=1), size: int = Query(20, ge=1, le=100),
-        user_id: int = Depends(get_current_web_admin_id),
+        user_id: int = Depends(current_admin_id),
         inventory: InventoryService = Depends(inventory_dependency),
     ):
         rows, _ = await inventory.list_definitions(
@@ -174,7 +165,7 @@ def create_admin_router(inventory_dependency) -> APIRouter:
     @router.post("/item-catalogs", response_model=AdminDefinitionResponse, status_code=201)
     async def create_catalog(
         body: DefinitionCreateRequest, background_tasks: BackgroundTasks, response: Response,
-        user_id: int = Depends(get_current_web_admin_id),
+        user_id: int = Depends(current_admin_id),
         inventory: InventoryService = Depends(inventory_dependency),
     ):
         result = await inventory.create_definition(**body.model_dump())
@@ -186,7 +177,7 @@ def create_admin_router(inventory_dependency) -> APIRouter:
     async def update_catalog(
         body: DefinitionUpdateRequest, background_tasks: BackgroundTasks, response: Response,
         definition_id: int = Path(ge=1),
-        user_id: int = Depends(get_current_web_admin_id),
+        user_id: int = Depends(current_admin_id),
         inventory: InventoryService = Depends(inventory_dependency),
     ):
         result = await inventory.update_definition(definition_id, **body.model_dump(exclude_unset=True))
@@ -197,7 +188,7 @@ def create_admin_router(inventory_dependency) -> APIRouter:
     @router.delete("/item-catalogs/{definition_id}", status_code=204)
     async def delete_catalog(
         background_tasks: BackgroundTasks, definition_id: int = Path(ge=1),
-        user_id: int = Depends(get_current_web_admin_id),
+        user_id: int = Depends(current_admin_id),
         inventory: InventoryService = Depends(inventory_dependency),
     ):
         await inventory.delete_definition(definition_id)
@@ -208,7 +199,7 @@ def create_admin_router(inventory_dependency) -> APIRouter:
     async def item_events(
         response: Response, item_id: int = Path(ge=1),
         page: int = Query(1, ge=1), size: int = Query(20, ge=1, le=100),
-        user_id: int = Depends(get_current_web_admin_id),
+        user_id: int = Depends(current_admin_id),
         inventory: InventoryService = Depends(inventory_dependency),
     ):
         rows, total = await inventory.list_item_events(item_id, page=page, size=size)
