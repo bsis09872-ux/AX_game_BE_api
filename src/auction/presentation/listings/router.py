@@ -12,6 +12,8 @@ from fastapi import APIRouter, Query, status
 from auction.domain.listings.entities import ListingStatus
 from auction.presentation.dependencies import CurrentUserId, ListingServiceDep
 from auction.presentation.listings.schemas import (
+    AdminCancelRequest,
+    AdminCancelResponse,
     BidRequest,
     ListingCreateRequest,
     ListingPageResponse,
@@ -65,6 +67,29 @@ async def get_admin_listings(
         items=[ListingResponse.from_listing(listing) for listing in listings],
         page=page,
     )
+
+# [관리자] 매물 강제 취소: QUEUED·BIDDING을 CANCELLED로 바꾼다. 삭제하지 않는다.
+# 관리자 ID는 토큰에서 받고, 권한·상태 검사는 서비스와 엔티티가 한다.
+# 성공 시 안내 메시지만 반환하며 사유·관리자 ID는 응답에 싣지 않는다.
+@router.post(
+    "/management/{listing_id}/cancel",
+    response_model=AdminCancelResponse,
+    summary="관리자 매물 강제 취소",
+    tags=["auction-management"],
+)
+async def admin_cancel_listing(
+    listing_id: int,
+    body: AdminCancelRequest,
+    user_id: CurrentUserId,
+    service: ListingServiceDep,
+) -> AdminCancelResponse:
+    await service.admin_cancel(
+        admin_id=user_id,
+        listing_id=listing_id,
+        reason=body.reason,
+        now=datetime.now(timezone.utc),
+    )
+    return AdminCancelResponse()
 
 # [AUC-03] 매물 상세 조회
 @router.get("/{listing_id}", response_model=ListingResponse, summary="매물 상세 조회")
