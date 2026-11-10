@@ -23,10 +23,21 @@
     {% endif %}
 
     {% if rows %}
+    {# 표 모양은 아이템 도감과 같다: 이름(그림 포함) · 분류 · 희귀도 뒤에 거래 정보 #}
     <table class="table-fixed">
+      <colgroup>
+        <col style="width: 20%">
+        <col style="width: 10%">
+        <col style="width: 14%">
+        <col style="width: 14%">
+        <col style="width: 26%">
+        <col style="width: 16%">
+      </colgroup>
       <thead>
         <tr>
-          <th>아이템</th>
+          <th>이름</th>
+          <th>분류</th>
+          <th>희귀도</th>
           <th>{{ '판매자' if tab == 'won' else '구매자' }}</th>
           <th>거래 체결 시각</th>
           <th class="num">{{ '낙찰가' if tab == 'won' else '판매가' }}</th>
@@ -35,7 +46,9 @@
       <tbody>
         {% for r in rows %}
         <tr>
-          <td>{{ item_icon(r.item, 32) }}<a href="{{ r.href }}">{{ r.item_name }}</a></td>
+          <td>{{ item_icon(r.item) }}<a href="{{ r.href }}">{{ r.item_name }}</a></td>
+          <td>{{ r.item.category or '-' }}</td>
+          <td>{{ r.item.rarity if r.item.category else '-' }}</td>
           <td>{{ r.partner_name }}</td>
           <td>{{ moment(r.completed_at) }}</td>
           <td class="num">{{ gold(r.price) }}</td>

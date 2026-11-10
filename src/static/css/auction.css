@@ -62,9 +62,9 @@ body.embed .main-content {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 16px;
+  gap: 6px 16px;
   margin-bottom: 14px;
-  padding: 10px 14px;
+  padding: 6px 14px;
 }
 
 /* 글자와 입력 칸을 한 줄에 나란히: "분류 [칸] 아이템 이름 [칸] ..." */
@@ -82,7 +82,7 @@ body.embed .main-content {
 
 .search-field input,
 .search-field select {
-  padding: 6px 10px;
+  padding: 2px 8px;
   min-width: 0;
 }
 
@@ -92,6 +92,10 @@ body.embed .main-content {
 
 .search-field input[inputmode="numeric"] {
   width: 90px;
+}
+
+.search-actions .btn {
+  padding: 2px 14px;
 }
 
 .search-actions {
@@ -696,6 +700,12 @@ body.embed .main-content {
 /* 내 거래: 인덱스 탭은 패널 왼쪽 위에 붙인다. 제목은 화면 낭독기에게만 읽힌다 */
 .trades-tabs {
   margin-left: 4px;
+}
+
+.trades-tabs a {
+  width: 88px;
+  padding: 4px 0;
+  text-align: center;
 }
 
 .sr-only {
