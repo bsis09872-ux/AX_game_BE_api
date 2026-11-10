@@ -53,10 +53,6 @@
         {% endif %}
         <p class="muted">회색 칸은 경매에 올라가 있는 아이템이에요. 경매가 끝나면 주인이 바뀌거나 가방으로 돌아와요.</p>
 
-        <div class="page-links">
-          <a class="to-right" href="/item-catalogs">아이템 도감 보기</a>
-        </div>
-
         {% if has_previous or has_next %}
         <nav aria-label="페이지 이동">
           {% if has_previous %}<a href="{{ prev_url }}">이전</a>{% endif %}
