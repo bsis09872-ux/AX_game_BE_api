@@ -377,3 +377,10 @@ body.embed .main-content {
   margin-top: 6px;
   color: var(--gold);
 }
+
+/* 이모티콘은 폰트 기준선이 달라 아래로 처져 보여서 살짝 올린다 */
+.hero-emoji {
+  display: inline-block;
+  line-height: 1;
+  transform: translateY(-2px);
+}
