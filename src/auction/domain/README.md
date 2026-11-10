@@ -23,11 +23,14 @@ domain/
 | Listing | 매물 상태 전이, 입찰 규칙, 마감 판단, 판매자·관리자 취소 | 잔액 확인, 연속 낙찰 제한, 재판매 제한, 정산 순서, 관리자 권한 확인 |
 | Trade | 낙찰 확정 기록(불변), 내역의 근거, 연속 낙찰 제한 판단 재료 | 매물 상태 변경, 돈 이동 |
 
-**매물 상태 전이**
+**매물 상태 전이** (경매 시간 `AUCTION_DURATION` = 6분)
 
 - QUEUED → BIDDING → SOLD / FAILED
 - QUEUED → CANCELLED (판매자·관리자)
-- BIDDING → CANCELLED (관리자만)
+- BIDDING → CANCELLED (관리자만. 처리한 관리자 ID만 `admin_cancelled_by`에 기록하고 사유는 받지 않는다)
+- 상태는 `_transition_to()`로만 바꾸며, 허용되지 않은 전이는 409다.
+
+**입찰 검사 순서** (`place_bid`): 상태 → 마감 시각 → 자기 매물 → 이미 최고 입찰자 → 금액. 최소 증가 단위는 없다.
 
 ## 예외
 
