@@ -86,7 +86,7 @@ def build_fishing_service(session: AsyncSession) -> FishingService:
     )
 
 
-# 낚시 API 온오프 (기본값: 꺼짐)
+# 낚시 API 온오프 (기본값: 켜짐. 끄려면 DEMO_FISHING_ENABLED=false)
 def is_fishing_enabled() -> bool:
-    value = os.environ.get('DEMO_FISHING_ENABLED', 'false')
+    value = os.environ.get('DEMO_FISHING_ENABLED', 'true')
     return value.strip().lower() in ('1', 'true', 'yes', 'on')
