@@ -21,6 +21,8 @@ from database import Base, engine
 # region 공통 import
 from shared.core.exception_handlers import register_exception_handlers
 from shared.core.logging_config import setup_logging
+from shared.core.http_application import HttpApplication
+from shared.core.http_settings import read_cors_origins
 from shared.item_images import image_directory
 from composition import get_admin_auction_queries, get_member_admin_service
 from web_router import create_dashboard_router
@@ -111,7 +113,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await auction_scheduler.stop()
         await engine.dispose()
 
-app = FastAPI(title="Catch&Bid", lifespan=lifespan)
+app = HttpApplication(
+    title="Catch&Bid", lifespan=lifespan, cors_origins=read_cors_origins()
+)
 
 # 실행 폴더와 관계없이 src 아래의 공통 화면과 정적 파일을 찾는다.
 SRC_DIR = Path(__file__).resolve().parent
