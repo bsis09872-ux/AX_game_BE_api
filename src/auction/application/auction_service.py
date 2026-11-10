@@ -20,6 +20,7 @@ from auction.application.contract import (
     TransactionManager,
     WalletGateway,
 )
+from auction.application.listings.queue import lock_next_queued
 from auction.domain.listings.entities import Listing, ListingStatus
 from auction.domain.listings.repositories import ListingRepository
 from auction.domain.trades.entities import Trade
@@ -93,7 +94,7 @@ class AuctionService:
         await self.listings.lock_definition(listing.item_definition_id)
 
         # 잠금 순서(매물 → 아이템 → 사용자 → 지갑)를 지키려고 다음 매물을 정산 전에 잠근다.
-        next_listing = await self._lock_next_queued(listing.item_definition_id)
+        next_listing = await lock_next_queued(self.listings, listing.item_definition_id)
 
         if listing.has_bidder():
             await self._settle(listing, now)
@@ -178,16 +179,3 @@ class AuctionService:
             state.purchase_count,
             state.blocked_until,
         )
-
-    # 같은 종류에서 다음으로 공개할 가장 오래된 대기 매물을 잠금 조회한다.
-    # 입력: 아이템 종류 ID. 반환: 잠금된 QUEUED 매물, 없으면 None.
-    # 후보가 잠금 사이에 취소됐으면 다음 후보를 다시 찾는다.
-    async def _lock_next_queued(self, item_definition_id: int) -> Listing | None:
-        while True:
-            candidate = await self.listings.next_queued(item_definition_id)
-            if candidate is None:
-                return None
-
-            locked = await self.listings.get_for_update(candidate.id)
-            if locked is not None and locked.status == ListingStatus.QUEUED:
-                return locked

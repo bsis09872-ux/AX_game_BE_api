@@ -7,12 +7,21 @@
 # [TO DO] 거래 기록 ID(trade_id)를 아이템 이력에 남길지 정산 순서와 함께 정한다. (진행 전)
 # [TO DO] 경매 오류 분류가 정해지면 인벤토리 오류를 경매 오류로 변환할지 정한다. (진행 전)
 
+import logging
 from datetime import datetime
 
 from auction.application.contract import InventoryGateway
 from auction.application.dto import ItemSummary
+from auction.domain.exceptions import InventoryMismatchError
 from inventory.application.dto import ItemInfo
 from inventory.application.service import InventoryService
+from inventory.domain.exceptions import (
+    InvalidStateError,
+    ItemNotFoundError,
+    NotOwnerError,
+)
+
+logger = logging.getLogger(__name__)
 
 # 인벤토리 아이템 정보를 경매용 요약으로 바꾼다.
 def _to_item_summary(info: ItemInfo) -> ItemSummary:
@@ -44,7 +53,10 @@ class InventoryGatewayAdapter(InventoryGateway):
         )
         return _to_item_summary(info)
 
-    # 예약 해제 (LISTED → OWNED): 취소·유찰
+    # 예약 해제 (LISTED → OWNED): 판매자 취소·관리자 취소·유찰
+    # 입력: 아이템 ID·소유자(판매자) ID·매물 ID·처리 시각. 반환값 없음.
+    # 아이템 누락·상태 불일치·소유권 불일치는 사용자 오류가 아닌 내부 데이터 불일치다.
+    # 원래 예외 유형과 ID를 로그로 남기고 경매 연동 예외(500)로 바꿔 올린다. rollback은 호출 측이 한다.
     async def release(
         self,
         inventory_item_id: int,
@@ -52,12 +64,23 @@ class InventoryGatewayAdapter(InventoryGateway):
         listing_id: int,
         now: datetime,
     ) -> None:
-        await self._inventory_service.release_from_listing(
-            inventory_item_id,
-            by_owner_id=owner_id,
-            now=now,
-            listing_id=listing_id,
-        )
+        try:
+            await self._inventory_service.release_from_listing(
+                inventory_item_id,
+                by_owner_id=owner_id,
+                now=now,
+                listing_id=listing_id,
+            )
+        except (ItemNotFoundError, InvalidStateError, NotOwnerError) as exc:
+            logger.error(
+                "inventory_mismatch action=release error=%s "
+                "listing_id=%s inventory_item_id=%s owner_id=%s",
+                type(exc).__name__,
+                listing_id,
+                inventory_item_id,
+                owner_id,
+            )
+            raise InventoryMismatchError() from exc
 
     # 소유권 이전 (LISTED → 구매자 OWNED): 낙찰 정산
     # from_owner_id를 넘겨 현재 소유자가 판매자인지 인벤토리가 확인하게 한다.

@@ -62,6 +62,15 @@ class ListingModel(Base):
         DateTime(timezone=True), nullable=False
     )
 
+    # 관리자 강제 취소 기록 — 내부 기록용이며 응답에 노출하지 않는다.
+    # 취소 시각은 closed_at을 쓴다. 판매자 취소·정산·유찰이면 둘 다 NULL이다.
+    admin_cancelled_by: Mapped[int | None] = mapped_column(
+        BigInteger, nullable=True
+    )
+    admin_cancel_reason: Mapped[str | None] = mapped_column(
+        String(200), nullable=True
+    )
+
     # 5. DB 제약과 조회용 인덱스
     __table_args__ = (
         # 시작가는 양수여야 한다.
