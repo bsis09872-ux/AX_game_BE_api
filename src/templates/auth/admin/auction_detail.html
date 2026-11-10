@@ -1,0 +1,53 @@
+{% extends "auth/admin/layout.html" %}
+{% from "auth/admin/auction_macros.html" import states, time %}
+{% block admin_title %}경매 매물 상세{% endblock %}
+{% block admin_content %}
+<section class="panel admin-section">
+  <p><a href="{{ back_url }}">← 매물 목록</a></p>
+  <p class="admin-hint">모든 시각은 UTC 기준입니다.</p>
+  {% if selected %}
+  <h3>매물 #{{ selected.id }} / {{ states.get(selected.status, selected.status) }}</h3>
+  <dl class="member-details">
+    <dt>판매자</dt>
+    <dd><a href="/admin/members/{{ selected.seller_id }}">회원 #{{ selected.seller_id }}</a></dd>
+    <dt>보유 아이템 ID</dt>
+    <dd>{{ selected.inventory_item_id }}</dd>
+    <dt>카탈로그</dt>
+    <dd><a href="/admin/catalogs/{{ selected.item_definition_id }}/edit">#{{ selected.item_definition_id }}</a></dd>
+    <dt>시작가</dt>
+    <dd>{{ '{:,}'.format(selected.start_price) }} GOLD</dd>
+    <dt>최고 입찰액</dt>
+    <dd>{{ '{:,}'.format(selected.current_bid_amount) ~ ' GOLD' if selected.current_bid_amount is not none else '입찰 없음'
+      }}</dd>
+    <dt>최고 입찰자</dt>
+    <dd>{% if selected.current_bidder_id is not none %}<a href="/admin/members/{{ selected.current_bidder_id }}">회원 #{{
+        selected.current_bidder_id }}</a>{% else %}없음{% endif %}</dd>
+    <dt>등록 시각</dt>
+    <dd>{{ time(selected.created_at) }}</dd>
+    <dt>공개 시각</dt>
+    <dd>{{ time(selected.started_at) }}</dd>
+    <dt>마감 예정</dt>
+    <dd>{{ time(selected.ends_at) }}</dd>
+    <dt>종료 시각</dt>
+    <dd>{{ time(selected.closed_at) }}</dd>
+    {% if selected.admin_cancelled_by is not none %}
+    <dt>취소 관리자</dt>
+    <dd><a href="/admin/members/{{ selected.admin_cancelled_by }}">회원 #{{ selected.admin_cancelled_by }}</a></dd>
+    {% endif %}
+  </dl>
+  {% else %}<p role="status">매물 #{{ listing_id }}을 찾을 수 없습니다.</p>{% endif %}
+
+  {% if selected %}
+  <p><a href="/admin/auction-trades?listing_id={{ selected.id }}">이 매물의 거래 내역</a></p>
+  {% if selected.status in ('QUEUED', 'BIDDING') %}
+  <form id="auction-cancel-form" action="/admin/listings/{{ selected.id }}/cancel" method="post"
+    data-listing-id="{{ selected.id }}">
+    <h3>관리자 강제 취소</h3>
+    <p class="admin-hint">취소하면 아이템이 판매자에게 반환됩니다. 진행 중인 매물은 같은 종류의 다음 대기 매물이 공개됩니다.</p>
+    <button type="submit" class="btn wood" disabled>강제 취소</button>
+    <noscript><p>강제 취소하려면 JavaScript를 활성화해 주세요.</p></noscript>
+  </form>
+  {% endif %}
+  {% endif %}
+</section>
+{% endblock %}
