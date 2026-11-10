@@ -57,21 +57,24 @@ body.embed .main-content {
   font-size: 14px;
 }
 
-/* 검색 폼 */
+/* 검색 폼: [글자+칸] 4개와 검색 버튼이 너비를 똑같이 나눠 가진다. 테두리는 얇게 */
 .search-panel {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: center;
-  gap: 8px 28px;
+  gap: 8px 20px;
   margin-bottom: 14px;
   padding: 10px 14px;
+  border-width: 1px;
+  box-shadow: inset 1px 1px 0 var(--wood-light), inset -1px -1px 0 var(--wood-dark);
 }
 
-/* 글자와 입력 칸을 한 줄에 나란히: "분류 [칸] 아이템 이름 [칸] ..." */
+/* 글자와 입력 칸을 한 줄에 나란히: "분류 [칸]" */
 .search-field {
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
 }
 
 .search-field label {
@@ -82,31 +85,34 @@ body.embed .main-content {
 
 .search-field input,
 .search-field select {
-  padding: 2px 8px;
+  flex: 1;
+  width: 0; /* 남는 폭을 칸이 나눠 갖게 한다 */
   min-width: 0;
-}
-
-.search-field select {
-  min-width: 100px;
-}
-
-.search-field input[type="search"] {
-  width: 220px;
-}
-
-.search-field input[inputmode="numeric"] {
-  width: 120px;
-}
-
-.search-actions .btn {
-  padding: 2px 14px;
+  padding: 2px 8px;
 }
 
 .search-actions {
-  margin-left: auto; /* 검색 버튼은 오른쪽 끝으로 */
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.search-actions .btn {
+  flex: 1;
+  padding: 2px 14px;
+}
+
+/* 폭이 좁으면 두 줄, 더 좁으면 한 줄씩 */
+@media (max-width: 900px) {
+  .search-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .search-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* 매물 카드: 패널 없이 배경 위에 놓는 양각 카드. 풀 화면에서 한 줄에 4개 */
