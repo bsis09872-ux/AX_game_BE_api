@@ -1,8 +1,8 @@
 """지갑 라우터
 
 경로(앱에서 /v1 prefix 적용 후):
-  GET  /v1/wallets/me                 내 지갑 조회 (WALL-01)
-  POST /v1/wallets/{user_id}/charge   관리자 지갑 충전
+  GET  /v1/wallets/me                 내 지갑 조회 (WALL-02)
+  POST /v1/wallets/{user_id}/charge   관리자 지갑 충전 (WALL-01)
 
 subtract_balance·check_bid_funds·settle_sale은 경매 쪽 내부 호출이라 라우터가 없다(wallet.wiring.build_wallet_service 사용).
 라우터는 얇게 유지한다: 인증된 사용자 ID를 서비스에 넘기고 결과를 응답 스키마로 바꾼다.
@@ -39,7 +39,7 @@ def create_wallet_router(
     @router.get(
         "/wallets/me",
         response_model=WalletResponse,
-        summary="[WALL-01] 내 지갑 조회",
+        summary="[WALL-02] 내 지갑 조회",
         responses={401: {"description": "인증 필요"}},
     )
     async def get_my_wallet(service: ServiceDep, session: SessionDep, user_id: UserIdDep) -> WalletResponse:
@@ -52,7 +52,7 @@ def create_wallet_router(
     @router.post(
         "/wallets/{user_id}/charge",
         response_model=WalletResponse,
-        summary="관리자 지갑 충전",
+        summary="[WALL-01] 관리자 지갑 충전",
         responses={
             401: {"description": "인증 필요"},
             403: {"description": "INSUFFICIENT_AUTHORITY (관리자가 아님)"},
