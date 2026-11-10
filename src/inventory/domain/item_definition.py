@@ -3,7 +3,7 @@
 - 누구의 소유물도 아니다. 사용자가 가진 개별 아이템(InventoryItem)과 구분한다
 - code는 고유하고 ^[a-z][a-z0-9_]{2,49}$ 형식, name은 공백 제외 1~100자다
 - category는 FISH/GEM/MISC, rarity는 COMMON~LEGENDARY만 허용한다
-- start_price는 0보다 큰 정수, weight는 0 이상의 정수, icon은 영문 소문자로 시작하고 영문 소문자·숫자·밑줄만 쓴 1~50자다
+- start_price는 0보다 크고 BIGINT 한계(9223372036854775807) 이하인 정수, weight는 0 이상 INTEGER 한계(2147483647) 이하인 정수, icon은 영문 소문자로 시작하고 영문 소문자·숫자·밑줄만 쓴 1~50자다
 - name과 category는 만든 뒤 바꿀 수 없다 (바꾸려 하면 도메인이 거절한다)
 - start_price가 바뀌어도 이미 등록된 매물에는 영향이 없다 (매물이 등록 때 복사해 간다)
 - id는 저장소가 DB에 저장할 때 정해진다. 만들 때는 비어 있고, 규칙 검사 대상이 아니다
@@ -20,6 +20,8 @@ from inventory.domain.exceptions import (
 
 _CODE_PATTERN = re.compile(r'^[a-z][a-z0-9_]{2,49}$')
 _ICON_PATTERN = re.compile(r'^[a-z][a-z0-9_]{0,49}$')
+_BIGINT_MAX = 9223372036854775807  # start_price 컬럼(BIGINT)의 한계
+_INT_MAX = 2147483647  # weight 컬럼(INTEGER)의 한계
 
 def _check_code(code) -> str:
     if not isinstance(code, str) or not _CODE_PATTERN.fullmatch(code):
@@ -40,10 +42,10 @@ def _check_enum(enum_class, field: str, value):
         raise ItemRuleViolationError(f'{field}는 허용된 값이 아닙니다.')
     return enum_class(value)
 
-def _check_int(field: str, value, minimum: int) -> int:
+def _check_int(field: str, value, minimum: int, maximum: int) -> int:
     # bool은 int의 자식이고 True가 1로 통과하므로 따로 체크
-    if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
-        raise ItemRuleViolationError(f'{field}는 {minimum} 이상의 정수여야 합니다.')
+    if isinstance(value, bool) or not isinstance(value, int) or not minimum <= value <= maximum:
+        raise ItemRuleViolationError(f'{field}는 {minimum} 이상 {maximum} 이하의 정수여야 합니다.')
     return value
 
 def _check_icon(icon) -> str:
@@ -77,10 +79,10 @@ class ItemDefinition:
         self._name = _check_name(name)
         self._category = _check_enum(ItemCategory, 'category', category)
         self._rarity = _check_enum(ItemRarity, 'rarity', rarity)
-        self.start_price = _check_int('start_price', start_price, 1)
+        self.start_price = _check_int('start_price', start_price, 1, _BIGINT_MAX)
         self.description = description
         self.icon = _check_icon(icon)
-        self.weight = _check_int('weight', weight, 0)
+        self.weight = _check_int('weight', weight, 0, _INT_MAX)
         self.fishable = _check_fishable(fishable)
 
     @property
@@ -118,9 +120,9 @@ class ItemDefinition:
         changes = {}
 
         if start_price is not None:
-            changes['start_price'] = _check_int('start_price', start_price, 1)
+            changes['start_price'] = _check_int('start_price', start_price, 1, _BIGINT_MAX)
         if weight is not None:
-            changes['weight'] = _check_int('weight', weight, 0)
+            changes['weight'] = _check_int('weight', weight, 0, _INT_MAX)
         if icon is not None:
             changes['icon'] = _check_icon(icon)
         if fishable is not None:
