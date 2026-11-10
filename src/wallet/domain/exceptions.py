@@ -23,6 +23,12 @@ class InsufficientBalanceError(BusinessRuleError):
     message = "사용 가능한 골드가 부족합니다."
 
 
+class BalanceLimitExceededError(BusinessRuleError):
+    # 관리자 충전 후 잔액이 게임 상한(rules.MAX_BALANCE)을 넘음 → 400. 정산에서는 쓰지 않는다
+    code = "BALANCE_LIMIT_EXCEEDED"
+    message = "잔액 한도를 넘어 충전할 수 없습니다."
+
+
 class BuyerBalanceShortError(AppError):
     # WALL-08: 정산 시 구매자 잔액 < 낙찰가. 예약 규칙이 지켜지면 생기지 않는 불일치다.
     # 일부러 분류(400/404)를 주지 않아 핸들러가 500으로 처리하고 예외 종류만 로그에 남긴다.
