@@ -70,3 +70,6 @@
 
 .admin-section .admin-inventory-table { min-width:1100px; }
 .admin-inventory-table th, .admin-inventory-table td { white-space:nowrap; }
+
+.admin-section .admin-auction-table { min-width:1100px; }
+.admin-auction-table th, .admin-auction-table td { white-space:nowrap; }

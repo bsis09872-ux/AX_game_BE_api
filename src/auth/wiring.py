@@ -16,16 +16,16 @@ from auth.infrastructure.revoked_session_cache import RevokedSessionCache
 from users.application.admin_service import MemberAdminService
 from auth.application.admin_contracts import AdminAuctionReader
 from auth.infrastructure.admin_auction_reader import AdminAuctionReaderAdapter
-from auction.application.listings.service import ListingService
-from auction.infrastructure.listings.repositories import SqlAlchemyListingRepository
 
 
 def build_admin_auction_reader(session: AsyncSession) -> AdminAuctionReader:
-    # TODO(경매 담당): 공용 조회 factory가 제공되면 이 조립부를 해당 wiring으로 교체한다.
-    # 기존 조회 서비스와 저장소만 조립하며 등록/입찰/취소/정산은 연결하지 않는다.
-    # register/bid/cancel, 정산과 다음 매물 공개 구현 및 스케줄러 연결은 경매 담당 범위다.
+    # inventory.wiring도 인증 조립부를 사용하므로 요청 시점에 가져와 순환 import를 피한다.
+    from auction.wiring import build_listing_service, build_trade_service
+
+    # 경매 도메인이 공개한 조립부를 사용하고, 관리자 화면에는 조회 계약만 노출한다.
     return AdminAuctionReaderAdapter(
-        ListingService(SqlAlchemyListingRepository(session, page_size=20)),
+        build_listing_service(session),
+        build_trade_service(session),
     )
 
 

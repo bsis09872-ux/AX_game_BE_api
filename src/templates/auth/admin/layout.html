@@ -14,7 +14,7 @@
 <nav class="admin-tabs" aria-label="관리 메뉴">
   {% for key, href, label in [('home','/admin','관리 홈'),('members','/admin/members','회원 /
   권한'),('catalogs','/admin/catalogs','아이템 목록'),('editor','/admin/catalogs/new','아이템 만들기'),('events','/admin/history','보유
-  아이템 이력'),('auctions','/admin/auctions','경매 조회')] %}
+  아이템 이력'),('auctions','/admin/auctions','경매 매물'),('trades','/admin/auction-trades','거래 내역')] %}
   <a data-admin-tab="{{ key }}" href="{{ request.url.path if key == 'editor' and item is defined and item else href }}"
     {% if section==key %}aria-current="page" {% endif %}>{{ '아이템 수정' if key == 'editor' and item is defined and item
     else label }}</a>
