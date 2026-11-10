@@ -6,7 +6,9 @@
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Path, Response
 
 from auction.presentation.dependencies import ListingServiceDep
 from auction.presentation.listings.schemas import AdminCancelResponse
@@ -27,7 +29,8 @@ def create_listing_admin_web_router(
         summary="관리자 매물 강제 취소 (웹)",
     )
     async def admin_cancel_listing_web(
-        listing_id: int,
+        listing_id: Annotated[int, Path(ge=1, le=9223372036854775807)],
+        response: Response,
         service: ListingServiceDep,
         admin_id: int = Depends(current_admin_id),
     ) -> AdminCancelResponse:
@@ -36,6 +39,7 @@ def create_listing_admin_web_router(
             listing_id=listing_id,
             now=datetime.now(timezone.utc),
         )
+        response.headers['Cache-Control'] = 'no-store'
         return AdminCancelResponse()
 
     return router
