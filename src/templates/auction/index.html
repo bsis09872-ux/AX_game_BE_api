@@ -1,0 +1,93 @@
+{# 경매장 목록: 진행 중(경매 중) 매물을 카드로 보여 준다 #}
+{% extends "auction/_layout.html" %}
+{% from "inventory/_macros.html" import item_icon %}
+{% from "auction/_macros.html" import gold, clock %}
+{% block title %}경매장 | Catch &amp; Bid{% endblock %}
+
+{% block content %}
+<section aria-labelledby="auction-title">
+  <div class="auction-hero">
+    <img class="px" src="{{ url_for('static', path='/sprites/npc_auctioneer.png') }}" alt="" width="90" height="72">
+    <div class="hero-text">
+      <h1 id="auction-title">경매장</h1>
+      <p class="muted">경매사가 정한 시작가에서 시작 · 6분 뒤 가장 높은 금액을 부른 사람이 낙찰</p>
+      <p class="hero-count"><span class="hero-emoji" aria-hidden="true">📦</span> <span data-live-count>지금 경매장에는 매물 {{ cards | length }}건이 올라와 있어요</span></p>
+    </div>
+    <div class="hero-action">
+      {% if embed %}
+      <button type="button" class="btn red" data-auction-close>닫기 (Esc)</button>
+      {% else %}
+      <a class="btn gold" href="/inventory">내 아이템 올리기</a>
+      {% endif %}
+    </div>
+  </div>
+
+  {# 검색: 이름·분류·최소가·최대가. 가져온 쪽 안에서 거른다 #}
+  <form method="get" action="/auctions" class="panel search-panel" role="search" aria-label="경매 검색">
+    {% if embed %}<input type="hidden" name="embed" value="1">{% endif %}
+    <div class="search-field">
+      <label for="s-category">분류</label>
+      <select id="s-category" name="category">
+        {% for code, label in category_options %}<option value="{{ code }}"{% if code == search.category %} selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="search-field">
+      <label for="s-q">아이템 이름</label>
+      <input id="s-q" name="q" type="search" maxlength="50" placeholder="예: 진주" value="{{ search.q }}">
+    </div>
+    <div class="search-field">
+      <label for="s-min">최소가</label>
+      <input id="s-min" name="min_price" type="text" inputmode="numeric" value="{{ search.min_price_text }}">
+    </div>
+    <div class="search-field">
+      <label for="s-max">최대가</label>
+      <input id="s-max" name="max_price" type="text" inputmode="numeric" value="{{ search.max_price_text }}">
+    </div>
+    <div class="search-actions">
+      <button type="submit" class="btn">검색</button>
+      {% if search.active or search.error %}<a href="/auctions{% if embed %}?embed=1{% endif %}">초기화</a>{% endif %}
+    </div>
+  </form>
+  {% if search.error %}<p class="notice error" role="alert">{{ search.error }}</p>{% endif %}
+
+  {# 카드는 패널 안이 아니라 배경 위에 바로 놓는다 (양각 카드). 이 영역만 몇 초마다 다시 읽어 갈아 끼운다 #}
+  <div data-live-list>
+  {% if cards %}
+  <div class="card-grid">
+    {% for c in cards %}
+    <a class="card" href="{{ c.href }}" data-sig="{{ c.id }}:{{ c.price }}:{{ 1 if c.has_bid else 0 }}">
+      <div class="card-top">
+        {{ item_icon(c.item, 48) }}
+        <div class="card-info">
+          <div class="card-name">{{ c.item.name }}</div>
+          <div class="card-meta"><span class="muted">경매 #{{ c.id }} · {{ c.item.category }}</span></div>
+        </div>
+      </div>
+      <div class="card-price">
+        <span class="muted">{{ '현재가' if c.has_bid else '시작가' }}</span>
+        <span>{{ gold(c.price) }}</span>
+      </div>
+      <div class="card-foot">
+        <span class="muted">판매자 : {{ c.seller_name }}</span>
+        {{ clock(c.remaining_text, c.urgent, c.remaining_seconds) }}
+      </div>
+      {# 카드 맨 아래 상태 띠: 입찰자가 있으면 노랑, 없으면 흐리게 #}
+      <div class="card-status {{ 'yes' if c.has_bid else 'none' }}">
+        <span aria-hidden="true">{{ '●' if c.has_bid else '○' }}</span> {{ '입찰자 있음' if c.has_bid else '입찰자 없음' }}
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="panel"><p>{{ '조건에 맞는 경매가 없어요.' if search.active else '진행 중인 경매가 없습니다.' }}</p></div>
+  {% endif %}
+
+  {% if has_previous or has_next %}
+  <nav class="pager" aria-label="페이지 이동">
+    {% if has_previous %}<a href="{{ prev_url }}">이전</a>{% endif %}
+    {% if has_next %}<a href="{{ next_url }}">다음</a>{% endif %}
+  </nav>
+  {% endif %}
+  </div>
+</section>
+{% endblock %}

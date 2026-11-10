@@ -1,0 +1,35 @@
+{# 경매 등록: 내 아이템을 카탈로그 시작가로 경매에 올린다 (낚시 팝업의 "경매장에 올리기", 가방의 "경매 시작") #}
+{% extends "auction/_layout.html" %}
+{% from "inventory/_macros.html" import item_icon %}
+{% from "auction/_macros.html" import gold %}
+{% block title %}경매에 올리기 | Catch &amp; Bid{% endblock %}
+
+{% block content %}
+<section aria-labelledby="new-title">
+  <div class="auction-head">
+    <h1 id="new-title" class="title-tab">경매에 올리기</h1>
+    {% if embed %}<button type="button" class="btn red" data-auction-close>닫기 (Esc)</button>{% endif %}
+  </div>
+
+  {% if error %}<p class="notice error" role="alert">{{ error }}</p>{% endif %}
+
+  <div class="panel new-panel">
+    {{ item_icon(n.item, 64) }}
+    <h2>{{ n.item.name }}</h2>
+    <p class="muted">{{ n.item.category }} · #{{ n.item_id }}</p>
+    <p>시작가 <strong class="stage-price">{{ gold(n.start_price) }}</strong></p>
+    <p class="muted">시작가는 아이템 카탈로그 값이라 바꿀 수 없어요. 경매 시간은 6분이에요.</p>
+
+    {% if n.can_register %}
+    <form method="post" action="{{ n.action }}" data-page-form>
+      <input type="hidden" name="item_id" value="{{ n.item_id }}">
+      <button type="submit" class="btn gold big">경매 시작</button>
+    </form>
+    {% else %}
+    <p>{{ n.reason }}</p>
+    {% endif %}
+
+    <p><a href="{{ n.back_href }}">경매장 보기</a></p>
+  </div>
+</section>
+{% endblock %}

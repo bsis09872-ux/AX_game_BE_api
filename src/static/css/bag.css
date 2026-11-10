@@ -1,0 +1,269 @@
+/* 내 가방 화면: 아이템 칸 격자와 오른쪽 패널. 칸(.slot)·버튼(.btn)은 global.css, 그림 틀은 inventory.css를 쓴다 */
+
+.bag-layout .bag-main {
+  flex: 2 1 420px;
+}
+
+.bag-layout .bag-side {
+  flex: 1 1 280px;
+}
+
+/* 한 행에 5칸이 기본 (20칸이면 4행). 화면이 아주 좁을 때만 칸 수를 줄인다 */
+.bag-slots {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-bottom: 12px;
+}
+
+@media (max-width: 520px) {
+  .bag-slots {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 400px) {
+  .bag-slots {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* 칸은 링크라서 글자색과 밑줄을 맞춘다 */
+a.slot {
+  color: var(--text);
+  gap: 2px;
+}
+
+a.slot:hover {
+  text-decoration: none;
+}
+
+.slot-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.slot.empty {
+  cursor: default;
+  opacity: .5;
+}
+
+.slot.empty:hover {
+  background: var(--slot);
+}
+
+.bag-side .panel + .panel {
+  margin-top: 16px;
+}
+
+.wallet-box dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0;
+}
+
+.wallet-box dd {
+  margin: 0;
+  text-align: right;
+}
+
+.gold-text {
+  color: var(--gold);
+}
+
+.select-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+/* ---- 가방 다듬기 ---- */
+
+/* 아이콘이 칸 가운데에 오도록: .item-icon의 오른쪽 여백(글줄 안 간격용)을 칸 안에서는 없앤다 */
+.slot .item-icon,
+.select-item .item-icon {
+  margin: 0;
+}
+
+/* 희귀도에 따라 칸 배경을 옅게 물들인다 (희귀도 색 --rarity는 inventory.css) */
+a.slot {
+  background: color-mix(in srgb, var(--rarity, var(--steel)) 22%, var(--slot));
+}
+
+.slot.empty {
+  background: var(--slot);
+}
+
+/* 필터 버튼: 148px 고정폭이 두 줄로 꺾이던 것을 글자 폭에 맞춰 작게 */
+.bag-filters {
+  gap: 6px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+}
+
+.bag-filters .filter-label {
+  min-width: 48px;
+  font-size: 12px;
+}
+
+.bag-filters .filter-group a {
+  width: auto;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+/* 상태·희귀도 버튼은 너비를 같게 (정렬은 글자 폭 그대로). 가장 긴 UNCOMMON·LEGENDARY가 한 줄에 들어가는 폭 */
+.bag-filters .filter-group[aria-label="상태"] a,
+.bag-filters .filter-group[aria-label="희귀도"] a,
+.bag-filters .filter-group a.equal-width {  /* 정렬의 "최근 획득 순"도 희귀도의 "전체"와 같은 너비 */
+  width: 88px;
+  padding: 2px 0;
+}
+
+.bag-filters .filter-group a[aria-current="true"]::before {
+  content: none;
+}
+
+/* 오른쪽 패널들: 탭(제목)과 패널 사이 간격 */
+.bag-side .title-tab {
+  margin: 0;
+  font-size: 16px;
+}
+
+.bag-side .panel + .title-tab {
+  margin-top: 16px;
+}
+
+.bag-side .panel + .panel {
+  margin-top: 0;
+}
+
+.wallet-box {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.wallet-box dl {
+  flex: 1 1 160px;
+}
+
+.wallet-note {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 12px;
+}
+
+.start-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.start-amount {
+  flex: 1 1 auto;
+  text-align: right;
+}
+
+/* 상자 없는 글자 버튼: "아이템 도감 보기" 링크처럼 보이되 색은 붉은 계열 */
+/* 올릴 수 없는 이유 문구도 같은 색 */
+.block-reason {
+  color: var(--pink);
+}
+
+.link-btn {
+  padding: 0;
+  font: inherit;
+  color: var(--pink);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+.action-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.action-row .btn {
+  flex: 1 1 0;
+  padding: 5px 10px;
+  font-size: 14px;
+}
+
+.btn.blue {
+  background: #2e5f8f;
+  box-shadow: inset 0 calc(-1 * var(--px)) 0 #1f4266, inset 0 var(--px) 0 #4a82b8;
+}
+
+/* 분류 탭은 글자 수와 상관없이 너비를 같게 */
+.bag-main .index-tabs a {
+  width: 72px;
+  padding: 4px 0;
+  text-align: center;
+}
+
+/* 격자 고정: 아이템이 있는 칸·빈 칸 모두 같은 높이 (빈 줄이 넓어지던 것을 막는다) */
+.bag-slots .slot {
+  height: 104px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* 상태·희귀도·정렬 버튼: 글자 폭에 맞추고 버튼 안에서는 줄바꿈하지 않는다 (줄은 버튼 사이에서만 넘어간다) */
+.bag-filters .filter-group a {
+  width: auto;
+  min-width: 56px;
+  padding: 2px 8px;
+}
+
+/* "경매 중" 표시가 아이콘 위에 겹치지 않게 모든 칸의 윗줄을 비워 둔다 */
+.bag-slots .slot {
+  padding-top: 18px;
+}
+
+/* 격자 아래 한 줄: 왼쪽 도감 전체 보기, 오른쪽 쪽 이동 */
+.bag-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 22px;
+}
+
+.bag-pager {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+}
+
+/* 이전·다음·현재 쪽 자리를 고정해서 첫 쪽·마지막 쪽에서도 위치가 안 흔들린다 */
+.bag-pager a,
+.bag-pager .off {
+  min-width: 56px;
+  text-align: center;
+}
+
+.bag-pager .off {
+  opacity: 0.4;
+}
+
+.bag-pager .page-now {
+  min-width: 64px;
+  text-align: center;
+  color: var(--muted);
+}

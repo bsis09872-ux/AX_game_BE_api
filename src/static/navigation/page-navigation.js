@@ -2,6 +2,7 @@ import { preparePageStyles, renderPage } from "./page-renderer.js";
 
 export function createPageNavigation(initializePage) {
     let requestController;
+    let activeController = null; // 지금 진행 중인 이동(fetch부터 렌더링 끝까지). 자동 갱신이 사용자의 이동을 끊지 않게 구분한다
     let pageController;
     let submitting = false;
 
@@ -21,9 +22,14 @@ export function createPageNavigation(initializePage) {
         message.hidden = false;
     }
 
+    // options.background: 화면 안의 자동 갱신(실시간 반영)이 부르는 이동이다.
+    // - 다른 이동이 진행 중이면 그 요청을 끊지 않고 건너뛴다. 사용자가 직접 요청한 이동은 진행 중인 자동 갱신까지 취소하고 우선한다.
+    // - 스크롤·포커스·오류 안내를 건드리지 않고, 실패하면 조용히 넘어간다.
+    // 반환: 새 화면을 그렸으면 true, 건너뛰었거나 그리지 못했으면 false
     async function navigate(path, options = {}) {
+        const background = options.background === true;
         if (submitting) {
-            return;
+            return false;
         }
 
         const url = new URL(path, location.href);
@@ -32,17 +38,24 @@ export function createPageNavigation(initializePage) {
 
         if (url.origin !== location.origin) {
             location.assign(url.href);
-            return;
+            return false;
+        }
+
+        if (background && activeController) {
+            return false;
         }
 
         requestController?.abort();
         const controller = new AbortController();
         requestController = controller;
+        activeController = controller;
         submitting = isSubmission;
 
         const main = document.getElementById("main-content");
-        main.setAttribute("aria-busy", "true");
-        message.hidden = true;
+        if (!background) {
+            main.setAttribute("aria-busy", "true");
+            message.hidden = true;
+        }
 
         try {
             const response = await fetch(url, {
@@ -76,8 +89,10 @@ export function createPageNavigation(initializePage) {
                     );
                 }
 
-                location.assign(response.url);
-                return;
+                if (!background) {
+                    location.assign(response.url);
+                }
+                return false;
             }
 
             const applyStyles = await preparePageStyles(nextPage, controller.signal);
@@ -100,6 +115,11 @@ export function createPageNavigation(initializePage) {
             applyStyles();
             submitting = false;
             mountPage();
+
+            if (background) {
+                return true;
+            }
+
             focusTarget.focus({ preventScroll: true });
 
             const anchor =
@@ -109,21 +129,27 @@ export function createPageNavigation(initializePage) {
             } else {
                 window.scrollTo(0, 0);
             }
+            return true;
         } catch (error) {
-            if (controller.signal.aborted) {
-                return;
+            if (controller.signal.aborted || background) {
+                return false;
             }
 
             if (options.fromHistory && !isSubmission) {
                 location.replace(url.href);
-                return;
+                return false;
             }
 
             const text = isSubmission
                 ? "요청 결과를 확인하지 못했습니다. 중복 제출 전에 처리 결과를 확인해 주세요."
                 : error.message;
             showError(text);
+            return false;
         } finally {
+            // 자신이 최신 요청일 때만 이동 중 상태를 푼다
+            if (activeController === controller) {
+                activeController = null;
+            }
             if (requestController === controller) {
                 submitting = false;
                 main.removeAttribute("aria-busy");

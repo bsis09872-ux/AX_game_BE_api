@@ -1,0 +1,14 @@
+{# 모든 화면이 같이 쓰는 주 메뉴. 헤더의 사용 가능 금액은 공통 헤더(static/wallet-balance.js, 지갑 담당)가 채운다 #}
+
+
+{# active는 'auction', 'inventory', 'trades', 'wallet', 'me', 'admin' 중 하나 (지금 화면의 메뉴 강조). admin이 참이면 관리자 메뉴가 붙는다 #}
+{% macro site_nav(active, admin=false) -%}
+<nav class="nav" aria-label="주 메뉴">
+  <a {% if active == 'auction' %}class="on" aria-current="page" {% endif %}href="/auctions">경매장</a>
+  <a {% if active == 'inventory' %}class="on" aria-current="page" {% endif %}href="/inventory">내 가방</a>
+  <a {% if active == 'trades' %}class="on" aria-current="page" {% endif %}href="/auctions/trades">내 거래</a>
+  <a {% if active == 'wallet' %}class="on" aria-current="page" {% endif %}href="/wallet">내 지갑</a>
+  <a {% if active == 'me' %}class="on" aria-current="page" {% endif %}href="/me">내 정보</a>
+  {% if admin %}<a {% if active == 'admin' %}class="on" aria-current="page" {% endif %}href="/admin">관리자</a>{% endif %}
+</nav>
+{%- endmacro %}

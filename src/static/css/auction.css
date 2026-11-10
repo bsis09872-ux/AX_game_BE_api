@@ -1,0 +1,780 @@
+/* 경매장 화면 스타일. 색·버튼·슬롯·표는 global.css, 아이템 그림 틀은 inventory.css를 그대로 쓴다 */
+
+/* 팝업(iframe) 안: global.css가 헤더·푸터를 숨기므로 배경 캐러셀과 건너뛰기 링크도 숨긴다 */
+body.embed .title-carousel,
+body.embed .skip-link {
+  display: none;
+}
+
+body.embed .main-content {
+  padding-top: 10px;
+}
+
+/* 알림: 성공은 초록, 오류는 빨강 */
+.notice {
+  margin: 0 0 14px;
+  padding: 8px 12px;
+  border: var(--px) solid var(--outline);
+  background: var(--green-dark);
+  color: var(--text);
+}
+
+.notice.error {
+  background: var(--red);
+}
+
+/* 제목줄: 제목과 버튼 */
+.auction-head {
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* 경매장 제목 영역: 경매사 그림, 제목·설명·건수, 오른쪽 버튼 */
+.auction-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.hero-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.hero-text h1 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+
+.hero-text p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* 검색 폼: [글자+칸] 4개가 너비를 똑같이 나눠 갖고, 검색 버튼은 원래 크기로 오른쪽 끝에 둔다. 입력 칸 테두리는 얇게 */
+.search-panel {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  align-items: center;
+  gap: 8px 20px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+}
+
+/* 글자와 입력 칸을 한 줄에 나란히: "분류 [칸]" */
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.search-field label {
+  font-size: 14px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.search-field input,
+.search-field select {
+  flex: 1;
+  width: 0; /* 남는 폭을 칸이 나눠 갖게 한다 */
+  min-width: 0;
+  padding: 2px 8px;
+  border-width: 1px;
+}
+
+.search-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.search-actions .btn {
+  padding: 2px 14px;
+}
+
+/* 폭이 좁으면 두 줄, 더 좁으면 한 줄씩 */
+@media (max-width: 900px) {
+  .search-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .search-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* 매물 카드: 패널 없이 배경 위에 놓는 양각 카드. 풀 화면에서 한 줄에 4개 */
+.card-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  color: var(--text);
+  background: var(--wood);
+  border: var(--px) solid var(--outline);
+  box-shadow:
+    inset var(--px) var(--px) 0 var(--wood-light),
+    inset calc(-1 * var(--px)) calc(-1 * var(--px)) 0 var(--wood-dark);
+}
+
+.card:hover {
+  background: #98643a;
+  text-decoration: none;
+}
+
+.card-top {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.card-info {
+  min-width: 0;
+}
+
+.card-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.card-price {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  color: var(--gold);
+}
+
+.card-price .muted {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.card-price img {
+  vertical-align: middle;
+}
+
+/* 카드 맨 아래 상태 띠 (카드 안쪽 여백을 가로질러 가장자리까지) */
+.card-status {
+  margin: 0 -12px -12px;
+  padding: 6px 12px;
+  font-size: 13px;
+  background: rgba(36, 26, 31, 0.45);
+  border-top: 2px solid rgba(0, 0, 0, 0.25);
+}
+
+.card-status.yes {
+  color: var(--green);
+}
+
+.card-status.none {
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.card-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.clock {
+  color: var(--water);
+}
+
+.clock.urgent {
+  color: var(--pink);
+}
+
+/* 매물 상태 표시(.tag는 global.css) */
+.tag.BIDDING {
+  background: var(--green-dark);
+}
+
+.tag.QUEUED {
+  background: #2e5f8f;
+}
+
+.tag.FAILED {
+  background: var(--steel);
+  color: var(--outline);
+}
+
+/* 이전·다음 */
+.pager {
+  display: flex;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+/* 경매 상세 무대: 벽, 바닥, 경매사, 아이템 카드, 최고액 입찰자 */
+.stage-col {
+  flex: 2 1 480px;
+}
+
+.auction-stage {
+  position: relative;
+  padding: 0;
+  overflow: hidden;
+  background: linear-gradient(#6b3d2c 0 58%, #3a2316 58% 60%, #9a6a3f 60% 100%);
+}
+
+/* 바닥 널빤지 줄무늬 */
+.auction-stage::before {
+  content: "";
+  position: absolute;
+  inset: 60% 0 0;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.1) 0 2px,
+    transparent 2px 56px
+  );
+  pointer-events: none;
+}
+
+/* 진행 바: 남은 시간만큼 채워져 줄어든다 */
+.timebar {
+  position: relative;
+  height: 16px;
+  margin: 14px 14px 0;
+  background: var(--night);
+  border: var(--px) solid var(--outline);
+}
+
+.timebar-fill {
+  height: 100%;
+  background: var(--pink);
+  /* 8비트 입체감: 위쪽에 밝은 줄, 아래쪽에 어두운 줄 */
+  box-shadow:
+    inset 0 4px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.22);
+  transition: width 0.4s;
+}
+
+.timebar.urgent .timebar-fill {
+  background: var(--red);
+}
+
+.stage-top {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 30px 14px 0;
+}
+
+.stage-npc {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.stage-top .stage-npc {
+  margin-bottom: 10px;
+}
+
+.stage-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  min-width: 220px;
+  padding: 18px 26px;
+  text-align: center;
+  background: linear-gradient(#34262d, var(--night));
+  border: var(--px) solid var(--outline);
+  /* 입체감: 왼쪽 위는 밝게, 오른쪽 아래는 어둡게, 바닥에 그림자 */
+  box-shadow:
+    inset 3px 3px 0 #5a4550,
+    inset -3px -3px 0 #130d10,
+    6px 6px 0 rgba(0, 0, 0, 0.4);
+}
+
+.price-block {
+  margin-top: -6px;
+}
+
+.card-time {
+  margin-top: 8px;
+}
+
+.stage-name {
+  margin: 0;
+  font-size: 20px;
+}
+
+.price-label {
+  margin-bottom: 2px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.stage-price {
+  color: var(--gold);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+/* 바닥 위: 최고액 입찰자가 서는 자리 */
+.stage-floor {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  height: 190px; /* 입찰자가 있든 없든 무대 높이는 같다 */
+  margin: 18px 14px 14px;
+  padding: 10px;
+  background: rgba(58, 35, 22, 0.55);
+  border: var(--px) solid rgba(58, 35, 22, 0.8);
+}
+
+/* 입찰자가 있으면 흐린 바닥이 테두리 없이 무대 가장자리까지, 경매사 바로 아래부터 덮는다 (위 18 + 190 + 아래 14 = 222로 높이를 맞춘다) */
+.stage-floor.crowded {
+  margin: 0;
+  height: 222px;
+  border: 0;
+}
+
+.stage-floor .empty {
+  align-self: center;
+  margin: 0;
+  color: var(--muted);
+}
+
+.tag.lead {
+  background: var(--gold);
+  color: var(--outline);
+}
+
+/* 웅성거리는 입찰자들: 작고 어둡게, 위아래로 조금씩 흔들린다. 최고액 입찰자는 크고 금빛으로 빛난다 */
+.crowd {
+  width: 100%;
+  overflow: hidden;
+  padding-top: 4px;
+}
+
+.crowd-row {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+/* 뒷줄: 더 작고 더 어둡게 앞줄 사이사이에 보인다 */
+.crowd-row.back {
+  margin-bottom: -40px;
+}
+
+.crowd-row.back .crowd-npc {
+  margin-left: -10px;
+  filter: brightness(0.5);
+}
+
+.crowd-npc {
+  flex: none;
+  margin-left: -14px;
+  filter: brightness(0.7);
+  animation: murmur 1.4s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -0.23s);
+}
+
+.crowd .stage-bidder {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  margin: 0 -2px 0 -4px;
+}
+
+.stage-bidder img {
+  filter: drop-shadow(0 0 6px var(--gold));
+}
+
+.stage-bidder.me img {
+  animation: me-glow 1.2s ease-in-out infinite alternate;
+}
+
+.stage-bidder figcaption {
+  padding: 0 8px;
+  background: rgba(36, 26, 31, 0.75);
+}
+
+@keyframes murmur {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes me-glow {
+  from {
+    filter: drop-shadow(0 0 4px var(--gold));
+  }
+  to {
+    filter: drop-shadow(0 0 12px var(--gold));
+  }
+}
+
+.side .title-tab,
+.side .panel + .title-tab {
+  margin: 0;
+  font-size: 16px;
+}
+
+.side .panel + .panel,
+.side .panel + .title-tab {
+  margin-top: 16px;
+}
+
+.rules h2 {
+  margin: 0 0 10px;
+  padding-bottom: 8px;
+  font-size: 15px;
+  border-bottom: 1px solid rgba(255, 244, 224, 0.22);
+}
+
+.rules ol {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.7;
+}
+
+.rules li + li {
+  margin-top: 6px;
+}
+
+.rules p {
+  margin: 0;
+}
+
+.bid-meta {
+  margin: 0 0 6px;
+}
+
+/* 입찰 패널 안내 문구: 위 정보와 구분되는 말풍선(꼬리는 오른쪽 아래). 안내는 하늘색, 입찰이 막힌 경고는 붉은색 */
+.bid-message {
+  --bubble-line: rgba(255, 244, 224, 0.85);
+  /* 패널 바탕(나무색)에 어두운 색을 10%만 섞어 거의 투명하게 */
+  --bubble-bg: color-mix(in srgb, var(--wood) 90%, var(--night));
+  position: relative;
+  margin: 10px 0 25px; /* 꼬리 끝(9px)에서 아래 구분선까지 약 20px */
+  padding: 8px 12px;
+  text-align: center;
+  color: var(--water);
+  background: var(--bubble-bg);
+  border: 1px solid var(--bubble-line);
+  border-radius: 8px;
+}
+
+.bid-message.warn {
+  --bubble-line: var(--pink);
+  color: var(--pink);
+}
+
+/* 꼬리: 바깥(테두리색) 삼각형 위에 안쪽(배경색) 삼각형을 겹쳐 테두리가 이어진 모양으로 만든다 */
+.bid-message::before,
+.bid-message::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  border-style: solid;
+  border-color: transparent;
+}
+
+.bid-message::before {
+  right: 16px;
+  border-width: 9px 7px 0;
+  border-top-color: var(--bubble-line);
+}
+
+.bid-message::after {
+  right: 17px;
+  border-width: 8px 6px 0;
+  border-top-color: var(--bubble-bg);
+}
+
+/* 입찰 폼: 입력 칸과 버튼을 한 줄에 같은 높이로 */
+.bid-form {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 244, 224, 0.22); /* 입찰 규칙 제목 아래 실선과 같은 연한 선 */
+}
+
+.bid-form label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* "입찰 금액 (G)" 글자: 가방의 "경매 시작"과 같은 붉은 계열 (크기는 안내 문구와 같다) */
+.bid-label {
+  color: var(--pink);
+  font-size: 15px;
+}
+
+.bid-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.bid-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  font-size: 16px;
+}
+
+.bid-row .btn {
+  flex: none;
+}
+
+/* 결과 배너 (낙찰, 유찰, 취소, 대기) */
+.banner {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 24px;
+  width: max-content;
+  max-width: 90%;
+  text-align: center;
+  background: var(--steel);
+  color: var(--outline);
+  border: var(--px) solid var(--outline);
+}
+
+.banner strong {
+  font-size: 22px;
+}
+
+.banner.sold {
+  background: var(--gold);
+  animation: banner-pop 0.5s ease-out;
+}
+
+.banner.queued {
+  background: #2e5f8f;
+  color: var(--text);
+}
+
+.banner.fail,
+.banner.cancel {
+  background: var(--steel);
+}
+
+@keyframes banner-pop {
+  0% {
+    transform: translateX(-50%) scale(0.6);
+    opacity: 0;
+  }
+  70% {
+    transform: translateX(-50%) scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+/* 낙찰 이펙트: 위에서 떨어지는 조각 (CSS만 사용) */
+.confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.confetti i {
+  position: absolute;
+  top: -8px;
+  width: 8px;
+  height: 8px;
+  background: var(--pink);
+  animation: confetti-fall 1.8s ease-in infinite;
+}
+
+.confetti i:nth-child(1) {
+  left: 5%;
+  animation-delay: 0s;
+}
+.confetti i:nth-child(2) {
+  left: 15%;
+  animation-delay: 0.4s;
+  background: var(--water);
+}
+.confetti i:nth-child(3) {
+  left: 25%;
+  animation-delay: 0.8s;
+  background: var(--green);
+}
+.confetti i:nth-child(4) {
+  left: 35%;
+  animation-delay: 0.2s;
+}
+.confetti i:nth-child(5) {
+  left: 45%;
+  animation-delay: 0.6s;
+  background: var(--water);
+}
+.confetti i:nth-child(6) {
+  left: 55%;
+  animation-delay: 1s;
+  background: var(--green);
+}
+.confetti i:nth-child(7) {
+  left: 65%;
+  animation-delay: 0.3s;
+}
+.confetti i:nth-child(8) {
+  left: 75%;
+  animation-delay: 0.7s;
+  background: var(--water);
+}
+.confetti i:nth-child(9) {
+  left: 85%;
+  animation-delay: 1.1s;
+  background: var(--green);
+}
+.confetti i:nth-child(10) {
+  left: 95%;
+  animation-delay: 0.5s;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(90px) rotate(240deg);
+    opacity: 0;
+  }
+}
+
+/* 시스템에서 "동작 줄이기"를 켠 사람에게는 움직임을 끈다 */
+@media (prefers-reduced-motion: reduce) {
+  .banner.sold {
+    animation: none;
+  }
+  .card.flash {
+    animation: none;
+  }
+  .confetti {
+    display: none;
+  }
+  .timebar-fill {
+    transition: none;
+  }
+  .crowd-npc,
+  .stage-bidder.me img {
+    animation: none;
+  }
+}
+
+/* 내 거래: 인덱스 탭은 패널 왼쪽 위에 붙인다. 제목은 화면 낭독기에게만 읽힌다 */
+/* 내 가방의 제목 탭(.title-tab: 안쪽 여백 4px 14px, 글자 16px)과 같은 크기 */
+.trades-tabs a {
+  padding: 4px 14px;
+  font-size: 16px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* 건수 줄: 설명 문구와 구분되게 색을 다르게 */
+.hero-text .hero-count {
+  margin-top: 6px;
+  color: var(--gold);
+}
+
+/* 이모티콘은 폰트 기준선이 달라 아래로 처져 보여서 살짝 올린다 */
+.hero-emoji {
+  display: inline-block;
+  line-height: 1;
+  transform: translateY(-2px);
+}
+
+/* 최소 입찰 금액 안내: ※ 표시를 달고 오른쪽 정렬 */
+.bid-hint {
+  margin: 8px 0 0;
+  text-align: right;
+}
+
+/* 목록이 갱신될 때 새로 생기거나 값이 바뀐 카드를 잠깐 밝게 깜빡인다 */
+.card.flash {
+  animation: card-flash 1.2s ease-out;
+}
+
+@keyframes card-flash {
+  0% {
+    filter: brightness(1.6);
+    outline: 3px solid var(--gold);
+  }
+  100% {
+    filter: brightness(1);
+    outline: 3px solid transparent;
+  }
+}
+
+/* 입력 칸 색: 경매사(대머리 아저씨) 그림의 살색. 검색 폼의 칸과 드롭다운, 입찰 금액 칸에 쓴다 */
+:root {
+  --skin: #f7c282;
+}
+
+.search-field input,
+.search-field select,
+.bid-row input {
+  background: var(--skin);
+  /* 살짝 음각: 왼쪽 위는 어둡게, 오른쪽 아래는 밝게 눌린 느낌 */
+  box-shadow: inset 2px 2px 0 rgba(63, 38, 49, 0.35), inset -2px -2px 0 rgba(255, 255, 255, 0.45);
+}
+
+.search-field input::placeholder {
+  color: rgba(63, 38, 49, 0.55);
+}

@@ -7,9 +7,8 @@ __pycache__/
 .vscode/
 /.private/
 /.local/
-
-# 이승주 개인 작업폴더
 .persfolder/
 .specstory/
 tests/
 practice/
+.pytest_cache/

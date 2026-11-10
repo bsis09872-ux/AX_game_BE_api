@@ -14,13 +14,8 @@
 {{ '{:,}'.format(amount) }} GOLD
 {%- endmacro %}
 
-{% block navigation %}
-<nav class="nav" aria-label="주 메뉴">
-  <a href="/inventory">내 인벤토리</a>
-  <a class="on" href="/wallet" aria-current="page">내 지갑</a>
-  <a href="/me">내 정보</a>
-</nav>
-{% endblock %}
+{% from "_site.html" import site_nav %}
+{% block navigation %}{{ site_nav('wallet') }}{% endblock %}
 
 {% block content %}
 <section aria-labelledby="wallet-title">

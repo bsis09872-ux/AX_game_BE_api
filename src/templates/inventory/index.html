@@ -1,78 +1,117 @@
+{# 내 가방: 아이템 칸을 누르면 오른쪽 패널에 선택해서 경매에 올릴 수 있다 (표에서 칸 격자로 바꿈) #}
 {% extends "base.html" %}
 {% block page_key %}inventory{% endblock %}
 {% block body_attributes %}data-session-protected="true"{% endblock %}
-{% from "inventory/_macros.html" import gold, moment, filter_group, item_icon %}
-{% block title %}내 인벤토리 | Catch &amp; Bid{% endblock %}
+{% from "_site.html" import site_nav %}
+{% from "inventory/_macros.html" import gold, moment, filter_group, item_icon, category_name %}
+{% block title %}내 가방 | Catch &amp; Bid{% endblock %}
 
 {% block styles %}
 <link data-page-style rel="stylesheet" href="{{ url_for('static', path='/css/inventory.css') }}">
+<link data-page-style rel="stylesheet" href="{{ url_for('static', path='/css/common.css') }}">
+<link data-page-style rel="stylesheet" href="{{ url_for('static', path='/css/bag.css') }}">
 {% endblock %}
 
-{% block navigation %}
-<nav class="nav" aria-label="주 메뉴">
-  <a class="on" href="/inventory" aria-current="page">내 인벤토리</a>
-  <a href="/me">내 정보</a>
-</nav>
-{% endblock %}
+{% block navigation %}{{ site_nav('inventory') }}{% endblock %}
 
 {% block content %}
+{% set cat = filter_groups | selectattr('label', 'equalto', '분류') | first %}
 <section aria-labelledby="inventory-title">
-  <h1 id="inventory-title" class="title-tab">내 인벤토리</h1>
+  <div class="row bag-layout" data-live-refresh>
+    <div class="col bag-main">
+      <div class="tab-row">
+        <h1 id="inventory-title" class="title-tab">내 가방</h1>
+        <nav class="index-tabs" aria-label="분류">
+          {% for o in cat.options %}<a {% if o.current %}class="on" aria-current="true" {% endif
+            %}href="{{ o.href }}">{{ o.text }}</a>{% endfor %}
+        </nav>
+      </div>
+      <div class="panel">
+        {# 분류는 위 탭으로 옮겼고, 나머지 필터는 칸 위에 작은 버튼으로 둔다 #}
+        <div class="filters bag-filters">
+          {% for group in filter_groups if group.label != '분류' %}{{ filter_group(group) }}{% endfor %}
+        </div>
 
-  <div class="panel">
-    {# 응답 모델이 골라낸 공개 값만 표시한다. 글자는 Jinja2가 자동으로 이스케이프한다 #}
-    <div class="filters">
-      {% for group in filter_groups %}{{ filter_group(group) }}{% endfor %}
+        {# 응답 모델이 골라낸 공개 값만 표시한다. 글자는 Jinja2가 자동으로 이스케이프한다 #}
+        <div class="slots bag-slots">
+          {% for s in slots %}
+          <a class="slot rarity-{{ s.item.definition.rarity }}{% if s.listed %} listed{% endif %}{% if s.selected %} sel{% endif %}"
+            href="{{ s.href }}" {% if s.selected %}aria-current="true" {% endif %}
+            title="{{ s.item.definition.name }}{% if s.listed %} (경매 중){% endif %}">
+            {{ item_icon(s.item.definition, 48) }}
+            <span class="slot-name">{{ s.item.definition.name }}</span>
+            {% if s.listed %}<span class="badge">경매 중</span>{% endif %}
+          </a>
+          {% endfor %}
+          {% for _ in range(empty_slots) %}<div class="slot empty" aria-hidden="true"></div>{% endfor %}
+        </div>
+
+        {% if not slots %}
+        <p>{{ '조건에 맞는 아이템이 없습니다.' if filtered else '아직 보유한 아이템이 없습니다.' }}</p>
+        {% endif %}
+
+        {# 격자 아래 한 줄: 왼쪽에 도감 전체 보기, 오른쪽에 쪽 이동(쪽이 둘 이상일 때). 없는 방향은 흐리게 두어 자리를 고정한다 #}
+        <div class="bag-foot">
+          <a class="catalog-all" href="/item-catalogs">📖 아이템 도감</a>
+          {% if total_pages > 1 %}
+          <nav class="bag-pager" aria-label="페이지 이동">
+            {% if has_previous %}<a href="{{ prev_url }}">‹ 이전</a>{% else %}<span class="off" aria-disabled="true">‹
+              이전</span>{% endif %}
+            <span class="page-now">{{ page }} / {{ total_pages }}</span>
+            {% if has_next %}<a href="{{ next_url }}">다음 ›</a>{% else %}<span class="off" aria-disabled="true">다음
+              ›</span>{% endif %}
+          </nav>
+          {% endif %}
+        </div>
+      </div>
     </div>
-    {% if items %}
-    <table class="table-fixed">
-      <colgroup>
-        <col style="width: 20%">
-        <col style="width: 10%">
-        <col style="width: 16%">
-        <col style="width: 26%">
-        <col style="width: 12%">
-        <col style="width: 16%">
-      </colgroup>
-      <thead>
-        <tr>
-          <th>이름</th>
-          <th>분류</th>
-          <th>희귀도</th>
-          <th>획득시각</th>
-          <th>거래상태</th>
-          <th class="num">거래시작가</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in items %}
-        <tr>
-          <td>{{ item_icon(item.definition) }}<a href="/inventory/{{ item.id }}">{{ item.definition.name }}</a></td>
-          <td>{{ item.definition.category }}</td>
-          <td>{{ item.definition.rarity }}</td>
-          <td>{{ moment(item.acquired_at) }}</td>
-          <td>{{ '경매중' if item.status == 'LISTED' else '보관중' }}</td>
-          <td class="num">{{ gold(item.definition.start_price) }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% elif filtered %}
-    <p>조건에 맞는 아이템이 없습니다.</p>
-    {% else %}
-    <p>아직 보유한 아이템이 없습니다.</p>
-    {% endif %}
 
-    <div class="page-links">
-      <a class="to-right" href="/item-catalogs">아이템 도감 보기</a>
+    <div class="col bag-side">
+      {% if wallet %}
+      <h2 class="title-tab">지갑</h2>
+      <div class="panel wallet-box">
+        <img class="px" src="{{ url_for('static', path='/sprites/ui_wallet.png') }}" alt="" width="64" height="64">
+        <dl>
+          <dt>전체 자산</dt>
+          <dd>{{ gold(wallet.balance) }}</dd>
+          <dt>가용 자산</dt>
+          <dd class="gold-text">{{ gold(wallet.available) }}</dd>
+          <dt>계류 자산</dt>
+          <dd>{{ gold(wallet.held) }}</dd>
+        </dl>
+        <p class="muted wallet-note">전체 자산 = 가용 자산 + 계류 자산(입찰로 묶인 금액)</p>
+      </div>
+      {% endif %}
+
+      <h2 class="title-tab">경매에 올리기</h2>
+      <div class="panel select-panel">
+        {% if selected %}
+        <div class="select-item">
+          {{ item_icon(selected.definition, 64) }}
+          <span>{{ selected.definition.name }}</span>
+          <span class="muted">{{ category_name(selected.definition.category) }} · #{{ selected.id }}</span>
+        </div>
+        <div class="start-row">
+          <span>경매 시작가</span>
+          <span class="gold-text start-amount">{{ gold(selected.definition.start_price) }}</span>
+          {% if selected.can_list %}
+          <form method="post" action="{{ auction_new_url }}" data-page-form>
+            <input type="hidden" name="item_id" value="{{ selected.id }}">
+            <button type="submit" class="link-btn">경매 시작</button>
+          </form>
+          {% endif %}
+        </div>
+        <p class="muted">경매 시작가는 경매사가 고정한 값이라 바꿀 수 없어요. 경매 진행 시간은 6분이에요.</p>
+        {% if not selected.can_list %}<p class="block-reason">{{ selected.reason }}</p>{% endif %}
+        <div class="action-row">
+          <a class="btn wood" href="/inventory/{{ selected.id }}">상세 보기</a>
+          <a class="btn blue" href="/item-catalogs?item={{ selected.id }}#item-{{ selected.definition.id }}">도감 보기</a>
+        </div>
+        {% else %}
+        <p class="muted">아이템 칸을 눌러서 경매에 올려 보세요.</p>
+        {% endif %}
+      </div>
     </div>
-
-    {% if has_previous or has_next %}
-    <nav aria-label="페이지 이동">
-      {% if has_previous %}<a href="{{ prev_url }}">이전</a>{% endif %}
-      {% if has_next %}<a href="{{ next_url }}">다음</a>{% endif %}
-    </nav>
-    {% endif %}
   </div>
 </section>
 {% endblock %}

@@ -1,0 +1,22 @@
+{# 경매장 화면의 공통 틀. base.html을 그대로 쓰고 아래 블록만 채운다 #}
+{# 라우터가 넘기는 값: embed(팝업 안인지), nav_active(메뉴 강조) #}
+{% extends "base.html" %}
+{% from "_site.html" import site_nav %}
+
+{% block page_key %}auction{% endblock %}
+
+{% block styles %}
+<link data-page-style rel="stylesheet" href="{{ url_for('static', path='/css/inventory.css') }}">
+<link data-page-style rel="stylesheet" href="{{ url_for('static', path='/css/common.css') }}">
+<link data-page-style rel="stylesheet" href="{{ url_for('static', path='/css/auction.css') }}">
+{% endblock %}
+
+{# 팝업(iframe) 안이면 body에 embed 클래스를 달아 헤더·푸터·배경을 숨긴다 (global.css, auction.css) #}
+{# data-session-protected: 공통 세션 확인·자동 갱신에 참여한다 (docs/project-structure.md) #}
+{% block body_attributes %}data-session-protected="true"{% if embed %} class="embed"{% endif %}{% endblock %}
+
+{% block navigation %}{{ site_nav(nav_active) }}{% endblock %}
+
+{% block scripts %}
+{% if embed %}<script src="{{ url_for('static', path='/auction-embed.js') }}" defer></script>{% endif %}
+{% endblock %}

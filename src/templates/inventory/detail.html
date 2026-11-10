@@ -1,20 +1,17 @@
 {% extends "base.html" %}
 {% block page_key %}inventory{% endblock %}
 {% block body_attributes %}data-session-protected="true"{% endblock %}
-{% from "inventory/_macros.html" import gold, moment, item_icon %}
+{% from "_site.html" import site_nav %}
+{% from "inventory/_macros.html" import gold, moment, item_icon, category_name %}
 
 {% block title %}{{ item.definition.name }} | Catch &amp; Bid{% endblock %}
 
 {% block styles %}
 <link data-page-style rel="stylesheet" href="{{ url_for('static', path='/css/inventory.css') }}">
+<link data-page-style rel="stylesheet" href="{{ url_for('static', path='/css/common.css') }}">
 {% endblock %}
 
-{% block navigation %}
-<nav class="nav" aria-label="주 메뉴">
-    <a class="on" href="/inventory" aria-current="page">내 인벤토리</a>
-    <a href="/me">내 정보</a>
-</nav>
-{% endblock %}
+{% block navigation %}{{ site_nav('inventory') }}{% endblock %}
 
 {% block content %}
 <section aria-labelledby="item-title">
@@ -29,7 +26,7 @@
                     <tbody>
                         <tr>
                             <th>분류</th>
-                            <td>{{ item.definition.category }}</td>
+                            <td>{{ category_name(item.definition.category) }}</td>
                         </tr>
                         <tr>
                             <th>희귀도</th>
@@ -40,25 +37,25 @@
                             <td>{{ item.definition.description }}</td>
                         </tr>
                         <tr>
-                            <th>획득경로</th>
+                            <th>획득 경로</th>
                             <td>{{ {'SEED':'기본 지급', 'ADMIN_GRANT':'관리자 지급', 'REWARD':'보상',
                                 'TRADE':'거래'}.get(item.origin,
                                 item.origin) }}</td>
                         </tr>
                         <tr>
-                            <th>획득시각</th>
+                            <th>획득 시각</th>
                             <td>{{ moment(item.acquired_at) }}</td>
                         </tr>
                         <tr>
-                            <th>거래상태</th>
-                            <td>{{ '경매중' if item.status == 'LISTED' else '보관중' }}</td>
+                            <th>거래 상태</th>
+                            <td>{{ '경매 중' if item.status == 'LISTED' else '보관 중' }}</td>
                         </tr>
                         <tr>
-                            <th>거래시작가</th>
+                            <th>거래 시작가</th>
                             <td>{{ gold(item.definition.start_price) }}</td>
                         </tr>
                         <tr>
-                            <th>재판매가능시각</th>
+                            <th>재판매 가능 시각</th>
                             <td>{{ moment(item.resale_available_at) if item.resale_available_at else '제한 없음' }}</td>
                         </tr>
                     </tbody>
@@ -67,7 +64,7 @@
         </div>
 
         <div class="page-links">
-            <a href="/inventory">← 내 인벤토리</a>
+            <a href="/inventory?item={{ item.id }}">← 내 가방</a>{# 방금 본 아이템이 가방의 선택 패널에 다시 뜨게 한다 #}
             <a class="to-right" href="/item-catalogs#item-{{ item.definition.id }}">아이템 도감 보기</a>
         </div>
     </div>

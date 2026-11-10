@@ -1,26 +1,24 @@
 {% extends "base.html" %}
 {% block page_key %}inventory{% endblock %}
 {% block body_attributes %}data-session-protected="true"{% endblock %}
-{% from "inventory/_macros.html" import gold, item_icon %}
+{% from "_site.html" import site_nav %}
+{% from "inventory/_macros.html" import gold, item_icon, category_name %}
 
 {% block title %}아이템 도감 | Catch &amp; Bid{% endblock %}
 
 {% block styles %}
 <link data-page-style rel="stylesheet" href="{{ url_for('static', path='/css/inventory.css') }}">
+<link data-page-style rel="stylesheet" href="{{ url_for('static', path='/css/common.css') }}">
 {% endblock %}
 
-{% block navigation %}
-<nav class="nav" aria-label="주 메뉴">
-    <a class="on" href="/inventory" aria-current="page">내 인벤토리</a>
-    <a href="/me">내 정보</a>
-</nav>
-{% endblock %}
+{% block navigation %}{{ site_nav('inventory') }}{% endblock %}
 
 {# 필터 링크 주소: 값이 있는 것만 붙인다 #}
 {# - 는 공백 또는 줄바꿈을 지운다는 의미: 주소가 깨지지 않도록 한다#}
 {% macro href(c, r) -%}
-/item-catalogs{% if c or r %}?{% if c %}category={{ c }}{% endif %}{% if c and r %}&amp;{% endif %}{% if r %}rarity={{ r
-}}{% endif %}{% endif %}
+{% set parts = [] %}{% if c %}{% set _ = parts.append('category=' ~ c) %}{% endif %}{% if r %}{% set _ =
+parts.append('rarity=' ~ r) %}{% endif %}{% if back_item %}{% set _ = parts.append('item=' ~ back_item) %}{% endif
+%}/item-catalogs{% if parts %}?{{ parts | join('&') }}{% endif %}
 {%- endmacro %}
 
 {% block content %}
@@ -33,7 +31,8 @@
                 <span class="filter-label">분류</span>
                 <a href="{{ href(None, rarity) }}" {% if not category %} aria-current="true" {% endif %}>전체</a>
                 {% for c in categories %}
-                <a href="{{ href(c, rarity) }}" {% if category==c %} aria-current="true" {% endif %}>{{ c }}</a>
+                <a href="{{ href(c, rarity) }}" {% if category==c %} aria-current="true" {% endif %}>{{ category_name(c)
+                    }}</a>
                 {% endfor %}
             </nav>
             <nav class="filter-group" aria-label="희귀도 필터">
@@ -62,14 +61,14 @@
                     <th>분류</th>
                     <th>희귀도</th>
                     <th>설명</th>
-                    <th class="num">거래시작가</th>
+                    <th class="num">거래 시작가</th>
                 </tr>
             </thead>
             <tbody>
                 {% for d in definitions %}
                 <tr id="item-{{ d.id }}">
                     <td>{{ item_icon(d) }}{{ d.name }}</td>
-                    <td>{{ d.category }}</td>
+                    <td>{{ category_name(d.category) }}</td>
                     <td>{{ d.rarity }}</td>
                     <td>{{ d.description }}</td>
                     <td class="num">{{ gold(d.start_price) }}</td>
@@ -82,7 +81,8 @@
         {% endif %}
 
         <div class="page-links">
-            <a href="/inventory">← 내 인벤토리</a>
+            <a href="/inventory{% if back_item %}?item={{ back_item }}{% endif %}">← 내 가방</a>{# 가방에서 보던 아이템이 다시
+            선택되게 한다 #}
         </div>
     </div>
 </section>

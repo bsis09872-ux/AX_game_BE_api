@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_site.html" import site_nav %}
 
 {% block page_key %}{{ self.page() }}{% endblock %}
 
@@ -14,11 +15,7 @@ data-resume="{{ 'true' if resume else 'false' }}"
 {% block navigation %}
 <nav class="nav" aria-label="주 메뉴">
     {% if user is defined %}
-    <a href="/me" {% if self.page()=="me" %}class="on" aria-current="page" {% endif %}>내 정보</a>
-    <a href="/inventory">내 인벤토리</a>
-    {% if user.role == "ADMIN" %}
-    <a href="/admin" {% if self.page()=="admin" %}class="on" aria-current="page" {% endif %}>관리자</a>
-    {% endif %}
+    {{ site_nav(self.page(), user.role == "ADMIN") }}
     {% else %}
     <a href="/login" {% if self.page()=="login" %}class="on" aria-current="page" {% endif %}>로그인</a>
     <a href="/register" {% if self.page()=="register" %}class="on" aria-current="page" {% endif %}>회원가입</a>

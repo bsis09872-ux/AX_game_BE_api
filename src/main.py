@@ -35,6 +35,7 @@ from auth.presentation.router import router as auth_router
 from auth.presentation.web_router import router as auth_web_router
 from auth.presentation.web_dependencies import (
     get_current_web_user_id, get_current_web_admin_id, get_web_settings, register_web_auth_handlers,
+    require_web_origin,  # 경매 화면의 POST 출처 확인
 )
 # endregion
 
@@ -82,6 +83,10 @@ import auction.infrastructure.listings.models  # noqa: F401 (임시)
 # endregion
 
 
+# region 경매·가방 화면
+from auction.presentation.web_router import create_auction_web_router
+from auction.presentation.web_dependencies import read_wallet_box
+# endregion
 API_PREFIX = "/v1"
 
 
@@ -147,7 +152,8 @@ app.include_router(create_user_web_router(get_current_web_user_id))
 app.include_router(inventory_router, prefix=API_PREFIX)
 if is_fishing_enabled():
     app.include_router(fishing_router, prefix=API_PREFIX)
-app.include_router(create_inventory_web_router(get_current_web_user_id))
+# 가방 화면에 지갑 박스 읽기 함수를 넘긴다 (인벤토리가 wallet을 import하지 않게 main이 연결)
+app.include_router(create_inventory_web_router(get_current_web_user_id, read_wallet_box))
 # endregion
 
 
@@ -169,6 +175,8 @@ app.include_router(create_listing_admin_web_router(get_current_web_admin_id))
 wire_auction_dependencies(app, get_current_user_id)
 app.include_router(listing_router, prefix=API_PREFIX)
 app.include_router(trade_router, prefix=API_PREFIX)
+# 경매 화면(목록·상세·등록·입찰·취소·내 거래). 로그인과 출처 확인은 auth 함수를 넘긴다
+app.include_router(create_auction_web_router(get_current_web_user_id, require_web_origin))
 
 
 @app.get("/health")

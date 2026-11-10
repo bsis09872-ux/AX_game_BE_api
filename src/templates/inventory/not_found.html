@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 {% block page_key %}inventory{% endblock %}
 {% block body_attributes %}data-session-protected="true"{% endblock %}
+{% from "_site.html" import site_nav %}
 
 {% block title %}아이템을 찾을 수 없습니다 | Catch &amp; Bid{% endblock %}
 
-{% block navigation %}
-<nav class="nav" aria-label="주 메뉴">
-    <a class="on" href="/inventory" aria-current="page">내 인벤토리</a>
-    <a href="/me">내 정보</a>
-</nav>
+{% block styles %}
+<link data-page-style rel="stylesheet" href="{{ url_for('static', path='/css/common.css') }}">
 {% endblock %}
+
+{% block navigation %}{{ site_nav('inventory') }}{% endblock %}
 
 {% block content %}
 <section aria-labelledby="not-found-title">
@@ -17,7 +17,7 @@
 
     <div class="panel">
         <p>찾을 수 없는 아이템입니다</p>
-        <p><a href="/inventory">← 내 인벤토리</a></p>
+        <p><a href="/inventory">← 내 가방</a></p>
     </div>
 </section>
 {% endblock %}

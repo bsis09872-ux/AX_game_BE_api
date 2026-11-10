@@ -14,12 +14,13 @@ from inventory.presentation.router import Category, InventorySort, Rarity, Statu
 
 # 정렬을 안 정했을 때의 기본값 (주소에는 넣지 않는다)
 DEFAULT_SORT = 'acquired_desc'
-STATUS_LABELS = {'OWNED': '보관중', 'LISTED': '경매중'}
-SORT_LABELS = {'acquired_desc': '최근 획득순', 'rarity_desc': '희귀도 높은 순', 'name_asc': '이름 오름차순'}
+CATEGORY_LABELS = {'FISH': '물고기', 'GEM': '보석', 'MISC': '잡화'}
+STATUS_LABELS = {'OWNED': '보관 중', 'LISTED': '경매 중'}
+SORT_LABELS = {'acquired_desc': '최근 획득 순', 'rarity_desc': '희귀도 높은 순', 'name_asc': '이름 오름차순'}
 
 
 # 내 인벤토리 주소: 값이 있는 것만 붙인다
-def inventory_href(*, status=None, category=None, rarity=None, sort=DEFAULT_SORT, page=None) -> str:
+def inventory_href(*, status=None, category=None, rarity=None, sort=DEFAULT_SORT, page=None, item=None) -> str:
     params = {}
     if status:
         params['status'] = status
@@ -32,6 +33,9 @@ def inventory_href(*, status=None, category=None, rarity=None, sort=DEFAULT_SORT
         params['sort'] = sort
     if page is not None:
         params['page'] = page
+    # 선택한 아이템: 가방 칸을 누르면 오른쪽 패널에 보여 준다
+    if item is not None:
+        params['item'] = item
     return '/inventory' + ('?' + urlencode(params) if params else '')
 
 
@@ -52,8 +56,8 @@ def filter_groups(status, category, rarity, sort) -> list[dict]:
         {'label': '상태', 'options': [option('status', None, '전체')]
             + [option('status', v, STATUS_LABELS[v]) for v in get_args(Status)]},
         {'label': '분류', 'options': [option('category', None, '전체')]
-            + [option('category', v, v) for v in get_args(Category)]},
+            + [option('category', v, CATEGORY_LABELS.get(v, v)) for v in get_args(Category)]},
         {'label': '희귀도', 'options': [option('rarity', None, '전체')]
             + [option('rarity', v, v, f'rarity-{v}') for v in get_args(Rarity)]},
-        {'label': '정렬', 'options': [option('sort', v, SORT_LABELS[v]) for v in get_args(InventorySort)]},
+        {'label': '정렬', 'options': [option('sort', v, SORT_LABELS[v], 'equal-width' if v == DEFAULT_SORT else '') for v in get_args(InventorySort)]},
     ]
