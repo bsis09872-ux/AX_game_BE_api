@@ -27,6 +27,11 @@ class WalletResponse(_FromAttrs):
     updated_at: datetime    # balance가 마지막으로 바뀐 시각
 
 
+class WalletBalanceResponse(_FromAttrs):
+    """헤더 표시용 사용 가능 금액 (웹 화면 GET /wallet/balance). 다른 값은 내보내지 않는다."""
+    available_balance: int
+
+
 class ChargeRequest(BaseModel):
     """관리자 지갑 충전"""
     amount: int = Field(..., gt=0, description="충전 금액 (1 이상)")

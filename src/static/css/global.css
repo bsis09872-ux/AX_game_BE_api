@@ -605,6 +605,15 @@ body {
     }
 }
 
+/* 헤더 사용 가능 금액 (지갑). 금액 칸이 오른쪽 끝으로 밀고, 회원 이름은 그 바로 뒤에 붙인다. */
+.hud--wallet .gold[hidden] {
+    display: none;
+}
+
+[data-shell-slot="wallet"] ~ [data-shell-slot="status"] > .hud {
+    margin-left: 0;
+}
+
 /* 헤더의 슬롯은 DOM 갱신 단위이며 별도 레이아웃 상자를 만들지 않는다. */
 .shell-slot {
     display: contents;

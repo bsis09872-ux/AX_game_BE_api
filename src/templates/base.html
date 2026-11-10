@@ -48,6 +48,12 @@
             <div class="shell-slot" data-shell-slot="navigation">
                 {% block navigation %}{% endblock %}
             </div>
+            {# 사용 가능 금액. 로그인한 화면에서 static/wallet-balance.js가 채운다 (지갑 담당) #}
+            <div class="shell-slot" data-shell-slot="wallet">
+                <div class="hud hud--wallet">
+                    <span class="gold" data-wallet-balance title="사용 가능 금액" hidden></span>
+                </div>
+            </div>
             <div class="shell-slot" data-shell-slot="status">
                 {% block header_status %}{% endblock %}
             </div>

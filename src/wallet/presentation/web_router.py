@@ -1,4 +1,4 @@
-"""지갑 화면 라우터 (GET /wallet, Jinja2)
+"""지갑 화면 라우터 (GET /wallet 화면, GET /wallet/balance 헤더용 사용 가능 금액)
 
 - 로그인 확인(현재 사용자 번호)은 main.py에서 넘겨 받는다 (auth의 쿠키 구조를 모른다).
   웹 화면이라 API용 get_current_user_id가 아니라 쿠키용 get_current_web_user_id를 넘긴다.
@@ -9,13 +9,13 @@
 """
 from collections.abc import Awaitable, Callable
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import HTMLResponse
 
 from wallet.application.service import WalletService
 
 from .dependencies import HeldReaderBuilder, SessionDep, wallet_service_dependency
-from .schemas import WalletResponse
+from .schemas import WalletBalanceResponse, WalletResponse
 
 
 def create_wallet_web_router(
@@ -47,5 +47,22 @@ def create_wallet_web_router(
         )
         response.headers["Cache-Control"] = "no-store"
         return response
+
+    @router.get("/wallet/balance", response_model=WalletBalanceResponse)
+    async def get_wallet_balance(
+        response: Response,
+        session: SessionDep,
+        user_id: int = Depends(current_user_id),
+        service: WalletService = Depends(get_wallet_service),
+    ) -> WalletBalanceResponse:
+        """헤더에 표시할 사용 가능 금액 (static/wallet-balance.js가 화면마다 호출).
+
+        로그인 쿠키는 HttpOnly라 JS가 /v1 API(Bearer)를 부를 수 없어서 쿠키 인증 경로를 따로 둔다.
+        로그인이 안 되어 있으면 auth 처리대로 /login으로 리다이렉트된다.
+        """
+        view = await service.get_my_wallet(user_id)
+        await session.commit()  # 처음 조회면 지갑이 만들어진다 (WALL-06)
+        response.headers["Cache-Control"] = "no-store"
+        return WalletBalanceResponse.model_validate(view)
 
     return router
