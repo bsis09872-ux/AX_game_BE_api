@@ -65,8 +65,10 @@ body.embed .main-content {
   gap: 8px 20px;
   margin-bottom: 14px;
   padding: 10px 14px;
-  border-width: 1px;
-  box-shadow: inset 1px 1px 0 var(--wood-light), inset -1px -1px 0 var(--wood-dark);
+  /* 회색 계열: 주변 갈색 카드와 구분되는 도구 영역 */
+  background: #4a4650;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: none;
 }
 
 /* 글자와 입력 칸을 한 줄에 나란히: "분류 [칸]" */
@@ -79,7 +81,7 @@ body.embed .main-content {
 
 .search-field label {
   font-size: 14px;
-  color: var(--muted);
+  color: var(--steel);
   white-space: nowrap;
 }
 
