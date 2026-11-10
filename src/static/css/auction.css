@@ -762,3 +762,18 @@ body.embed .main-content {
     outline: 3px solid transparent;
   }
 }
+
+/* 입력 칸 색: 경매사(대머리 아저씨) 그림의 살색. 검색 폼의 칸과 드롭다운, 입찰 금액 칸에 쓴다 */
+:root {
+  --skin: #f7c282;
+}
+
+.search-field input,
+.search-field select,
+.bid-row input {
+  background: var(--skin);
+}
+
+.search-field input::placeholder {
+  color: rgba(63, 38, 49, 0.55);
+}
