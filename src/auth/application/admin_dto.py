@@ -20,6 +20,7 @@ class AdminListing:
     started_at: datetime | None
     ends_at: datetime | None
     closed_at: datetime | None
+    admin_cancelled_by: int | None = None
 
 
 @dataclass(frozen=True)

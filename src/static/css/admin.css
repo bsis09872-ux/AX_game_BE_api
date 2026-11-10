@@ -73,3 +73,5 @@
 
 .admin-section .admin-auction-table { min-width:1100px; }
 .admin-auction-table th, .admin-auction-table td { white-space:nowrap; }
+
+#auction-cancel-form { margin-top:24px; }

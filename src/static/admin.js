@@ -4,6 +4,7 @@ import { initCatalogEditor } from "./admin/catalog-editor.js";
 import { initCatalogList } from "./admin/catalog-list.js";
 import { initItemEvents } from "./admin/item-events.js";
 import { setImage } from "./admin/item-images.js";
+import { initAuctionCancel } from "./admin/auction-cancel.js";
 
 // 페이지 진입점에서는 기능을 조립하고 각 기능은 자신의 폼이 있을 때만 실행한다.
 export function initAdminPage({ root, signal, navigate }) {
@@ -13,6 +14,7 @@ export function initAdminPage({ root, signal, navigate }) {
     initCatalogEditor(context);
     initCatalogList(context);
     initItemEvents(context);
+    initAuctionCancel(context);
     initAdminMembers(adminRoot, signal, navigate);
 
     for (const image of adminRoot.querySelectorAll("img[data-inventory-icon]")) {

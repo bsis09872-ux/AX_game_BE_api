@@ -24,6 +24,7 @@ class AdminAuctionReaderAdapter:
             current_bid_amount=listing.current_bid_amount,
             created_at=listing.created_at, started_at=listing.started_at,
             ends_at=listing.ends_at, closed_at=listing.closed_at,
+            admin_cancelled_by=listing.admin_cancelled_by,
         )
 
     async def list_listings(
