@@ -1,4 +1,4 @@
-{% extends "auth/admin/layout.html" %}
+{% extends "admin/layout.html" %}
 {% block admin_title %}회원 상세{% endblock %}
 {% block admin_content %}
 <section class="panel admin-section">
@@ -40,7 +40,7 @@
       class="btn wood">입찰 제한 저장</button>
     <button id="clear-bid" type="button" class="btn wood">관리자 제한 해제</button>
   </form>
-  <p class="admin-hint">회원의 제한 설정을 저장합니다. 실제 입찰 차단은 경매 기능의 연동이 필요합니다.</p>
+  <p class="admin-hint">경매 입찰 시 자동 제한과 관리자 제한 중 더 늦은 종료 시각까지 입찰이 제한됩니다.</p>
 </section>
 <section class="panel admin-section">
   <h2>로그인 정지</h2>

@@ -22,17 +22,17 @@ from database import Base, engine
 from shared.core.exception_handlers import register_exception_handlers
 from shared.core.logging_config import setup_logging
 from shared.item_images import image_directory
+from composition import get_admin_auction_queries, get_member_admin_service
+from web_router import create_dashboard_router
 # endregion
 
 
 # region 도메인 import: 인증
 from auth.wiring import initialize_auth
-from auth.presentation.dependencies import get_current_user_id, get_member_admin_service, get_admin_auction_reader
+from auth.presentation.dependencies import get_current_user_id
 from auth.presentation.exception_handlers import register_auth_exception_handlers
 from auth.presentation.router import router as auth_router
 from auth.presentation.web_router import router as auth_web_router
-from auth.presentation.admin_router import create_admin_router
-from auth.presentation.admin_auction_router import create_admin_auction_router
 from auth.presentation.web_dependencies import (
     get_current_web_user_id, get_current_web_admin_id, get_web_settings, register_web_auth_handlers,
     require_web_origin,  # [Claude] 경매 화면의 POST 출처 확인
@@ -49,6 +49,7 @@ from users.infrastructure.schema import upgrade_member_controls
 
 
 # region 도메인 import: 인벤토리
+from inventory.presentation.admin_router import create_inventory_admin_router
 from inventory.presentation.router import router as inventory_router
 from inventory.presentation.dependencies import get_inventory_service
 from inventory.presentation.fishing_router import router as fishing_router
@@ -59,10 +60,12 @@ from inventory.wiring import is_fishing_enabled
 
 # region 도메인 import: 지갑
 from wallet.presentation.router import create_wallet_router
+from wallet.presentation.web_router import create_wallet_web_router
 from auction.wiring import build_held_amount_reader  # 지갑 예약금 조회 (경매 제공 AuctionHeldAmountReader)
 # endregion
 
 # region 도메인 import: 경매
+from auction.presentation.admin_router import create_admin_auction_router
 from auction.presentation.listings.admin_web_router import create_listing_admin_web_router
 from auction.presentation.listings.router import router as listing_router
 from auction.presentation.trades.router import router as trade_router
@@ -156,12 +159,14 @@ app.include_router(create_inventory_web_router(get_current_web_user_id, read_bal
 
 # region 도메인 라우터: 지갑
 app.include_router(create_wallet_router(get_current_user_id, build_held_amount_reader), prefix=API_PREFIX)
+app.include_router(create_wallet_web_router(get_current_web_user_id, build_held_amount_reader))
 # endregion
 
 
 # region 관리자 화면
-app.include_router(create_admin_router(get_inventory_service))
-app.include_router(create_admin_auction_router(get_admin_auction_reader))
+app.include_router(create_dashboard_router(get_current_web_admin_id))
+app.include_router(create_inventory_admin_router(get_current_web_admin_id, get_inventory_service))
+app.include_router(create_admin_auction_router(get_current_web_admin_id, get_admin_auction_queries))
 app.include_router(create_member_admin_router(get_current_web_admin_id, get_member_admin_service))
 app.include_router(create_listing_admin_web_router(get_current_web_admin_id))
 # endregion

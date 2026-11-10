@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{# 공통 페이지 전환(#30): page_key로 페이지를 구분하고, 로그인 세션 자동 갱신을 연결한다 #}
+{% block page_key %}wallet{% endblock %}
+{% block body_attributes %}data-session-protected="true"{% endblock %}
+{% block title %}내 지갑 | Catch &amp; Bid{% endblock %}
+
+{% block styles %}
+{# data-page-style: 화면 전환 시 이 페이지 전용 CSS로 교체된다 #}
+<link data-page-style rel="stylesheet" href="{{ url_for('static', path='/css/wallet.css') }}">
+{% endblock %}
+
+{# 금액 표시: 천 단위 콤마 + GOLD (인벤토리와 같은 표기) #}
+{% macro gold(amount) -%}
+{{ '{:,}'.format(amount) }} GOLD
+{%- endmacro %}
+
+{% block navigation %}
+<nav class="nav" aria-label="주 메뉴">
+  <a href="/inventory">내 인벤토리</a>
+  <a class="on" href="/wallet" aria-current="page">내 지갑</a>
+  <a href="/me">내 정보</a>
+</nav>
+{% endblock %}
+
+{% block content %}
+<section aria-labelledby="wallet-title">
+  <h1 id="wallet-title" class="title-tab">내 지갑</h1>
+
+  <div class="panel wallet-detail-panel">
+    {# 인벤토리 상세 화면과 같은 배치: 왼쪽 그림, 오른쪽 정보 표 #}
+    <div class="wallet-detail">
+      {# 금화 그림 자리. 아이콘(png)이 생기면 이 div 안을 <img>로 바꾼다 #}
+      <div class="wallet-coin-frame" aria-hidden="true">
+        <span class="wallet-coin"><span class="wallet-coin__mark">G</span></span>
+      </div>
+
+      <div class="wallet-detail-info">
+        {# 웹 라우터가 WalletResponse로 골라낸 공개 값만 표시한다 #}
+        <table>
+          <tbody>
+            <tr class="wallet-row--main">
+              <th>사용 가능 금액</th>
+              <td>{{ gold(wallet.available_balance) }}</td>
+            </tr>
+            <tr>
+              <th>총잔액</th>
+              <td>{{ gold(wallet.balance) }}</td>
+            </tr>
+            <tr>
+              <th>입찰로 묶인 금액</th>
+              <td>{{ gold(wallet.held_amount) }}</td>
+            </tr>
+            <tr>
+              <th>마지막 잔액 변경</th>
+              <td>{{ wallet.updated_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p class="muted wallet-note">
+          사용 가능 금액 = 총잔액 - 입찰로 묶인 금액.<br>
+          입찰할 때는 잔액이 빠지지 않고 묶이기만 합니다. 낙찰되면 잔액에서 빠지고,
+          다른 사람이 더 높게 입찰하면 묶인 금액이 다시 풀립니다.
+        </p>
+      </div>
+    </div>
+
+    <div class="wallet-links">
+      <a href="/inventory">← 내 인벤토리</a>
+      <a href="/me">내 정보 →</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

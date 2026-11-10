@@ -1,0 +1,52 @@
+{% extends "admin/layout.html" %}
+{% from "admin/auction_macros.html" import states, time, id_filter, pagination %}
+{% block admin_title %}경매 매물 조회{% endblock %}
+{% block admin_content %}
+<section class="panel admin-section">
+  <h2>전체 매물</h2>
+  <form action="/admin/auctions" method="get" class="admin-filters">
+    {{ id_filter('listing_id', '매물 ID', query.listing_id) }}
+    {{ id_filter('item_definition_id', '카탈로그 ID', query.item_definition_id) }}
+    {{ id_filter('inventory_item_id', '보유 아이템 ID', query.inventory_item_id) }}
+    <label>상태
+      <select name="status">
+        <option value="">전체 상태</option>
+        {% for value, label in states.items() %}
+        <option value="{{ value }}" {% if query.status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="btn wood">조회</button>
+    <a href="/admin/auctions">초기화</a>
+  </form>
+
+  <div class="admin-table-scroll" role="region" aria-label="경매 매물 목록" tabindex="0">
+    <table class="admin-auction-table">
+      <thead>
+        <tr>
+          <th>매물</th><th>상태</th><th>판매자</th><th>카탈로그</th><th>보유 아이템</th>
+          <th>시작가 (GOLD)</th><th>최고 입찰액 (GOLD)</th><th>등록 시각 (UTC)</th><th>마감 예정 (UTC)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td><a href="{{ query.page_url('/admin/auctions/' ~ row.id) }}">#{{ row.id }}</a></td>
+          <td>{{ states.get(row.status, row.status) }}</td>
+          <td><a href="/admin/members/{{ row.seller_id }}">#{{ row.seller_id }}</a></td>
+          <td><a href="/admin/catalogs/{{ row.item_definition_id }}/edit">#{{ row.item_definition_id }}</a></td>
+          <td>#{{ row.inventory_item_id }}</td>
+          <td>{{ '{:,}'.format(row.start_price) }}</td>
+          <td>{{ '{:,}'.format(row.current_bid_amount) if row.current_bid_amount is not none else '입찰 없음' }}</td>
+          <td>{{ time(row.created_at) }}</td>
+          <td>{{ time(row.ends_at) }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9">조건에 맞는 매물이 없습니다.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ pagination('/admin/auctions', query, has_next) }}
+</section>
+{% endblock %}

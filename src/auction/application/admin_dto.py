@@ -1,5 +1,9 @@
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Literal
+
+
+AdminListingStatus = Literal['QUEUED', 'BIDDING', 'SOLD', 'FAILED', 'CANCELLED']
 
 
 @dataclass(frozen=True)
@@ -16,3 +20,17 @@ class AdminListing:
     started_at: datetime | None
     ends_at: datetime | None
     closed_at: datetime | None
+    admin_cancelled_by: int | None = None
+
+
+@dataclass(frozen=True)
+class AdminTrade:
+    id: int
+    listing_id: int
+    seller_id: int
+    buyer_id: int
+    item_name_snapshot: str
+    seller_name_snapshot: str
+    buyer_name_snapshot: str
+    price_snapshot: int
+    completed_at: datetime

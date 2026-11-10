@@ -21,7 +21,7 @@ class Balance:
             raise InsufficientBalanceError()
         self.value -= amount
 
-    # 추가 
+    # 추가
     def plus(self, amount: int):
         self.value += amount
 
