@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, Path, Response
 
 from auction.presentation.dependencies import ListingServiceDep
 from auction.presentation.listings.schemas import AdminCancelResponse
+from auction.presentation.params import ListingIdPath
 
 
 # 관리자 웹 화면용 라우터를 만든다.
