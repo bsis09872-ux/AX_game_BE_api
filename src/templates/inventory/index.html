@@ -85,7 +85,7 @@
           <span class="muted">{{ category_name(selected.definition.category) }} · #{{ selected.id }}</span>
         </div>
         <p class="start-price"><span>경매 시작가</span> <span class="gold-text">{{ gold(selected.definition.start_price) }}</span></p>
-        <p class="muted">경매 시작가는 아이템 카탈로그 값이라 바꿀 수 없어요. 경매 시간은 6분이에요.</p>
+        <p class="muted">경매 시작가는 경매사가 고정한 값이라 바꿀 수 없어요. 경매 진행 시간은 6분이에요.</p>
         {% if selected.can_list %}
         <form method="post" action="{{ auction_new_url }}" class="start-form">
           <input type="hidden" name="item_id" value="{{ selected.id }}">

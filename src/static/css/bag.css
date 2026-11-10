@@ -167,3 +167,17 @@ a.slot {
   background: #2e5f8f;
   box-shadow: inset 0 calc(-1 * var(--px)) 0 #1f4266, inset 0 var(--px) 0 #4a82b8;
 }
+
+/* 분류 탭은 글자 수와 상관없이 너비를 같게 */
+.bag-main .index-tabs a {
+  width: 72px;
+  padding: 4px 0;
+  text-align: center;
+}
+
+/* 격자 고정: 아이템이 있는 칸·빈 칸 모두 같은 높이 (빈 줄이 넓어지던 것을 막는다) */
+.bag-slots .slot {
+  height: 104px;
+  min-height: 0;
+  overflow: hidden;
+}
