@@ -107,7 +107,7 @@ export function createWorldConnection({ player, room, signal, navigate, status, 
             clearWaiters();
             onDisconnect();
             if (stopped || signal.aborted) return;
-            if ([4409, 1008].includes(event.code)) {
+            if ([4409, 1003, 1008, 1009].includes(event.code)) {
                 stopped = true;
                 setStatus(
                     event.code === 4409

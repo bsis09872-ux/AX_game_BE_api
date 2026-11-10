@@ -1,7 +1,7 @@
 """임시 PostgreSQL DB, 두 ASGI 프로세스와 두 독립 Chromium 계정으로 검증한다.
 
 사용자 DB의 테이블/계정은 수정하지 않는다. 임시 DB 생성 권한이 필요하다.
-uv run --frozen --with httpx --with playwright python scripts/verify-fishing-client.py
+uv run --frozen --with httpx --with playwright python scripts/verify-game-integration.py
 """
 
 import asyncio
@@ -21,7 +21,6 @@ import asyncpg
 import httpx
 import websockets
 from dotenv import load_dotenv
-from playwright.async_api import async_playwright, expect
 from sqlalchemy.engine import make_url
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -30,7 +29,6 @@ from world.infrastructure.map_loader import load_geometry
 
 ARTIFACTS = ROOT / ".private" / "multiplayer-qa"
 ARTIFACTS.mkdir(parents=True, exist_ok=True)
-SCREENSHOTS = ARTIFACTS
 def free_port():
     with socket.socket() as listener:
         listener.bind(("127.0.0.1", 0))
@@ -91,7 +89,7 @@ async def send_move(ws, seq, x, y):
 
 async def check_api(bases, clients, db, restart):
     a, b = clients
-    # 미인증/다른 Origin、旧直接 지급 경로를 우회할 수 없다.
+    # 미인증, 다른 Origin, 본문 없는 지급으로 검증을 우회할 수 없다.
     async with httpx.AsyncClient(base_url=bases[0]) as guest:
         assert (await guest.get("/v1/play")).status_code == 303
         assert (
@@ -254,6 +252,107 @@ async def check_api(bases, clients, db, restart):
     )
 
 
+async def check_errors(bases, clients, db, restart):
+    assert (await db.fetchval('SELECT current_database()')).startswith('ax_game_qa_')
+    client = clients[0]
+    base = bases[0]
+    cookie = '; '.join(f'{key}={value}' for key, value in client.cookies.items())
+
+    # JSON 계약 위반과 프레임 제한은 서버 오류가 아닌 연결 거절로 처리한다.
+    for payload, joined, code in [
+        ('{', False, 1008),
+        (json.dumps({'type': 'hello', 'room': '../world'}), False, 1008),
+        (b'binary', False, 1003),
+        (b'binary', True, 1003),
+        ('x' * 2049, True, 1009),
+        (json.dumps({'type': 'unknown'}), True, 1008),
+    ]:
+        async with websockets.connect(base.replace('http', 'ws') + '/v1/ws/world',
+                                      origin=base, additional_headers={'Cookie': cookie}) as ws:
+            if joined:
+                await ws.send(json.dumps({'type': 'hello'}))
+                await receive_type(ws, 'welcome')
+            await ws.send(payload)
+            async with asyncio.timeout(6):
+                with suppress(websockets.exceptions.ConnectionClosed):
+                    while True:
+                        await ws.recv()
+            assert ws.close_code == code, (payload, joined, ws.close_code, code)
+        assert (await client.get('/health')).status_code == 200
+
+    ws, _ = await open_socket(base, client)
+    try:
+        for _ in range(26):
+            await ws.send(json.dumps({'type': 'ping'}))
+        async with asyncio.timeout(6):
+            with suppress(websockets.exceptions.ConnectionClosed):
+                while True:
+                    await ws.recv()
+        assert ws.close_code == 1008
+    finally:
+        await ws.close()
+    print('PASS protocol: malformed JSON, invalid map/type, binary, oversized frames, rate limit', flush=True)
+
+    # 앱을 disabled 설정으로 다시 시작해 등록 여부와 쿠키 API를 함께 확인한다.
+    await restart(0, {'DEMO_FISHING_ENABLED': 'false'})
+    try:
+        ws, welcome = await open_socket(base, client)
+        try:
+            assert (await client.get('/v1/play')).status_code == 200
+            assert (await client.post('/v1/play/casts', json={
+                'id': str(uuid4()), 'connection_id': welcome['connection_id']})).status_code == 503
+            assert (await client.post('/v1/play/fishing-results', json={'cast_id': str(uuid4())})).status_code == 503
+            assert (await client.post('/v1/fishing-results', json={'cast_id': str(uuid4())})).status_code == 404
+        finally:
+            await ws.close()
+    finally:
+        await restart(0, {'DEMO_FISHING_ENABLED': 'true'})
+
+    # 임시 DB의 시간만 조정하여 만료, 취소, 카탈로그 없음과 재시도 규칙을 검증한다.
+    await db.execute('TRUNCATE world_presences, fishing_attempts, fishing_cooldowns')
+    ws, welcome = await open_socket(base, client)
+    try:
+        for seq, y in enumerate(range(100, 145, 4)):
+            await asyncio.sleep(.08)
+            await send_move(ws, seq, 128, y)
+        await asyncio.sleep(.25)
+        for case in ['cancelled', 'expired', 'no-catalog']:
+            await db.execute('DELETE FROM fishing_cooldowns')
+            values = {'id': str(uuid4()), 'connection_id': welcome['connection_id']}
+            cast = await client.post('/v1/play/casts', json=values)
+            assert cast.status_code == 200, cast.text
+            duplicate = await client.post('/v1/play/casts', json=values)
+            assert duplicate.json()['bite_at'] == cast.json()['bite_at']
+            other = await clients[1].post('/v1/play/casts', json=values)
+            assert other.status_code == 409  # 다른 계정의 접속 ID를 사용할 수 없다.
+            payload = {'cast_id': values['id']}
+            for path, body in [('/v1/play/casts/cancel', values), ('/v1/play/fishing-results', payload)]:
+                assert (await client.post(path, json=body, headers={'Origin': 'null'})).status_code == 403
+            if case == 'cancelled':
+                assert (await client.post('/v1/play/casts/cancel', json=values)).status_code == 204
+                assert (await client.post('/v1/play/casts/cancel', json=values)).status_code == 204
+            else:
+                expiry = "clock_timestamp() - interval '1 second'" if case == 'expired' else "clock_timestamp() + interval '8 seconds'"
+                await db.execute("UPDATE fishing_attempts SET bite_at=clock_timestamp() - interval '2 seconds', expires_at=" + expiry)
+            if case == 'no-catalog':
+                await db.execute('UPDATE item_definitions SET fishable=false')
+            result = await client.post('/v1/play/fishing-results', json=payload)
+            assert result.status_code == (503 if case == 'no-catalog' else 409), result.text
+            assert await db.fetchval('SELECT count(*) FROM inventory_items') == 0
+            if case == 'no-catalog':
+                await db.execute('UPDATE item_definitions SET fishable=true')
+                # 끝나지 않은 동일 시도에만 재요청한다.
+                recovered = await client.post('/v1/play/fishing-results', json=payload)
+                assert recovered.status_code == 201, recovered.text
+                assert await db.fetchval('SELECT count(*) FROM inventory_items') == 1
+    finally:
+        await ws.close()
+        await db.execute('UPDATE item_definitions SET fishable=true')
+    await db.execute('DELETE FROM item_events; DELETE FROM inventory_items')
+    await db.execute('TRUNCATE world_presences, fishing_attempts, fishing_cooldowns')
+    print('PASS errors: disabled fishing, Origin guards, cast replay/cancellation/expiry, missing catalog recovery', flush=True)
+
+
 async def check_browser(bases, clients, db, restart):
     from game_browser_qa import check_browser as check
     await check(bases, clients, db, restart, ARTIFACTS)
@@ -347,11 +446,12 @@ async def main():
                 )
             ).status_code == 303
 
-        async def restart(index):
+        async def restart(index, overrides=None):
             process = processes[index]
             process.terminate()
             await asyncio.to_thread(process.wait, 5)
             await asyncio.sleep(0.5)
+            environments[index].update(overrides or {})
             processes[index] = await asyncio.to_thread(
                 subprocess.Popen,
                 process.args,
@@ -364,6 +464,7 @@ async def main():
             await ready(bases[index], processes[index])
 
         await check_api(bases, clients, db, restart)
+        await check_errors(bases, clients, db, restart)
         await check_browser(bases, clients, db, restart)
         print(
             "ALL PASS: temporary PostgreSQL + 2 ASGI processes + 2 Chromium sessions",

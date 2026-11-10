@@ -115,6 +115,8 @@ async def check_browser(bases, clients, db, restart, artifacts):
             await a.unroute('**/static/maps/world.tmj')
             await a.locator('.topbar a[href="/v1/play"]').click()
             await expect(a.locator('#net')).to_have_text('2명 접속', timeout=15000)
+            # 실제 사용자 화면을 기록한다. 충돌 디버그 표시가 없는 재진입 화면이다.
+            await a.screenshot(path=str(artifacts / 'integrated-desktop.png'), full_page=True)
             print('PASS navigation: failed preparation preserves previous page, cleanup and retry', flush=True)
 
             # 기존 연결이 끊겨도 같은 DB의 다른 프로세스와 다시 공유한다.

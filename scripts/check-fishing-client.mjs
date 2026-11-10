@@ -2,12 +2,43 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { Fishing } from "../src/static/game/fishing.js";
 import { createFishingApi } from "../src/static/game/api.js";
+import { createWorldConnection } from "../src/static/game/world-connection.js";
 
 const world = {
     map: { innerWater: [[1, 1]] },
     nearLake: () => true,
     nearestWater: () => ({ x: 20, y: 20 }),
 };
+
+test("규약 위반과 중복 접속 종료는 자동 재접속하지 않는다", async () => {
+    const originalLocation = globalThis.location;
+    const originalSocket = globalThis.WebSocket;
+    globalThis.location = { protocol: "https:", host: "qa.invalid" };
+    try {
+        for (const code of [1003, 1008, 1009, 4409]) {
+            const sockets = [];
+            globalThis.WebSocket = class {
+                constructor() { sockets.push(this); }
+                close() {}
+            };
+            const scope = new AbortController();
+            try {
+                const connection = createWorldConnection({
+                    player: {}, room: "world", signal: scope.signal,
+                    status: { dataset: {} }, onDisconnect() {}, navigate() {},
+                });
+                connection.connect();
+                await sockets[0].onclose({ code });
+                connection.connect();
+                assert.equal(sockets.length, 1, `close code ${code}`);
+                assert.equal(connection.connected, false);
+            } finally { scope.abort(); }
+        }
+    } finally {
+        globalThis.location = originalLocation;
+        globalThis.WebSocket = originalSocket;
+    }
+});
 
 function fishing(overrides = {}) {
     return new Fishing({

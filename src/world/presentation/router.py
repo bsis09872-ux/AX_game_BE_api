@@ -8,7 +8,7 @@ from contextlib import suppress
 from datetime import timedelta
 from uuid import UUID
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, WebSocketException
 from pydantic import ValidationError
 
 from auth.domain.exceptions import AuthenticationError
@@ -41,12 +41,20 @@ async def world_socket(socket: WebSocket):
         async with send_lock:
             await asyncio.wait_for(socket.send_json(message), timeout=3)
 
+    async def receive_text(timeout):
+        message = await asyncio.wait_for(socket.receive(), timeout=timeout)
+        if message['type'] == 'websocket.disconnect':
+            raise WebSocketDisconnect(message.get('code', 1000))
+        if message.get('text') is None:
+            raise WebSocketException(code=1003, reason='텍스트 메시지만 허용합니다.')
+        return message['text']
+
     try:
         async with AsyncSessionLocal() as session:
             claims = await build_auth_service(session).authenticate(token)
             user = await build_user_service(session).get_user_summary(claims.user_id)
-        raw = await asyncio.wait_for(socket.receive_text(), timeout=5)
-        if len(raw) > 2048:
+        raw = await receive_text(5)
+        if len(raw.encode('utf-8')) > 2048:
             await socket.close(code=1009)
             return
         hello = Hello.model_validate_json(raw)
@@ -60,8 +68,8 @@ async def world_socket(socket: WebSocket):
         async def receive():
             window_started, count = time.monotonic(), 0
             while True:
-                raw = await asyncio.wait_for(socket.receive_text(), timeout=12)
-                if len(raw) > 2048:
+                raw = await receive_text(12)
+                if len(raw.encode('utf-8')) > 2048:
                     await socket.close(code=1009)
                     return
                 now = time.monotonic()
@@ -109,6 +117,9 @@ async def world_socket(socket: WebSocket):
         done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         for task in done:
             task.result()
+    except WebSocketException as error:
+        with suppress(RuntimeError, WebSocketDisconnect):
+            await socket.close(code=error.code, reason=error.reason)
     except AuthenticationError:
         with suppress(RuntimeError, WebSocketDisconnect):
             await socket.close(code=4401)
