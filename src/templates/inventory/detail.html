@@ -40,25 +40,25 @@
                             <td>{{ item.definition.description }}</td>
                         </tr>
                         <tr>
-                            <th>획득경로</th>
+                            <th>획득 경로</th>
                             <td>{{ {'SEED':'기본 지급', 'ADMIN_GRANT':'관리자 지급', 'REWARD':'보상',
                                 'TRADE':'거래'}.get(item.origin,
                                 item.origin) }}</td>
                         </tr>
                         <tr>
-                            <th>획득시각</th>
+                            <th>획득 시각</th>
                             <td>{{ moment(item.acquired_at) }}</td>
                         </tr>
                         <tr>
-                            <th>거래상태</th>
-                            <td>{{ '경매 중' if item.status == 'LISTED' else '보관중' }}</td>
+                            <th>거래 상태</th>
+                            <td>{{ '경매 중' if item.status == 'LISTED' else '보관 중' }}</td>
                         </tr>
                         <tr>
-                            <th>거래시작가</th>
+                            <th>거래 시작가</th>
                             <td>{{ gold(item.definition.start_price) }}</td>
                         </tr>
                         <tr>
-                            <th>재판매가능시각</th>
+                            <th>재판매 가능 시각</th>
                             <td>{{ moment(item.resale_available_at) if item.resale_available_at else '제한 없음' }}</td>
                         </tr>
                     </tbody>

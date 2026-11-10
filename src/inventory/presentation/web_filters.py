@@ -15,7 +15,7 @@ from inventory.presentation.router import Category, InventorySort, Rarity, Statu
 # 정렬을 안 정했을 때의 기본값 (주소에는 넣지 않는다)
 DEFAULT_SORT = 'acquired_desc'
 CATEGORY_LABELS = {'FISH': '물고기', 'GEM': '보석', 'MISC': '잡화'}
-STATUS_LABELS = {'OWNED': '보관중', 'LISTED': '경매 중'}
+STATUS_LABELS = {'OWNED': '보관 중', 'LISTED': '경매 중'}
 SORT_LABELS = {'acquired_desc': '최근 획득순', 'rarity_desc': '희귀도 높은 순', 'name_asc': '이름 오름차순'}
 
 

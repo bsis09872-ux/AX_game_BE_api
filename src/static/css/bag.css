@@ -104,6 +104,13 @@ a.slot {
   font-size: 12px;
 }
 
+/* 상태·희귀도 버튼은 너비를 같게 (정렬은 글자 폭 그대로). 가장 긴 UNCOMMON·LEGENDARY가 한 줄에 들어가는 폭 */
+.bag-filters .filter-group[aria-label="상태"] a,
+.bag-filters .filter-group[aria-label="희귀도"] a {
+  width: 88px;
+  padding: 2px 0;
+}
+
 .bag-filters .filter-group a[aria-current="true"]::before {
   content: none;
 }
