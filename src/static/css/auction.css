@@ -434,8 +434,9 @@ body.embed .main-content {
   /* 패널 바탕(나무색)에 어두운 색을 10%만 섞어 거의 투명하게 */
   --bubble-bg: color-mix(in srgb, var(--wood) 90%, var(--night));
   position: relative;
-  margin: 10px 0 16px;
+  margin: 10px 0 30px; /* 꼬리 끝(9px)에서 아래 구분선까지 약 20px */
   padding: 8px 12px;
+  text-align: center;
   color: var(--water);
   background: var(--bubble-bg);
   border: 1px solid var(--bubble-line);
