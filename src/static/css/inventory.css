@@ -1,5 +1,6 @@
 
-tr:target {
+tr:target,
+tr.hash-target {
   background: rgba(255, 220, 120, 0.25);
 }
 

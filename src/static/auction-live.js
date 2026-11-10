@@ -379,7 +379,23 @@ export function initAuctionLive(context) {
     refreshOnReturn(context);
 }
 
+// 주소의 #번호에 해당하는 줄(도감의 item-9 등)을 강조한다.
+// 공통 페이지 전환은 history.pushState로 주소를 바꾸는데, 이때는 CSS의 :target이 적용되지 않아서 직접 클래스를 단다
+export function highlightHashTarget() {
+    if (!location.hash) {
+        return;
+    }
+    let id;
+    try {
+        id = decodeURIComponent(location.hash.slice(1));
+    } catch {
+        return;
+    }
+    document.getElementById(id)?.classList.add("hash-target");
+}
+
 // 가방·도감 화면(page_key "inventory")에서 호출된다
 export function initInventoryLive(context) {
+    highlightHashTarget();
     refreshOnReturn(context);
 }
