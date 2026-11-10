@@ -133,7 +133,7 @@ body.embed .main-content {
 }
 
 .card-status.yes {
-  color: var(--gold);
+  color: var(--green);
 }
 
 .card-status.none {
