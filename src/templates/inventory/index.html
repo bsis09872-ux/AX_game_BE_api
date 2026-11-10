@@ -53,12 +53,14 @@
 
         {# 격자 아래 한 줄: 왼쪽에 도감 전체 보기, 오른쪽에 쪽 이동(쪽이 둘 이상일 때). 없는 방향은 흐리게 두어 자리를 고정한다 #}
         <div class="bag-foot">
-          <a class="catalog-all" href="/item-catalogs">아이템 도감 전체 보기</a>
+          <a class="catalog-all" href="/item-catalogs">📖 아이템 도감</a>
           {% if total_pages > 1 %}
           <nav class="bag-pager" aria-label="페이지 이동">
-            {% if has_previous %}<a href="{{ prev_url }}">‹ 이전</a>{% else %}<span class="off" aria-disabled="true">‹ 이전</span>{% endif %}
+            {% if has_previous %}<a href="{{ prev_url }}">‹ 이전</a>{% else %}<span class="off" aria-disabled="true">‹
+              이전</span>{% endif %}
             <span class="page-now">{{ page }} / {{ total_pages }}</span>
-            {% if has_next %}<a href="{{ next_url }}">다음 ›</a>{% else %}<span class="off" aria-disabled="true">다음 ›</span>{% endif %}
+            {% if has_next %}<a href="{{ next_url }}">다음 ›</a>{% else %}<span class="off" aria-disabled="true">다음
+              ›</span>{% endif %}
           </nav>
           {% endif %}
         </div>
