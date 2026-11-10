@@ -16,6 +16,7 @@ from auction.presentation import dependencies as deps
 from auction.presentation.scheduler import AuctionCloseScheduler
 from database import AsyncSessionLocal, get_db
 
+from auction.application.admin_queries import AdminAuctionQueries
 from auction.application.auction_service import AuctionService
 from auction.application.listings.service import ListingService
 from auction.application.trades.service import TradeService
@@ -126,3 +127,7 @@ def wire_auction_dependencies(
         deps.provide_trade_service: _trade_service,
         deps.provide_current_user_id: current_user_id,
     })
+
+
+def build_admin_auction_queries(session: AsyncSession) -> AdminAuctionQueries:
+    return AdminAuctionQueries(build_listing_service(session), build_trade_service(session))

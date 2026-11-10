@@ -1,4 +1,4 @@
-{% extends "auth/admin/layout.html" %}
+{% extends "admin/layout.html" %}
 {% block admin_title %}{{ '아이템 수정' if item else '아이템 만들기' }}{% endblock %}
 {% block admin_content %}
 <form id="catalog-editor" class="admin-workbench" data-edit-id="{{ item.id if item else '' }}">

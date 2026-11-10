@@ -3,7 +3,7 @@ from urllib.parse import urlencode
 
 from pydantic import BaseModel, BeforeValidator, Field
 
-from auth.application.admin_dto import AdminListingStatus
+from auction.application.admin_dto import AdminListingStatus
 
 
 def empty_to_none(value):

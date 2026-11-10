@@ -19,7 +19,7 @@ def create_member_admin_router(current_admin_id, management_dependency) -> APIRo
     async def render(request, users, actor_id, template, **context):
         actor = UserMeResponse.from_user(await users.get_user(actor_id))
         return request.app.state.templates.TemplateResponse(
-            request=request, name=f'auth/admin/{template}.html',
+            request=request, name=f'admin/{template}.html',
             context={'user': actor, 'section': 'members', **context},
             headers={'Cache-Control': 'no-store'},
         )
