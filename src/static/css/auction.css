@@ -371,3 +371,9 @@ body.embed .main-content {
 .limit {
   margin: 12px 0;
 }
+
+/* 건수 줄: 설명 문구와 구분되게 색을 다르게 */
+.hero-text .hero-count {
+  margin-top: 6px;
+  color: var(--gold);
+}

@@ -12,7 +12,7 @@
     <div class="hero-text">
       <h1 id="auction-title">경매장</h1>
       <p class="muted">경매사가 정한 시작가에서 시작 · 6분 뒤 가장 높은 금액을 부른 사람이 낙찰</p>
-      <p class="muted">{{ cards | length }}건이 올라와 있어요</p>
+      <p class="hero-count">📦 지금 경매장에는 매물 {{ cards | length }}건이 올라와 있어요</p>
     </div>
     <div class="hero-action">
       {% if embed %}
@@ -31,19 +31,19 @@
       <div class="card-top">
         {{ item_icon(c.item, 48) }}
         <div class="card-info">
-          <div class="card-name"><span>{{ c.item.name }}</span> <span class="muted">#{{ c.id }}</span></div>
+          <div class="card-name">{{ c.item.name }}</div>
+          <div class="card-meta"><span class="muted">경매 #{{ c.id }} · {{ c.item.category }}</span></div>
           <div class="card-meta">
-            <span class="muted">{{ c.item.category }}</span>
             <span class="tag {{ 'bid-yes' if c.has_bid else 'bid-none' }}">{{ '입찰자 있음' if c.has_bid else '입찰자 없음' }}</span>
           </div>
         </div>
       </div>
       <div class="card-price">
         <span class="muted">{{ '현재가' if c.has_bid else '시작가' }}</span>
-        <span><img class="px" src="{{ url_for('static', path='/sprites/ui_coin.png') }}" alt="" width="20" height="20"> {{ gold(c.price) }}</span>
+        <span>{{ gold(c.price) }}</span>
       </div>
       <div class="card-foot">
-        <span class="muted">판매 {{ c.seller_name }}</span>
+        <span class="muted">판매자 : {{ c.seller_name }}</span>
         {{ clock(c.remaining_text, c.urgent) }}
       </div>
     </a>

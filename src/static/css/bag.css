@@ -208,3 +208,8 @@ a.slot {
   min-width: 56px;
   padding: 2px 8px;
 }
+
+/* "경매중" 표시가 아이콘 위에 겹치지 않게 모든 칸의 윗줄을 비워 둔다 */
+.bag-slots .slot {
+  padding-top: 18px;
+}
