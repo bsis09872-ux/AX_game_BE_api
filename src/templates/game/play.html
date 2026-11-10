@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block page_key %}play{% endblock %}
+{% block body_attributes %}data-session-protected="true"{% endblock %}
+{% block title %}낚시터 | Catch &amp; Bid{% endblock %}
+
+{% block styles %}
+<link data-page-style rel="stylesheet" href="{{ url_for('static', path='/css/game.css') }}">
+{% endblock %}
+
+{% block navigation %}
+<nav class="nav" aria-label="주 메뉴">
+  <a class="on" href="/play" aria-current="page">낚시터</a>
+  <a href="/inventory">내 인벤토리</a>
+  <a href="/me">내 정보</a>
+</nav>
+{% endblock %}
+
+{% block content %}
+{# 동작은 static/game/play.js의 initPlayPage가 맡는다 (pages.js에 "play"로 등록). 이 템플릿에는 스크립트를 두지 않는다 #}
+{% set sprite = url_for('static', path='/sprites') %}
+<div class="game" id="game" data-map="{{ map_name }}">
+  <div id="stage"></div>
+  <div class="names" id="names"></div>
+  <div class="hudbar">
+    <button class="btn wood" data-open="/inventory"><img class="px s2" src="{{ sprite }}/ui/ui_bag.png" alt="">가방</button>
+    <button class="btn gold" data-open="/auction"><img class="px s2" src="{{ sprite }}/ui/ui_gavel.png" alt="">경매장</button>
+    <button class="btn wood" id="skin-btn"><img class="px s2" id="skin-icon" src="{{ sprite }}/characters/char_player.png" alt="">캐릭터</button>
+    <span class="spacer"></span>
+    <span class="net" id="net" title="같은 맵 접속자 수 · 서버 왕복 시간">혼자 노는 중</span>
+    <span class="gold"><img class="px s2" src="{{ sprite }}/ui/ui_coin.png" alt=""><span data-gold>-</span></span>
+  </div>
+  <div class="panel skins hidden" id="skins"></div>
+  <div class="prompt" id="prompt">불러오는 중…</div>
+  <div class="panel catch hidden" id="catch">
+    <div class="muted" id="catch-title">낚았다!</div>
+    <div class="slot catch-slot" id="catch-slot"></div>
+    <div class="catch-name" id="catch-name"></div>
+    <div class="muted" id="catch-cat"></div>
+    <div class="catch-actions">
+      <button class="btn" id="again">계속 낚시</button>
+      <button class="btn gold" data-open="/inventory">가방 보기</button>
+    </div>
+  </div>
+</div>
+<div class="legend">
+  <span>호숫가에서 클릭 또는 스페이스: 낚싯대 꺼내기 → 던지기</span>
+  <span>경매장 건물이나 경매사 옆에서 스페이스, 또는 클릭으로 경매장 이동하기</span>
+</div>
+<div class="overlay hidden" id="overlay">
+  <div class="win">
+    <div class="bar"><b id="ov-title">경매장</b><span class="spacer"></span><button class="btn red" id="ov-close">닫기 (Esc)</button></div>
+    <iframe id="ov-frame" title="경매장"></iframe>
+  </div>
+</div>
+<canvas class="iris shut" id="iris" aria-hidden="true"></canvas>
+{% endblock %}
