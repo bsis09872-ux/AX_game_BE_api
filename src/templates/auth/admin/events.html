@@ -4,8 +4,25 @@
 <section class="panel admin-section" aria-labelledby="events-title">
   <h2 id="events-title">개별 아이템의 소유 / 거래 이력</h2>
   <p>아이템 종류의 ID가 아닌 개별 보유 아이템 ID로 조회합니다.</p>
-  <form id="event-search" class="admin-filters"><label>보유 아이템 ID<input name="item_id" inputmode="numeric" pattern="[1-9][0-9]*" required></label><button class="btn wood">조회</button></form>
-  <div class="admin-table-scroll"><table><thead><tr><th>발생 시각 (UTC)</th><th>변경 종류</th><th>이전 소유자</th><th>새 소유자</th><th>처리자</th><th>매물 / 거래</th></tr></thead><tbody id="event-rows"></tbody></table></div>
-  <div class="admin-pagination"><button id="event-prev" type="button" class="btn wood" disabled>이전</button><span id="event-page">아이템을 조회해 주세요.</span><button id="event-next" type="button" class="btn wood" disabled>다음</button></div>
+  <form id="event-search" class="admin-filters"><label>보유 아이템 ID<input name="item_id" inputmode="numeric"
+        pattern="[1-9][0-9]*" required></label><button class="btn wood">조회</button></form>
+  <div class="admin-table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>발생 시각 (UTC)</th>
+          <th>변경 종류</th>
+          <th>이전 소유자</th>
+          <th>새 소유자</th>
+          <th>처리자</th>
+          <th>매물 / 거래</th>
+        </tr>
+      </thead>
+      <tbody id="event-rows"></tbody>
+    </table>
+  </div>
+  <div class="admin-pagination"><button id="event-prev" type="button" class="btn wood" disabled>이전</button><span
+      id="event-page">아이템을 조회해 주세요.</span><button id="event-next" type="button" class="btn wood" disabled>다음</button>
+  </div>
 </section>
 {% endblock %}
