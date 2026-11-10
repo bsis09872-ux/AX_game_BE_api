@@ -1,36 +1,46 @@
 # auction / application
 
-등록·입찰·취소·정산의 실행 순서를 조율한다. 현재 서비스 파일은 구현 전 작업 주석이다.
+매물 등록·입찰·취소, 마감 정산, 관리자 조회의 실행 순서를 조율한다.
+업무 규칙은 domain에, DB와 다른 도메인 호출은 infrastructure(Repository·Adapter)에 맡긴다.
 
 ## 파일 역할
 
-- `listings/service.py`: 매물 등록·조회·입찰·취소.
-- `trades/service.py`: 내 낙찰·판매 내역과 참여 제한 상태 조회.
-- [TO DO] `contract.py`: 외부 도메인 연결 인터페이스 정의.
-- [TO DO] `auction_service.py`: 마감·정산·Trade 생성·제한 상태 갱신·다음 매물 공개.
+| 파일 | 역할 |
+|---|---|
+| `listings/service.py` | 매물 조회·등록·입찰·판매자 취소·관리자 강제 취소·관리자 전체 매물 조회 |
+| `listings/queue.py` | 같은 종류의 다음 대기 매물 잠금 조회(FIFO). 정산·유찰·관리자 취소가 함께 쓴다 |
+| `trades/service.py` | 내 낙찰·판매 내역, 입찰 제한 상태, 관리자 거래 조회 |
+| `auction_service.py` | 마감 정산·유찰·자동 유찰·다음 매물 공개. 스케줄러가 호출한다 |
+| `admin_queries.py`·`admin_dto.py` | 관리자 화면용 매물·거래 조회와 전달 형식 |
+| `contract.py` | 다른 도메인에 요청하는 계약(Users·Inventory·Wallet·트랜잭션) |
+| `dto.py` | 다른 도메인과 주고받는 데이터 형식 |
 
-## 정산 순서
+## 마감 정산 (`AuctionService.close_expired`)
 
-1. 합의한 잠금 순서로 매물과 사용자·자산 상태를 조회하고 종료 여부를 재검사한다.
-2. 입찰자가 없으면 유찰과 아이템 예약 해제를 처리한다.
-3. 입찰자가 있으면 재화·아이템 이전 후 SOLD 처리와 Trade 저장을 진행한다.
-4. 이번 Trade.completed_at을 포함하여 B 정책을 계산하고 User 제한 상태를 갱신한다.
-5. 다음 대기 매물 공개를 조율하고 전체 성공 시 commit한다.
+매물 1건 = 트랜잭션 1개.
+잠금 순서: 매물 → 아이템 종류(advisory) → 다음 대기 매물 → 아이템 → 사용자 → 지갑.
 
-제한 중 기존 입찰이 낙찰돼도 정산한다. 기술적 오류는 전체 rollback하며 무조건 유찰로 바꾸지 않는다.
+1. 마감된 BIDDING 매물을 잠그고 상태를 다시 확인한다.
+2. 아이템 종류와 다음 대기 매물을 잠근다.
+3. 입찰자가 있으면 정산: 아이템 이전 → 지갑 정산 → SOLD → Trade 저장 → 낙찰 제한 갱신.
+   입찰자가 없으면 유찰: FAILED → 아이템 예약 해제.
+4. 다음 대기 매물을 공개하고 commit한다.
 
-## 외부 계약 요청
+| 실패 | 처리 |
+|---|---|
+| 낙찰자 탈퇴·행 없음 (`SettlementNotPossibleError`) | rollback 후 새 트랜잭션에서 자동 유찰 |
+| 인벤토리·지갑 불일치, DB 오류 | rollback 후 다음 주기에 재시도 |
 
-- [TO DO] User 담당자: `get_for_update_many(user_ids: list[int]) -> dict[int, AuctionUserState]` 제공 협의. 상세 양식은 contract.py 참고.
-- [TO DO] User 담당자: `update_limit(user_id: int, purchase_count: int, blocked_until: datetime | None) -> None` 제공 협의.
-- [TO DO] 두 메서드는 async이며 같은 주입 세션을 사용하고 내부 commit하지 않는 계약이 필요하다. 현재 User Repository에는 없다.
-- [TO DO] inventory 담당자: 예약·예약 해제·소유권 이전의 공개 인터페이스와 실패 예외 합의.
-- [TO DO] wallet 담당자: 잔액 조회·잠금·입출금 계약 합의. 현재 Auction은 최고 입찰액 합산 방식이다.
-- [TO DO][제공 → wallet] `ListingRepository.sum_leading_bids(user_id: int) -> int`: 최고 입찰자로 묶인 금액 합계. 출금·사용 가능 금액 계산에 쓰도록 공유한다.
-- [TO DO] 모든 담당자: 잠금 순서·세션 공유·commit 주체·동시 정산 방식을 합의한다.
-- [TO DO] 앱 담당자: 모델·라우터·마감 실행 등록 요청. Auction 밖 파일은 수정하지 않는다.
+- 제한 중에 기존 입찰이 낙찰돼도 정산한다.
+- [TO DO][V2] 운영자 확인 대상(인벤토리·지갑 불일치)을 식별·복구하는 방안을 정한다. (진행 전)
 
-## 정책과 응답
+## 관리자 기능
 
-- 공통 BusinessRuleError는 현재 400으로 변환된다. 새 예외 체계나 403 분기는 추가하지 않는다.
-- 남은 시간 메시지는 정책 결과를 사용한다. 정책 함수가 HTTP 응답을 만들지 않는다.
+- 권한은 서비스에서 `is_admin`으로 확인한다. 일반 사용자는 403.
+- 강제 취소는 QUEUED·BIDDING만 가능하다. 처리한 관리자 ID와 `closed_at`만 기록한다.
+- BIDDING 매물을 취소하면 같은 종류의 다음 대기 매물을 공개한다.
+
+## 트랜잭션
+
+- 변경 요청은 같은 세션에서 처리하고 마지막에 `tx.commit()`한다. 실패하면 commit하지 않고 예외를 올린다.
+- 다른 도메인 예외는 import하지 않는다. 필요한 변환은 infrastructure Adapter가 한다.
