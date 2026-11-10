@@ -170,4 +170,4 @@ uv run uvicorn main:app --reload
 PYTHONPATH=src uv run python -m inventory.infrastructure.seed
 ```
 
-낚시 화면과 서버 연결은 [클라이언트 README](src/client/README.md), CORS와 요청 로그 설정은 [공통 미들웨어 문서](src/shared/core/README.md), EC2 준비 조건과 검증 범위는 [배포 문서](docs/ec2-deployment.md)를 확인합니다.
+낚시 화면과 서버 연결은 [클라이언트 README](src/client/README.md), CORS와 요청 로그 설정은 [공통 미들웨어 문서](src/shared/core/README.md)를 확인합니다.
