@@ -2,7 +2,7 @@
 
 - 로그인 확인(현재 사용자 번호)은 main.py에서 넘겨 받는다 (auth의 쿠키 구조를 모른다).
   웹 화면이라 API용 get_current_user_id가 아니라 쿠키용 get_current_web_user_id를 넘긴다.
-- 서비스의 내 지갑 조회(WALL-01)를 그대로 쓰고, 화면에는 응답 모델(WalletResponse)의 공개 값만 넘긴다.
+- 서비스의 내 지갑 조회(WALL-02)를 그대로 쓰고, 화면에는 응답 모델(WalletResponse)의 공개 값만 넘긴다.
 - 처음 조회면 지갑을 만들고 초기 골드를 지급하므로(WALL-06 지연 생성) API 라우터와 같이 commit한다.
   INITIAL_GRANT 로그는 commit 성공 시 세션 이벤트로 자동으로 남는다 (balance_recoder.py).
 - 개인 화면이라 브라우저에 저장하지 않게 한다 (Cache-Control: no-store).
