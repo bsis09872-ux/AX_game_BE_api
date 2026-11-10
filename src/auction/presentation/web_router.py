@@ -15,7 +15,7 @@ from typing import Literal
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Form, Path, Query, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auction.domain.listings.entities import ListingStatus
@@ -23,7 +23,7 @@ from auction.presentation.dependencies import ListingServiceDep, TradeServiceDep
 from auction.presentation.web_dependencies import get_inventory_reader, get_user_gateway, read_balance
 from auction.presentation.web_views import (
     CATEGORY_LABELS, TRADE_TABS, UNKNOWN_ITEM, card_view, definition_view, detail_url, detail_view, item_view, limit_view, list_url, new_view,
-    notice_text, parse_number, parse_search, trade_rows, trades_url,
+    live_state, notice_text, parse_number, parse_search, trade_rows, trades_url,
 )
 from auction.wiring import PAGE_SIZE
 from database import get_db
@@ -203,6 +203,28 @@ def create_auction_web_router(
             'prev_url': list_url(page - 1, ctx.embed, search),
             'next_url': list_url(page + 1, ctx.embed, search),
         })
+    # endregion
+
+    # region [Claude] 경매 상세 실시간 확인용 상태 (화면이 몇 초마다 부른다. 가볍게 매물 하나만 읽는다)
+    @router.get('/auctions/{listing_id:int}/state', include_in_schema=False)
+    async def get_auction_state(
+        service: ListingServiceDep,
+        listing_id: int = Path(ge=1),
+        user_id: int = Depends(current_user_id),
+    ):
+        headers = {'Cache-Control': 'no-store'}
+        try:
+            listing = await service.get_listing_detail(listing_id)
+        except NotFoundError:
+            return JSONResponse({'gone': True}, status_code=404, headers=headers)
+        # 대기 매물은 판매자에게만 보인다 (상세 화면과 같은 규칙)
+        if listing.status == ListingStatus.QUEUED and listing.seller_id != user_id:
+            return JSONResponse({'gone': True}, status_code=404, headers=headers)
+        state = live_state(listing, user_id, datetime.now(timezone.utc))
+        return JSONResponse(
+            {'status': state.status, 'price': state.price, 'leader': state.leader, 'remaining': state.remaining},
+            headers=headers,
+        )
     # endregion
 
     # region [Claude] 경매 상세 (진행, 낙찰, 유찰, 취소, 대기 모두 이 화면)

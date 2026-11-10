@@ -220,6 +220,36 @@ def parse_search(q: str | None, category: str | None, min_price: str | None, max
 # endregion
 
 
+# region [Claude] 경매 상세 실시간 확인
+# 열려 있는 상세 화면이 몇 초마다 확인하는 작은 상태. 값이 달라지면 화면을 다시 불러온다
+@dataclass(frozen=True)
+class LiveState:
+    status: str
+    price: int  # 입찰이 없으면 시작가
+    leader: str  # 'none'(입찰 없음), 'me'(내가 최고액), 'other'(다른 사람이 최고액). 누구인지는 알려 주지 않는다
+    remaining: int  # 남은 초 (브라우저가 이 값에서 시작해 직접 센다)
+
+
+def live_state(listing: Listing, viewer_id: int, now: datetime) -> LiveState:
+    remaining = listing.remaining(now)
+    seconds = int(remaining.total_seconds()) if remaining is not None else 0
+    if not listing.has_bidder():
+        leader = 'none'
+    else:
+        leader = 'me' if listing.current_bidder_id == viewer_id else 'other'
+    return LiveState(
+        status=listing.status.value,
+        price=listing.current_bid_amount or listing.start_price,
+        leader=leader,
+        remaining=max(seconds, 0),
+    )
+
+
+def state_url(listing_id: int, embed: bool = False) -> str:
+    return _url(f'/auctions/{listing_id}/state', embed)
+# endregion
+
+
 # region [Claude] 경매 상세
 STATUS_LABELS = {
     ListingStatus.BIDDING: '경매 중',
@@ -329,6 +359,8 @@ class DetailView:
     message: str  # 입찰 패널의 내 상태 안내
     message_warn: bool  # 입찰이 막힌 경고 안내(제한 중)면 붉게, 나머지는 파랗게 보여 준다
     closing: bool  # 마감 시각이 지났지만 아직 정산(낙찰·유찰) 전
+    live: LiveState | None  # 경매 중·대기 중일 때만 실시간 확인 대상
+    live_url: str
     can_bid: bool
     can_cancel: bool
     is_seller: bool
@@ -398,6 +430,8 @@ def detail_view(
         message=message,
         message_warn=warn,
         closing=closing,
+        live=live_state(listing, viewer_id, now) if listing.status in (ListingStatus.BIDDING, ListingStatus.QUEUED) else None,
+        live_url=state_url(listing.id, embed),
         can_bid=bidding and seconds > 0 and not is_seller and not is_leader and not blocked,
         can_cancel=listing.status == ListingStatus.QUEUED and is_seller,
         is_seller=is_seller,
