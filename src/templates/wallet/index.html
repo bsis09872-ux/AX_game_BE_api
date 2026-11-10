@@ -1,8 +1,12 @@
 {% extends "base.html" %}
+{# 공통 페이지 전환(#30): page_key로 페이지를 구분하고, 로그인 세션 자동 갱신을 연결한다 #}
+{% block page_key %}wallet{% endblock %}
+{% block body_attributes %}data-session-protected="true"{% endblock %}
 {% block title %}내 지갑 | Catch &amp; Bid{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', path='/css/wallet.css') }}">
+{# data-page-style: 화면 전환 시 이 페이지 전용 CSS로 교체된다 #}
+<link data-page-style rel="stylesheet" href="{{ url_for('static', path='/css/wallet.css') }}">
 {% endblock %}
 
 {# 금액 표시: 천 단위 콤마 + GOLD (인벤토리와 같은 표기) #}
