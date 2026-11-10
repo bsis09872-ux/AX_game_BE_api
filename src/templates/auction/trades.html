@@ -1,26 +1,25 @@
 {# [Claude] 이 파일은 Claude가 작성함 (검토 전) #}
 {# 내 거래: 낙찰받은 것과 판매한 것의 기록. 이름은 거래가 끝난 당시의 이름이다 #}
 {% extends "auction/_layout.html" %}
-{% from "inventory/_macros.html" import moment %}
+{% from "inventory/_macros.html" import moment, item_icon %}
 {% from "auction/_macros.html" import gold %}
 {% block title %}내 거래 | Catch &amp; Bid{% endblock %}
 
 {% block content %}
 <section aria-labelledby="trades-title">
-  <h1 id="trades-title" class="title-tab">내 거래</h1>
+  <h1 id="trades-title" class="sr-only">내 거래</h1>
+
+  {# 제목 탭 없이 기록 종류를 인덱스 탭으로 바로 올린다 #}
+  <nav class="index-tabs trades-tabs" aria-label="거래 기록 종류">
+    {% for t in tabs %}
+    <a href="{{ t.href }}" {% if t.current %}class="on" aria-current="page"{% endif %}>{{ t.label }}</a>
+    {% endfor %}
+  </nav>
 
   <div class="panel">
-    <nav class="tabs" aria-label="거래 종류">
-      {% for t in tabs %}
-      <a href="{{ t.href }}" {% if t.current %}class="on" aria-current="page"{% endif %}>{{ t.label }}</a>
-      {% endfor %}
-    </nav>
-
-    {% if limit %}
-    <p class="limit">
-      최근 낙찰 {{ limit.count }}/{{ limit.max_count }}회
-      {% if limit.blocked %}· <strong>입찰 제한 중</strong> (남은 시간 {{ limit.remaining_text }}){% endif %}
-    </p>
+    {# 입찰이 막혀 있을 때만 알려 준다 #}
+    {% if limit and limit.blocked %}
+    <p class="notice error" role="status">연속 낙찰 제한 중이라 입찰할 수 없어요. (남은 시간 {{ limit.remaining_text }})</p>
     {% endif %}
 
     {% if rows %}
@@ -29,17 +28,17 @@
         <tr>
           <th>아이템</th>
           <th>{{ '판매자' if tab == 'won' else '구매자' }}</th>
-          <th class="num">{{ '낙찰가' if tab == 'won' else '판매가' }}</th>
           <th>체결 시각</th>
+          <th class="num">{{ '낙찰가' if tab == 'won' else '판매가' }}</th>
         </tr>
       </thead>
       <tbody>
         {% for r in rows %}
         <tr>
-          <td><a href="{{ r.href }}">{{ r.item_name }}</a></td>
+          <td>{{ item_icon(r.item, 32) }}<a href="{{ r.href }}">{{ r.item_name }}</a></td>
           <td>{{ r.partner_name }}</td>
-          <td class="num">{{ gold(r.price) }}</td>
           <td>{{ moment(r.completed_at) }}</td>
+          <td class="num">{{ gold(r.price) }}</td>
         </tr>
         {% endfor %}
       </tbody>

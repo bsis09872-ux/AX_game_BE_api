@@ -451,29 +451,31 @@ def new_view(info, now: datetime, embed: bool = False) -> NewView:
 
 
 # region [Claude] 내 거래 (낙찰받은 것, 판매한 것)
-TRADE_TABS = {'won': '낙찰받은 것', 'sold': '판매한 것'}
+TRADE_TABS = {'won': '낙찰 기록', 'sold': '판매 기록'}
 
 
 @dataclass(frozen=True)
 class TradeRow:
     href: str
+    item: ItemView  # 그림용 (이름은 체결 당시 이름 item_name을 쓴다)
     item_name: str
     partner_name: str  # 낙찰받은 것이면 판매자, 판매한 것이면 구매자
     price: int
     completed_at: datetime
 
 
-# 거래 기록의 체결 당시 이름 스냅샷으로 표의 줄을 만든다
-def trade_rows(trades, tab: str) -> list[TradeRow]:
+# 거래 기록의 체결 당시 이름 스냅샷으로 표의 줄을 만든다. items는 거래마다 그림을 위해 읽어 둔 아이템 정보다
+def trade_rows(trades, tab: str, items: list[ItemView]) -> list[TradeRow]:
     return [
         TradeRow(
             href=detail_url(trade.listing_id),
+            item=item,
             item_name=trade.item_name_snapshot,
             partner_name=trade.seller_name_snapshot if tab == 'won' else trade.buyer_name_snapshot,
             price=trade.price_snapshot,
             completed_at=trade.completed_at,
         )
-        for trade in trades
+        for trade, item in zip(trades, items)
     ]
 
 

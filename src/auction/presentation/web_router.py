@@ -67,6 +67,16 @@ async def load_item(inventory, item_definition_id: int):
         return UNKNOWN_ITEM
 
 
+# 거래 기록에는 아이템 그림 정보가 없어서 거래 → 매물 → 아이템 종류(캐시) 순으로 읽는다. 못 읽으면 대체 그림
+# shortcut: 거래마다 매물을 한 번씩 읽는다(쪽당 최대 PAGE_SIZE번). 거래 기록에 아이템 종류 번호가 생기면 매물 조회를 뺀다
+async def load_trade_item(service, inventory, listing_id: int):
+    try:
+        listing = await service.get_listing_detail(listing_id)
+    except AppError:
+        return UNKNOWN_ITEM
+    return await load_item(inventory, listing.item_definition_id)
+
+
 # 없는 매물과 남의 대기 매물은 같은 화면(404)으로 보여 준다 (존재 여부를 알려 주지 않는다)
 def not_found_response(request: Request, ctx: PageContext, message: str | None = None):
     return render(request, 'auction/not_found.html', {**ctx.base(), 'message': message}, status_code=404)
@@ -304,6 +314,8 @@ def create_auction_web_router(
     async def get_auction_trades_page(
         request: Request,
         trades: TradeServiceDep,
+        service: ListingServiceDep,
+        inventory=Depends(get_inventory_reader),
         tab: Literal['won', 'sold'] = 'won',
         page: int = Query(1, ge=1),
         ctx: PageContext = Depends(page_context),
@@ -323,7 +335,10 @@ def create_auction_web_router(
             **ctx.base('trades'),
             'tab': tab,
             'tabs': [{'key': key, 'label': label, 'href': trades_url(key), 'current': key == tab} for key, label in TRADE_TABS.items()],
-            'rows': trade_rows(records, tab),
+            'rows': trade_rows(
+                records, tab,
+                [await load_trade_item(service, inventory, trade.listing_id) for trade in records],
+            ),
             'limit': limit,
             'has_previous': page > 1,
             # 전체 개수를 모르므로 꽉 찬 쪽이면 다음 쪽이 있다고 본다
