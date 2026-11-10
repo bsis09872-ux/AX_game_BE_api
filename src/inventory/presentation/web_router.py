@@ -191,6 +191,7 @@ def create_inventory_web_router(
         request: Request,
         category: Category | None=None,
         rarity: Rarity | None=None,
+        item: int | None = Query(None, ge=1),  # [Claude] 가방에서 넘어온 선택 아이템 번호 (돌아갈 때 다시 선택하려고 링크에 실어 나른다)
         user_id: int = Depends(current_user_id),  # [Claude] 헤더 골드를 읽으려고 사용자 번호를 받는다 (로그인 확인은 그대로)
         service: InventoryService = Depends(get_inventory_service),
         session: AsyncSession = Depends(get_db),
@@ -211,6 +212,7 @@ def create_inventory_web_router(
                 'definitions': [ItemDefinitionResponse.from_info(d) for d in definitions],
                 'category': category,
                 'rarity': rarity,
+                'back_item': item,  # [Claude]
                 # 필터 링크에 쓸 허용값
                 'categories': get_args(Category),
                 'rarities': get_args(Rarity),

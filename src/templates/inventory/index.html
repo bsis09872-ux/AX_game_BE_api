@@ -98,7 +98,7 @@
         {% if not selected.can_list %}<p>{{ selected.reason }}</p>{% endif %}
         <div class="action-row">
           <a class="btn wood" href="/inventory/{{ selected.id }}">상세 보기</a>
-          <a class="btn blue" href="/item-catalogs#item-{{ selected.definition.id }}">도감 보기</a>
+          <a class="btn blue" href="/item-catalogs?item={{ selected.id }}#item-{{ selected.definition.id }}">도감 보기</a>
         </div>
         {% else %}
         <p class="muted">아이템 칸을 눌러서 경매에 올려 보세요.</p>
