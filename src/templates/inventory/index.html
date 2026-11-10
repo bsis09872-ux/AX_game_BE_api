@@ -58,13 +58,11 @@
           {% if total_pages > 1 %}
           <nav class="bag-pager" aria-label="페이지 이동">
             {% if has_previous %}<a href="{{ prev_url }}">‹ 이전</a>{% else %}<span class="off" aria-disabled="true">‹ 이전</span>{% endif %}
-            <span class="page-now">{{ page }} / {{ total_pages }} 쪽</span>
+            <span class="page-now">{{ page }} / {{ total_pages }}</span>
             {% if has_next %}<a href="{{ next_url }}">다음 ›</a>{% else %}<span class="off" aria-disabled="true">다음 ›</span>{% endif %}
           </nav>
           {% endif %}
         </div>
-
-        <p class="muted">회색 칸은 경매에 올라가 있는 아이템이에요. 경매가 끝나면 주인이 바뀌거나 가방으로 돌아와요.</p>
       </div>
     </div>
 
