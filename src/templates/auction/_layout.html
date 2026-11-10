@@ -1,8 +1,8 @@
 {# [Claude] 이 파일은 Claude가 작성함 (검토 전) #}
 {# 경매장 화면의 공통 틀. base.html을 그대로 쓰고 아래 블록만 채운다 #}
-{# 라우터가 넘기는 값: embed(팝업 안인지), gold_balance(보유 골드 또는 None), nav_active(메뉴 강조) #}
+{# 라우터가 넘기는 값: embed(팝업 안인지), nav_active(메뉴 강조) #}
 {% extends "base.html" %}
-{% from "_site.html" import site_nav, gold_status %}
+{% from "_site.html" import site_nav %}
 
 {% block page_key %}auction{% endblock %}
 
@@ -17,7 +17,6 @@
 {% block body_attributes %}data-session-protected="true"{% if embed %} class="embed"{% endif %}{% endblock %}
 
 {% block navigation %}{{ site_nav(nav_active) }}{% endblock %}
-{% block header_status %}{{ gold_status(gold_balance) }}{% endblock %}
 
 {% block scripts %}
 {% if embed %}<script src="{{ url_for('static', path='/auction-embed.js') }}" defer></script>{% endif %}

@@ -3,7 +3,7 @@
 {% extends "base.html" %}
 {% block page_key %}inventory{% endblock %}
 {% block body_attributes %}data-session-protected="true"{% endblock %}
-{% from "_site.html" import site_nav, gold_status %}
+{% from "_site.html" import site_nav %}
 {% from "inventory/_macros.html" import gold, moment, filter_group, item_icon, category_name %}
 {% block title %}내 가방 | Catch &amp; Bid{% endblock %}
 
@@ -14,7 +14,6 @@
 {% endblock %}
 
 {% block navigation %}{{ site_nav('inventory') }}{% endblock %}
-{% block header_status %}{{ gold_status(gold_balance) }}{% endblock %}
 
 {% block content %}
 {% set cat = filter_groups | selectattr('label', 'equalto', '분류') | first %}

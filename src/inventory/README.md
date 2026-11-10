@@ -130,7 +130,7 @@ inventory/
 - 소유자는 요청 값이 아니라 인증 정보에서 얻습니다.
 
 ### 화면 (Jinja2)
-화면 경로는 `/v1` 접두어 없이 등록하고, 쿠키 로그인을 씁니다. 로그인 확인은 `main`이 함수를 넘겨주는 방식입니다(`create_inventory_web_router(current_user_id, balance_reader, wallet_reader)`: 뒤의 둘은 선택이며 헤더 골드·지갑 박스용 읽기 함수) `[Claude]`.
+화면 경로는 `/v1` 접두어 없이 등록하고, 쿠키 로그인을 씁니다. 로그인 확인은 `main`이 함수를 넘겨주는 방식입니다(`create_inventory_web_router(current_user_id, wallet_reader)`: 뒤의 것은 선택이며 가방의 지갑 박스용 읽기 함수. 헤더의 사용 가능 금액은 공통 헤더가 채운다) `[Claude]`.
 
 | 경로 | 권한 | 설명 |
 |---|---|---|

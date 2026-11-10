@@ -2,7 +2,7 @@
 {% extends "base.html" %}
 {% block page_key %}inventory{% endblock %}
 {% block body_attributes %}data-session-protected="true"{% endblock %}
-{% from "_site.html" import site_nav, gold_status %}
+{% from "_site.html" import site_nav %}
 {% from "inventory/_macros.html" import gold, moment, item_icon, category_name %}
 
 {% block title %}{{ item.definition.name }} | Catch &amp; Bid{% endblock %}
@@ -13,8 +13,6 @@
 {% endblock %}
 
 {% block navigation %}{{ site_nav('inventory') }}{% endblock %}
-{# [Claude] 헤더 골드: 읽기 함수가 없으면 보이지 않는다 #}
-{% block header_status %}{{ gold_status(gold_balance) }}{% endblock %}
 
 {% block content %}
 <section aria-labelledby="item-title">

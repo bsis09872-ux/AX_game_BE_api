@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auction.domain.listings.entities import ListingStatus
 from auction.presentation.dependencies import ListingServiceDep, TradeServiceDep
-from auction.presentation.web_dependencies import get_inventory_reader, get_user_gateway, read_balance
+from auction.presentation.web_dependencies import get_inventory_reader, get_user_gateway
 from auction.presentation.web_views import (
     CATEGORY_LABELS, TRADE_TABS, UNKNOWN_ITEM, card_view, definition_view, detail_url, detail_view, item_view, limit_view, list_url, new_view,
     live_state, notice_text, parse_number, parse_search, trade_rows, trades_url,
@@ -41,11 +41,10 @@ CATEGORY_OPTIONS = [('', '전체')] + list(CATEGORY_LABELS.items())
 class PageContext:
     user_id: int
     embed: bool
-    gold: int | None
 
     # 템플릿(_layout.html)이 쓰는 공통 값
     def base(self, nav_active: str = 'auction') -> dict:
-        return {'embed': self.embed, 'gold_balance': self.gold, 'nav_active': nav_active}
+        return {'embed': self.embed, 'nav_active': nav_active}
 
 
 # 템플릿을 그려 응답으로 만든다. 개인 화면이라 브라우저에 저장하지 않는다
@@ -150,14 +149,12 @@ def create_auction_web_router(
 ) -> APIRouter:
     router = APIRouter()
 
-    # 로그인한 사용자와 embed 여부, 보유 골드를 한 번에 준비한다 (팝업 안에서는 헤더가 숨겨져 골드를 읽지 않는다)
+    # 로그인한 사용자와 embed 여부를 한 번에 준비한다
     async def page_context(
         embed: bool = Query(False),
         user_id: int = Depends(current_user_id),
-        session: AsyncSession = Depends(get_db),
     ) -> PageContext:
-        gold = None if embed else await read_balance(session, user_id)
-        return PageContext(user_id=user_id, embed=embed, gold=gold)
+        return PageContext(user_id=user_id, embed=embed)
 
     # region [Claude] 경매장 목록
     @router.get('/auctions', response_class=HTMLResponse)

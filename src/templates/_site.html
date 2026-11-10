@@ -1,22 +1,15 @@
 {# [Claude] 이 파일은 Claude가 작성함 (검토 전) #}
-{# 경매장·인벤토리 화면이 같이 쓰는 헤더 조각: 주 메뉴와 보유 골드 #}
+{# 모든 화면이 같이 쓰는 주 메뉴. 헤더의 사용 가능 금액은 공통 헤더(static/wallet-balance.js, 지갑 담당)가 채운다 #}
 
 
-{# 주 메뉴: active는 'auction', 'inventory', 'trades', 'me' 중 하나 (지금 화면의 메뉴 강조) #}
-{% macro site_nav(active) -%}
+{# active는 'auction', 'inventory', 'trades', 'wallet', 'me', 'admin' 중 하나 (지금 화면의 메뉴 강조). admin이 참이면 관리자 메뉴가 붙는다 #}
+{% macro site_nav(active, admin=false) -%}
 <nav class="nav" aria-label="주 메뉴">
   <a {% if active == 'auction' %}class="on" aria-current="page" {% endif %}href="/auctions">경매장</a>
   <a {% if active == 'inventory' %}class="on" aria-current="page" {% endif %}href="/inventory">내 가방</a>
   <a {% if active == 'trades' %}class="on" aria-current="page" {% endif %}href="/auctions/trades">내 거래</a>
+  <a {% if active == 'wallet' %}class="on" aria-current="page" {% endif %}href="/wallet">내 지갑</a>
   <a {% if active == 'me' %}class="on" aria-current="page" {% endif %}href="/me">내 정보</a>
+  {% if admin %}<a {% if active == 'admin' %}class="on" aria-current="page" {% endif %}href="/admin">관리자</a>{% endif %}
 </nav>
-{%- endmacro %}
-
-
-{# [TODO] 헤더(메뉴·골드 표시)는 화면 담당자가 맡는다. 지금은 임시로 경매·가방 화면이 골드를 보여 주고 있으며, 담당자 헤더가 들어오면 이 조각과 각 화면의 header_status 블록을 걷어낸다 #}
-{# 보유 골드: 값이 없으면(지갑 없음, 팝업 안) 아무것도 보여 주지 않는다 #}
-{% macro gold_status(amount) -%}
-{% if amount is not none %}
-<div class="hud"><span class="gold" aria-label="보유 골드">{{ '{:,}'.format(amount) }} G</span></div>
-{% endif %}
 {%- endmacro %}

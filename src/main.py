@@ -85,7 +85,7 @@ import auction.infrastructure.listings.models  # noqa: F401 (임시)
 
 # region [Claude] 경매·가방 화면
 from auction.presentation.web_router import create_auction_web_router
-from auction.presentation.web_dependencies import read_balance, read_wallet_box
+from auction.presentation.web_dependencies import read_wallet_box
 # endregion
 API_PREFIX = "/v1"
 
@@ -153,7 +153,7 @@ app.include_router(inventory_router, prefix=API_PREFIX)
 if is_fishing_enabled():
     app.include_router(fishing_router, prefix=API_PREFIX)
 # [Claude] 가방 화면에 헤더 골드·지갑 박스 읽기 함수를 넘긴다 (인벤토리가 wallet을 import하지 않게 main이 연결)
-app.include_router(create_inventory_web_router(get_current_web_user_id, read_balance, read_wallet_box))
+app.include_router(create_inventory_web_router(get_current_web_user_id, read_wallet_box))
 # endregion
 
 
