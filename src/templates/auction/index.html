@@ -12,7 +12,7 @@
     <div class="hero-text">
       <h1 id="auction-title">경매장</h1>
       <p class="muted">경매사가 정한 시작가에서 시작 · 6분 뒤 가장 높은 금액을 부른 사람이 낙찰</p>
-      <p class="hero-count"><span class="hero-emoji" aria-hidden="true">📦</span> 지금 경매장에는 매물 {{ cards | length }}건이 올라와 있어요</p>
+      <p class="hero-count"><span class="hero-emoji" aria-hidden="true">📦</span> <span data-live-count>지금 경매장에는 매물 {{ cards | length }}건이 올라와 있어요</span></p>
     </div>
     <div class="hero-action">
       {% if embed %}
@@ -51,11 +51,12 @@
   </form>
   {% if search.error %}<p class="notice error" role="alert">{{ search.error }}</p>{% endif %}
 
-  {# 카드는 패널 안이 아니라 배경 위에 바로 놓는다 (양각 카드) #}
+  {# 카드는 패널 안이 아니라 배경 위에 바로 놓는다 (양각 카드). 이 영역만 몇 초마다 다시 읽어 갈아 끼운다 #}
+  <div data-live-list>
   {% if cards %}
   <div class="card-grid">
     {% for c in cards %}
-    <a class="card" href="{{ c.href }}">
+    <a class="card" href="{{ c.href }}" data-sig="{{ c.id }}:{{ c.price }}:{{ 1 if c.has_bid else 0 }}">
       <div class="card-top">
         {{ item_icon(c.item, 48) }}
         <div class="card-info">
@@ -69,7 +70,7 @@
       </div>
       <div class="card-foot">
         <span class="muted">판매자 : {{ c.seller_name }}</span>
-        {{ clock(c.remaining_text, c.urgent) }}
+        {{ clock(c.remaining_text, c.urgent, c.remaining_seconds) }}
       </div>
       {# 카드 맨 아래 상태 띠: 입찰자가 있으면 노랑, 없으면 흐리게 #}
       <div class="card-status {{ 'yes' if c.has_bid else 'none' }}">
@@ -88,5 +89,6 @@
     {% if has_next %}<a href="{{ next_url }}">다음</a>{% endif %}
   </nav>
   {% endif %}
+  </div>
 </section>
 {% endblock %}

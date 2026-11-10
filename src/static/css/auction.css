@@ -694,6 +694,9 @@ body.embed .main-content {
   .banner.sold {
     animation: none;
   }
+  .card.flash {
+    animation: none;
+  }
   .confetti {
     display: none;
   }
@@ -742,4 +745,20 @@ body.embed .main-content {
 .bid-hint {
   margin: 8px 0 0;
   text-align: right;
+}
+
+/* 목록이 갱신될 때 새로 생기거나 값이 바뀐 카드를 잠깐 밝게 깜빡인다 */
+.card.flash {
+  animation: card-flash 1.2s ease-out;
+}
+
+@keyframes card-flash {
+  0% {
+    filter: brightness(1.6);
+    outline: 3px solid var(--gold);
+  }
+  100% {
+    filter: brightness(1);
+    outline: 3px solid transparent;
+  }
 }

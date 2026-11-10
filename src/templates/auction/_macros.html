@@ -9,6 +9,6 @@
 
 
 {# 남은 시간 문구 (급하면 빨갛게) #}
-{% macro clock(text, urgent) -%}
-<span class="clock{% if urgent %} urgent{% endif %}">{{ text }}</span>
+{% macro clock(text, urgent, seconds=None) -%}
+<span class="clock{% if urgent %} urgent{% endif %}"{% if seconds is not none %} data-live-seconds="{{ seconds }}"{% endif %}>{{ text }}</span>
 {%- endmacro %}

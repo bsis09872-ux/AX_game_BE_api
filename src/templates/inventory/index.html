@@ -19,7 +19,7 @@
 {% block content %}
 {% set cat = filter_groups | selectattr('label', 'equalto', '분류') | first %}
 <section aria-labelledby="inventory-title">
-  <div class="row bag-layout">
+  <div class="row bag-layout" data-live-refresh>
     <div class="col bag-main">
       <div class="tab-row">
         <h1 id="inventory-title" class="title-tab">내 가방</h1>

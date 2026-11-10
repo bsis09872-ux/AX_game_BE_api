@@ -16,7 +16,7 @@
     {% endfor %}
   </nav>
 
-  <div class="panel">
+  <div class="panel" data-live-refresh>
     {# 입찰이 막혀 있을 때만 알려 준다 #}
     {% if limit and limit.blocked %}
     <p class="notice error" role="status">연속 낙찰 제한 중이라 입찰할 수 없어요. (남은 시간 {{ limit.remaining_text }})</p>
