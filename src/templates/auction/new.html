@@ -22,7 +22,7 @@
     <p class="muted">시작가는 아이템 카탈로그 값이라 바꿀 수 없어요. 경매 시간은 6분이에요.</p>
 
     {% if n.can_register %}
-    <form method="post" action="{{ n.action }}">
+    <form method="post" action="{{ n.action }}" data-page-form>
       <input type="hidden" name="item_id" value="{{ n.item_id }}">
       <button type="submit" class="btn gold big">경매 시작</button>
     </form>

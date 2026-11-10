@@ -103,7 +103,7 @@
         {% if d.message %}<p class="bid-message{% if d.message_warn %} warn{% endif %}">{{ d.message }}</p>{% endif %}
 
         {% if d.can_bid %}
-        <form method="post" action="{{ d.bid_action }}" class="bid-form">
+        <form method="post" action="{{ d.bid_action }}" class="bid-form" data-page-form>
           <label for="bid-amount" class="bid-label">입찰금액(G)</label>
           <div class="bid-row">
             <input id="bid-amount" name="amount" type="number" inputmode="numeric" min="{{ d.min_bid }}"
@@ -115,7 +115,7 @@
         {% endif %}
 
         {% if d.can_cancel %}
-        <form method="post" action="{{ d.cancel_action }}">
+        <form method="post" action="{{ d.cancel_action }}" data-page-form>
           <button type="submit" class="btn red">경매 취소</button>
         </form>
         {% endif %}

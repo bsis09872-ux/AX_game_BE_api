@@ -231,6 +231,8 @@ def create_auction_web_router(
         item: int | None = Query(None, ge=1),
         ctx: PageContext = Depends(page_context),
     ):
+        if item is None:
+            return RedirectResponse(list_url(1, True) if ctx.embed else '/inventory', status_code=303)
         return await new_response(request, ctx, inventory, item)
 
     @router.post('/auctions/new', response_class=HTMLResponse, dependencies=[Depends(require_origin)])
@@ -256,6 +258,14 @@ def create_auction_web_router(
     # endregion
 
     # region [Claude] 입찰·취소 (실패하면 되돌리고 같은 상세 화면에 이유를 보여 준다)
+    @router.get('/auctions/{listing_id:int}/bid', include_in_schema=False)
+    @router.get('/auctions/{listing_id:int}/cancel', include_in_schema=False)
+    async def redirect_post_only_url(
+        listing_id: int = Path(ge=1),
+        embed: bool = Query(False),
+    ):
+        return RedirectResponse(detail_url(listing_id, embed), status_code=303)
+
     @router.post('/auctions/{listing_id:int}/bid', response_class=HTMLResponse, dependencies=[Depends(require_origin)])
     async def post_auction_bid(
         request: Request,

@@ -95,7 +95,7 @@
           <span>경매 시작가</span>
           <span class="gold-text start-amount">{{ gold(selected.definition.start_price) }}</span>
           {% if selected.can_list %}
-          <form method="post" action="{{ auction_new_url }}">
+          <form method="post" action="{{ auction_new_url }}" data-page-form>
             <input type="hidden" name="item_id" value="{{ selected.id }}">
             <button type="submit" class="link-btn">경매 시작</button>
           </form>
