@@ -33,20 +33,53 @@ body.embed .main-content {
   flex-wrap: wrap;
 }
 
-/* 매물 카드 */
+/* 경매장 제목 영역: 경매사 그림, 제목·설명·건수, 오른쪽 버튼 */
+.auction-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.hero-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.hero-text h1 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+
+.hero-text p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.hero-action .btn {
+  color: #fff;
+}
+
+/* 매물 카드: 패널 없이 배경 위에 놓는 양각 카드. 풀 화면에서 한 줄에 4개 */
+.card-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
 .card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 10px;
+  gap: 10px;
+  padding: 12px;
   color: var(--text);
-  background: var(--slot);
+  background: var(--wood);
   border: var(--px) solid var(--outline);
-  box-shadow: inset var(--px) var(--px) 0 var(--slot-in);
+  box-shadow: inset var(--px) var(--px) 0 var(--wood-light), inset calc(-1 * var(--px)) calc(-1 * var(--px)) 0 var(--wood-dark);
 }
 
 .card:hover {
-  background: #7a4f2f;
+  background: #98643a;
   text-decoration: none;
 }
 
@@ -56,8 +89,39 @@ body.embed .main-content {
   align-items: center;
 }
 
+.card-info {
+  min-width: 0;
+}
+
+.card-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 13px;
+}
+
 .card-price {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
   color: var(--gold);
+}
+
+.card-price .muted {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.card-price img {
+  vertical-align: middle;
 }
 
 .card-foot {
@@ -76,7 +140,8 @@ body.embed .main-content {
 }
 
 /* 매물 상태 표시(.tag는 global.css) */
-.tag.BIDDING {
+.tag.BIDDING,
+.tag.bid-yes {
   background: var(--green-dark);
 }
 

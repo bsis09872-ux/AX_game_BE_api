@@ -7,46 +7,57 @@
 
 {% block content %}
 <section aria-labelledby="auction-title">
-  <div class="auction-head">
-    <h1 id="auction-title" class="title-tab">경매장</h1>
-    {% if embed %}
-    <button type="button" class="btn red" data-auction-close>닫기 (Esc)</button>
-    {% else %}
-    <a class="btn gold" href="/inventory">내 아이템 올리기</a>
-    {% endif %}
+  <div class="auction-hero">
+    <img class="px" src="{{ url_for('static', path='/sprites/npc_merchant.png') }}" alt="" width="72" height="72">
+    <div class="hero-text">
+      <h1 id="auction-title">경매장</h1>
+      <p class="muted">경매사가 정한 시작가에서 시작 · 6분 뒤 가장 높은 금액을 부른 사람이 낙찰</p>
+      <p class="muted">{{ cards | length }}건이 올라와 있어요</p>
+    </div>
+    <div class="hero-action">
+      {% if embed %}
+      <button type="button" class="btn red" data-auction-close>닫기 (Esc)</button>
+      {% else %}
+      <a class="btn" href="/inventory">내 아이템 올리기</a>
+      {% endif %}
+    </div>
   </div>
 
-  <div class="panel">
-    {% if cards %}
-    <div class="grid">
-      {% for c in cards %}
-      <a class="card" href="{{ c.href }}">
-        <div class="card-top">
-          {{ item_icon(c.item, 48) }}
-          <div>
-            <strong>{{ c.item.name }}</strong>
-            <div class="muted">{{ c.item.category }}</div>
-            <span class="tag BIDDING">입찰 중</span>
+  {# 카드는 패널 안이 아니라 배경 위에 바로 놓는다 (양각 카드) #}
+  {% if cards %}
+  <div class="card-grid">
+    {% for c in cards %}
+    <a class="card" href="{{ c.href }}">
+      <div class="card-top">
+        {{ item_icon(c.item, 48) }}
+        <div class="card-info">
+          <div class="card-name"><span>{{ c.item.name }}</span> <span class="muted">#{{ c.id }}</span></div>
+          <div class="card-meta">
+            <span class="muted">{{ c.item.category }}</span>
+            <span class="tag {{ 'bid-yes' if c.has_bid else 'bid-none' }}">{{ '입찰자 있음' if c.has_bid else '입찰자 없음' }}</span>
           </div>
         </div>
-        <div class="card-price">{{ gold(c.price) }} <span class="muted">{{ '현재가' if c.has_bid else '시작가' }}</span></div>
-        <div class="card-foot">
-          <span class="muted">판매 {{ c.seller_name }} · {{ '입찰 있음' if c.has_bid else '입찰 없음' }}</span>
-          {{ clock(c.remaining_text, c.urgent) }}
-        </div>
-      </a>
-      {% endfor %}
-    </div>
-    {% else %}
-    <p>진행 중인 경매가 없습니다.</p>
-    {% endif %}
-
-    {% if has_previous or has_next %}
-    <nav class="pager" aria-label="페이지 이동">
-      {% if has_previous %}<a href="{{ prev_url }}">이전</a>{% endif %}
-      {% if has_next %}<a href="{{ next_url }}">다음</a>{% endif %}
-    </nav>
-    {% endif %}
+      </div>
+      <div class="card-price">
+        <span class="muted">{{ '현재가' if c.has_bid else '시작가' }}</span>
+        <span><img class="px" src="{{ url_for('static', path='/sprites/ui_coin.png') }}" alt="" width="20" height="20"> {{ gold(c.price) }}</span>
+      </div>
+      <div class="card-foot">
+        <span class="muted">판매 {{ c.seller_name }}</span>
+        {{ clock(c.remaining_text, c.urgent) }}
+      </div>
+    </a>
+    {% endfor %}
   </div>
+  {% else %}
+  <div class="panel"><p>진행 중인 경매가 없습니다.</p></div>
+  {% endif %}
+
+  {% if has_previous or has_next %}
+  <nav class="pager" aria-label="페이지 이동">
+    {% if has_previous %}<a href="{{ prev_url }}">이전</a>{% endif %}
+    {% if has_next %}<a href="{{ next_url }}">다음</a>{% endif %}
+  </nav>
+  {% endif %}
 </section>
 {% endblock %}
