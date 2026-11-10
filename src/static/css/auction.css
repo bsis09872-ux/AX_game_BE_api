@@ -239,7 +239,7 @@ body.embed .main-content {
 }
 
 .price-block {
-  margin-top: 4px;
+  margin-top: -6px;
 }
 
 .card-time {
@@ -247,6 +247,7 @@ body.embed .main-content {
 }
 
 .stage-name {
+  margin: 0;
   font-size: 20px;
 }
 
@@ -269,7 +270,7 @@ body.embed .main-content {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  min-height: 150px;
+  min-height: 190px;
   margin: 18px 14px 14px;
   padding: 10px;
   background: rgba(58, 35, 22, .55);
@@ -289,12 +290,25 @@ body.embed .main-content {
 
 /* 웅성거리는 입찰자들: 작고 어둡게, 위아래로 조금씩 흔들린다. 최고액 입찰자는 크고 금빛으로 빛난다 */
 .crowd {
+  width: 100%;
+  overflow: hidden;
+  padding-top: 4px;
+}
+
+.crowd-row {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  width: 100%;
-  overflow: hidden;
-  padding-top: 8px;
+}
+
+/* 뒷줄: 더 작고 더 어둡게 앞줄 사이사이에 보인다 */
+.crowd-row.back {
+  margin-bottom: -22px;
+}
+
+.crowd-row.back .crowd-npc {
+  margin-left: -10px;
+  filter: brightness(.5);
 }
 
 .crowd-npc {
@@ -367,6 +381,39 @@ body.embed .main-content {
 
 .bid-meta {
   margin: 0 0 6px;
+}
+
+/* 입찰 폼: 입력 칸과 버튼을 한 줄에 같은 높이로 */
+.bid-form label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.bid-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.bid-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  font-size: 16px;
+}
+
+.bid-row .btn {
+  flex: none;
+}
+
+/* 최소 입찰 금액: 가방의 "경매 시작"과 같은 붉은 계열, 크게 */
+.bid-hint {
+  margin: 8px 0 0;
+}
+
+.bid-min {
+  color: var(--pink);
+  font-size: 18px;
 }
 
 /* 결과 배너 (낙찰, 유찰, 취소, 대기) */

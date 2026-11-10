@@ -232,10 +232,15 @@ def leader_view(listing: Listing, viewer_id: int, winner_name: str) -> Leader | 
     return Leader(sprite, '나' if is_me else alias, '최고액 입찰자', listing.current_bid_amount)
 
 
-# 무대 바닥에서 웅성거리는 다른 입찰자들 그림 번호 (경매 번호로 정해서 새로고침해도 같다). 최고액 입찰자의 그림은 뺀다
-def crowd_view(listing_id: int, leader_sprite: int) -> tuple[int, ...]:
-    sprites = [(listing_id * 3 + i * 5) % len(ALIASES) + 1 for i in range(len(ALIASES))]
-    return tuple(n for n in sprites if n != leader_sprite)
+# 무대 바닥에서 웅성거리는 다른 입찰자들의 그림 번호 (앞줄, 뒷줄). 경매 번호로 정해서 새로고침해도 같다
+# 별명이 있는 8명(1~8)과 구경꾼용으로 만든 8명(9~16)이 섞여 선다. 최고액 입찰자의 그림은 뺀다
+CROWD_SPRITES = 16
+
+
+def crowd_view(listing_id: int, leader_sprite: int) -> tuple[tuple[int, ...], tuple[int, ...]]:
+    front = [(listing_id * 3 + i * 5) % CROWD_SPRITES + 1 for i in range(8)]
+    back = [(listing_id * 7 + i * 3 + 8) % CROWD_SPRITES + 1 for i in range(10)]
+    return tuple(n for n in front if n != leader_sprite), tuple(back)
 
 
 @dataclass(frozen=True)
@@ -253,7 +258,8 @@ class DetailView:
     remaining_text: str
     timebar: Timebar | None
     leader: Leader | None
-    crowd: tuple[int, ...]  # 입찰자가 있을 때만 채운다
+    crowd_front: tuple[int, ...]  # 입찰자가 있을 때만 채운다
+    crowd_back: tuple[int, ...]
     banner: Banner | None
     message: str  # 입찰 패널의 내 상태 안내
     can_bid: bool
@@ -291,7 +297,7 @@ def detail_view(
     elif blocked:
         message = f'연속 낙찰 제한 중이라 입찰할 수 없어요. (남은 시간 {format_clock(blocked_seconds)})'
     elif listing.has_bidder():
-        message = '지금은 다른 입찰자가 최고액이에요.'
+        message = '지금은 다른 입찰자가 최고 입찰가를 올렸어요.'
     else:
         message = '아직 입찰이 없어요. 첫 입찰을 해 보세요!'
 
@@ -315,7 +321,8 @@ def detail_view(
         remaining_text=format_clock(seconds) if bidding else '마감',
         timebar=timebar_view(seconds) if bidding else None,
         leader=leader,
-        crowd=crowd_view(listing.id, leader.sprite) if leader else (),
+        crowd_front=crowd_view(listing.id, leader.sprite)[0] if leader else (),
+        crowd_back=crowd_view(listing.id, leader.sprite)[1] if leader else (),
         banner=banner_view(listing, viewer_id, winner_name),
         message=message,
         can_bid=bidding and seconds > 0 and not is_seller and not is_leader and not blocked,
