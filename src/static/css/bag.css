@@ -152,9 +152,18 @@ a.slot {
   text-align: right;
 }
 
-.start-row .btn {
-  padding: 3px 10px;
-  font-size: 14px;
+/* 상자 없는 글자 버튼: "아이템 도감 보기" 링크처럼 보이되 색은 붉은 계열 */
+.link-btn {
+  padding: 0;
+  font: inherit;
+  color: var(--pink);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.link-btn:hover {
+  text-decoration: underline;
 }
 
 .action-row {
@@ -188,8 +197,9 @@ a.slot {
   overflow: hidden;
 }
 
-/* 상태·희귀도·정렬 버튼도 너비를 같게 (줄임말(UNCOM, LEGEND, 희귀도순)이 한 줄에 들어가는 폭) */
+/* 상태·희귀도·정렬 버튼: 글자 폭에 맞추고 버튼 안에서는 줄바꿈하지 않는다 (줄은 버튼 사이에서만 넘어간다) */
 .bag-filters .filter-group a {
-  width: 64px;
-  padding: 2px 0;
+  width: auto;
+  min-width: 56px;
+  padding: 2px 8px;
 }
