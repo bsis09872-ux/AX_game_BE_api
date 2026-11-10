@@ -1,14 +1,16 @@
 {# [Claude] 이 파일은 Claude가 작성함 (검토 전) #}
 {# 경매 상세: 진행 바, 무대(경매사, 아이템 카드, 최고액 입찰자), 입찰 패널, 규칙, 결과 배너. 낙찰·유찰·취소·대기도 이 화면이다 #}
 {% extends "auction/_layout.html" %}
-{% from "inventory/_macros.html" import gold, moment, item_icon %}
+{% from "inventory/_macros.html" import moment, item_icon %}
+{% from "auction/_macros.html" import gold %}
 {% block title %}{{ d.item.name }} | 경매장 | Catch &amp; Bid{% endblock %}
 
 {% block content %}
 {% macro leader_figure() -%}
 <figure class="stage-npc stage-bidder{% if d.leader.label == '나' %} me{% endif %}">
   <span class="tag lead">{{ d.leader.badge }}</span>
-  <img class="px" src="{{ url_for('static', path='/sprites/npc_bidder_' ~ d.leader.sprite ~ '.png') }}" alt="" width="112" height="112">
+  <img class="px" src="{{ url_for('static', path='/sprites/npc_bidder_' ~ d.leader.sprite ~ '.png') }}" alt=""
+    width="112" height="112">
   <figcaption>{{ d.leader.label }}</figcaption>
 </figure>
 {%- endmacro %}
@@ -27,15 +29,16 @@
         {% if d.timebar %}
         {# 남은 시간만큼 채워지고 점점 줄어든다 #}
         <div class="timebar{% if d.timebar.urgent %} urgent{% endif %}" role="progressbar" aria-label="경매 마감까지 남은 시간"
-             aria-valuemin="0" aria-valuemax="{{ d.timebar.total }}" aria-valuenow="{{ d.timebar.remaining }}"
-             aria-valuetext="경매 마감까지 {{ d.remaining_text }}">
+          aria-valuemin="0" aria-valuemax="{{ d.timebar.total }}" aria-valuenow="{{ d.timebar.remaining }}"
+          aria-valuetext="경매 마감까지 {{ d.remaining_text }}">
           <div class="timebar-fill" style="width: {{ d.timebar.percent }}%"></div>
         </div>
         {% endif %}
 
         {% if d.banner %}
         <div class="banner {{ d.banner.kind }}" role="status">
-          {% if d.banner.kind == 'sold' %}<span class="confetti" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>{% endif %}
+          {% if d.banner.kind == 'sold' %}<span class="confetti"
+            aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>{% endif %}
           <strong>{{ d.banner.title }}</strong>
           <span>{{ d.banner.sub }}</span>
         </div>
@@ -43,7 +46,8 @@
 
         <div class="stage-top">
           <figure class="stage-npc">
-            <img class="px" src="{{ url_for('static', path='/sprites/npc_auctioneer.png') }}" alt="" width="160" height="128">
+            <img class="px" src="{{ url_for('static', path='/sprites/npc_auctioneer.png') }}" alt="" width="160"
+              height="128">
             <figcaption>경매사</figcaption>
           </figure>
 
@@ -56,7 +60,8 @@
               <div class="stage-price">{{ '{:,}'.format(d.price) }}G</div>
             </div>
             <div class="muted card-time">
-              {% if d.status == 'BIDDING' %}경매 마감까지 <span class="clock{% if d.timebar and d.timebar.urgent %} urgent{% endif %}">{{ d.remaining_text }}</span>
+              {% if d.status == 'BIDDING' %}경매 마감까지 <span
+                class="clock{% if d.timebar and d.timebar.urgent %} urgent{% endif %}">{{ d.remaining_text }}</span>
               {% elif d.status == 'QUEUED' %}순서를 기다리는 중
               {% else %}경매 마감{% endif %}
             </div>
@@ -70,13 +75,15 @@
           <div class="crowd">
             <div class="crowd-row back">
               {% for n in d.crowd_back %}
-              <img class="px crowd-npc" style="--i: {{ loop.index0 + 3 }}" src="{{ url_for('static', path='/sprites/npc_bidder_' ~ n ~ '.png') }}" alt="" width="48" height="48">
+              <img class="px crowd-npc" style="--i: {{ loop.index0 + 3 }}"
+                src="{{ url_for('static', path='/sprites/npc_bidder_' ~ n ~ '.png') }}" alt="" width="48" height="48">
               {% endfor %}
             </div>
             <div class="crowd-row front">
               {% for n in d.crowd_front %}
               {% if loop.index0 == half %}{{ leader_figure() }}{% endif %}
-              <img class="px crowd-npc" style="--i: {{ loop.index0 }}" src="{{ url_for('static', path='/sprites/npc_bidder_' ~ n ~ '.png') }}" alt="" width="64" height="64">
+              <img class="px crowd-npc" style="--i: {{ loop.index0 }}"
+                src="{{ url_for('static', path='/sprites/npc_bidder_' ~ n ~ '.png') }}" alt="" width="64" height="64">
               {% endfor %}
             </div>
           </div>
@@ -90,15 +97,17 @@
     <div class="col side">
       <h2 class="title-tab">입찰</h2>
       <div class="panel">
-        <p class="bid-meta">상태 <span class="tag {{ d.status }}">{{ d.status_label }}</span> · 판매자 : <strong>{{ d.seller_name }}</strong></p>
+        <p class="bid-meta">상태 <span class="tag {{ d.status }}">{{ d.status_label }}</span> · 판매자 : <strong>{{
+            d.seller_name }}</strong></p>
         {% if d.ends_at %}<p class="muted bid-meta">마감 {{ moment(d.ends_at) }}</p>{% endif %}
-        {% if d.message %}<p>{{ d.message }}</p>{% endif %}
+        {% if d.message %}<p class="bid-message{% if d.message_warn %} warn{% endif %}">{{ d.message }}</p>{% endif %}
 
         {% if d.can_bid %}
         <form method="post" action="{{ d.bid_action }}" class="bid-form">
-          <label for="bid-amount" class="bid-label">입찰 금액 (G)</label>
+          <label for="bid-amount" class="bid-label">입찰금액(G)</label>
           <div class="bid-row">
-            <input id="bid-amount" name="amount" type="number" inputmode="numeric" min="{{ d.min_bid }}" value="{{ d.min_bid }}" required>
+            <input id="bid-amount" name="amount" type="number" inputmode="numeric" min="{{ d.min_bid }}"
+              value="{{ d.min_bid }}" required>
             <button type="submit" class="btn gold">입찰하기</button>
           </div>
         </form>
@@ -113,11 +122,10 @@
       </div>
 
       <div class="panel dark rules">
-        <h2>입찰 규칙</h2>
+        <h2>입찰규칙</h2>
         <ol>
           <li>현재 최고가보다 높은 금액으로 입찰해요.</li>
           <li>마감 전까지 더 높게 부르면 최고액 입찰자가 바뀌어요.</li>
-          <li>최고액일 때만 입찰 금액이 묶이고,<br>밀려나면 바로 풀려요.</li>
           <li>마감 때 최고액 입찰자가 낙찰받고 금액이 차감돼요.<br>입찰자가 없으면 유찰, 아이템은 판매자에게 돌아가요.</li>
           <li>내 매물에는 입찰할 수 없고,<br>최고액 입찰자는 연속으로 입찰할 수 없어요.</li>
         </ol>

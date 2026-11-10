@@ -72,7 +72,9 @@ body.embed .main-content {
   color: var(--text);
   background: var(--wood);
   border: var(--px) solid var(--outline);
-  box-shadow: inset var(--px) var(--px) 0 var(--wood-light), inset calc(-1 * var(--px)) calc(-1 * var(--px)) 0 var(--wood-dark);
+  box-shadow:
+    inset var(--px) var(--px) 0 var(--wood-light),
+    inset calc(-1 * var(--px)) calc(-1 * var(--px)) 0 var(--wood-dark);
 }
 
 .card:hover {
@@ -121,6 +123,24 @@ body.embed .main-content {
   vertical-align: middle;
 }
 
+/* 카드 맨 아래 상태 띠 (카드 안쪽 여백을 가로질러 가장자리까지) */
+.card-status {
+  margin: 0 -12px -12px;
+  padding: 6px 12px;
+  font-size: 13px;
+  background: rgba(36, 26, 31, 0.45);
+  border-top: 2px solid rgba(0, 0, 0, 0.25);
+}
+
+.card-status.yes {
+  color: var(--gold);
+}
+
+.card-status.none {
+  color: var(--muted);
+  opacity: 0.7;
+}
+
 .card-foot {
   display: flex;
   justify-content: space-between;
@@ -137,8 +157,7 @@ body.embed .main-content {
 }
 
 /* 매물 상태 표시(.tag는 global.css) */
-.tag.BIDDING,
-.tag.bid-yes {
+.tag.BIDDING {
   background: var(--green-dark);
 }
 
@@ -167,8 +186,7 @@ body.embed .main-content {
   position: relative;
   padding: 0;
   overflow: hidden;
-  background:
-    linear-gradient(#6b3d2c 0 58%, #3a2316 58% 60%, #9a6a3f 60% 100%);
+  background: linear-gradient(#6b3d2c 0 58%, #3a2316 58% 60%, #9a6a3f 60% 100%);
 }
 
 /* 바닥 널빤지 줄무늬 */
@@ -176,7 +194,11 @@ body.embed .main-content {
   content: "";
   position: absolute;
   inset: 60% 0 0;
-  background: repeating-linear-gradient(90deg, rgba(0, 0, 0, .1) 0 2px, transparent 2px 56px);
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.1) 0 2px,
+    transparent 2px 56px
+  );
   pointer-events: none;
 }
 
@@ -193,8 +215,10 @@ body.embed .main-content {
   height: 100%;
   background: var(--pink);
   /* 8비트 입체감: 위쪽에 밝은 줄, 아래쪽에 어두운 줄 */
-  box-shadow: inset 0 4px 0 rgba(255, 255, 255, .55), inset 0 -3px 0 rgba(0, 0, 0, .22);
-  transition: width .4s;
+  box-shadow:
+    inset 0 4px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.22);
+  transition: width 0.4s;
 }
 
 .timebar.urgent .timebar-fill {
@@ -235,7 +259,10 @@ body.embed .main-content {
   background: linear-gradient(#34262d, var(--night));
   border: var(--px) solid var(--outline);
   /* 입체감: 왼쪽 위는 밝게, 오른쪽 아래는 어둡게, 바닥에 그림자 */
-  box-shadow: inset 3px 3px 0 #5a4550, inset -3px -3px 0 #130d10, 6px 6px 0 rgba(0, 0, 0, .4);
+  box-shadow:
+    inset 3px 3px 0 #5a4550,
+    inset -3px -3px 0 #130d10,
+    6px 6px 0 rgba(0, 0, 0, 0.4);
 }
 
 .price-block {
@@ -270,11 +297,11 @@ body.embed .main-content {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  height: 190px;  /* 입찰자가 있든 없든 무대 높이는 같다 */
+  height: 190px; /* 입찰자가 있든 없든 무대 높이는 같다 */
   margin: 18px 14px 14px;
   padding: 10px;
-  background: rgba(58, 35, 22, .55);
-  border: var(--px) solid rgba(58, 35, 22, .8);
+  background: rgba(58, 35, 22, 0.55);
+  border: var(--px) solid rgba(58, 35, 22, 0.8);
 }
 
 /* 입찰자가 있으면 흐린 바닥이 테두리 없이 무대 가장자리까지, 경매사 바로 아래부터 덮는다 (위 18 + 190 + 아래 14 = 222로 높이를 맞춘다) */
@@ -315,15 +342,15 @@ body.embed .main-content {
 
 .crowd-row.back .crowd-npc {
   margin-left: -10px;
-  filter: brightness(.5);
+  filter: brightness(0.5);
 }
 
 .crowd-npc {
   flex: none;
   margin-left: -14px;
-  filter: brightness(.7);
+  filter: brightness(0.7);
   animation: murmur 1.4s ease-in-out infinite;
-  animation-delay: calc(var(--i) * -.23s);
+  animation-delay: calc(var(--i) * -0.23s);
 }
 
 .crowd .stage-bidder {
@@ -343,17 +370,26 @@ body.embed .main-content {
 
 .stage-bidder figcaption {
   padding: 0 8px;
-  background: rgba(36, 26, 31, .75);
+  background: rgba(36, 26, 31, 0.75);
 }
 
 @keyframes murmur {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
 }
 
 @keyframes me-glow {
-  from { filter: drop-shadow(0 0 4px var(--gold)); }
-  to { filter: drop-shadow(0 0 12px var(--gold)); }
+  from {
+    filter: drop-shadow(0 0 4px var(--gold));
+  }
+  to {
+    filter: drop-shadow(0 0 12px var(--gold));
+  }
 }
 
 .side .title-tab,
@@ -371,7 +407,7 @@ body.embed .main-content {
   margin: 0 0 10px;
   padding-bottom: 8px;
   font-size: 15px;
-  border-bottom: 1px solid rgba(255, 244, 224, .22);
+  border-bottom: 1px solid rgba(255, 244, 224, 0.22);
 }
 
 .rules ol {
@@ -392,6 +428,15 @@ body.embed .main-content {
   margin: 0 0 6px;
 }
 
+/* 입찰 패널 안내 문구: 안내는 하늘색, 입찰이 막힌 경고는 붉은색 */
+.bid-message {
+  color: var(--water);
+}
+
+.bid-message.warn {
+  color: var(--pink);
+}
+
 /* 입찰 폼: 입력 칸과 버튼을 한 줄에 같은 높이로 */
 .bid-form label {
   display: block;
@@ -401,7 +446,7 @@ body.embed .main-content {
 /* "입찰 금액 (G)" 글자: 가방의 "경매 시작"과 같은 붉은 계열 (크기는 안내 문구와 같다) */
 .bid-label {
   color: var(--pink);
-  font-size: 20px;
+  font-size: 15px;
 }
 
 .bid-row {
@@ -420,7 +465,6 @@ body.embed .main-content {
 .bid-row .btn {
   flex: none;
 }
-
 
 /* 결과 배너 (낙찰, 유찰, 취소, 대기) */
 .banner {
@@ -448,7 +492,7 @@ body.embed .main-content {
 
 .banner.sold {
   background: var(--gold);
-  animation: banner-pop .5s ease-out;
+  animation: banner-pop 0.5s ease-out;
 }
 
 .banner.queued {
@@ -462,9 +506,17 @@ body.embed .main-content {
 }
 
 @keyframes banner-pop {
-  0% { transform: translateX(-50%) scale(.6); opacity: 0; }
-  70% { transform: translateX(-50%) scale(1.08); opacity: 1; }
-  100% { transform: translateX(-50%) scale(1); }
+  0% {
+    transform: translateX(-50%) scale(0.6);
+    opacity: 0;
+  }
+  70% {
+    transform: translateX(-50%) scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+  }
 }
 
 /* 낙찰 이펙트: 위에서 떨어지는 조각 (CSS만 사용) */
@@ -484,28 +536,79 @@ body.embed .main-content {
   animation: confetti-fall 1.8s ease-in infinite;
 }
 
-.confetti i:nth-child(1) { left: 5%; animation-delay: 0s; }
-.confetti i:nth-child(2) { left: 15%; animation-delay: .4s; background: var(--water); }
-.confetti i:nth-child(3) { left: 25%; animation-delay: .8s; background: var(--green); }
-.confetti i:nth-child(4) { left: 35%; animation-delay: .2s; }
-.confetti i:nth-child(5) { left: 45%; animation-delay: .6s; background: var(--water); }
-.confetti i:nth-child(6) { left: 55%; animation-delay: 1s; background: var(--green); }
-.confetti i:nth-child(7) { left: 65%; animation-delay: .3s; }
-.confetti i:nth-child(8) { left: 75%; animation-delay: .7s; background: var(--water); }
-.confetti i:nth-child(9) { left: 85%; animation-delay: 1.1s; background: var(--green); }
-.confetti i:nth-child(10) { left: 95%; animation-delay: .5s; }
+.confetti i:nth-child(1) {
+  left: 5%;
+  animation-delay: 0s;
+}
+.confetti i:nth-child(2) {
+  left: 15%;
+  animation-delay: 0.4s;
+  background: var(--water);
+}
+.confetti i:nth-child(3) {
+  left: 25%;
+  animation-delay: 0.8s;
+  background: var(--green);
+}
+.confetti i:nth-child(4) {
+  left: 35%;
+  animation-delay: 0.2s;
+}
+.confetti i:nth-child(5) {
+  left: 45%;
+  animation-delay: 0.6s;
+  background: var(--water);
+}
+.confetti i:nth-child(6) {
+  left: 55%;
+  animation-delay: 1s;
+  background: var(--green);
+}
+.confetti i:nth-child(7) {
+  left: 65%;
+  animation-delay: 0.3s;
+}
+.confetti i:nth-child(8) {
+  left: 75%;
+  animation-delay: 0.7s;
+  background: var(--water);
+}
+.confetti i:nth-child(9) {
+  left: 85%;
+  animation-delay: 1.1s;
+  background: var(--green);
+}
+.confetti i:nth-child(10) {
+  left: 95%;
+  animation-delay: 0.5s;
+}
 
 @keyframes confetti-fall {
-  0% { transform: translateY(0) rotate(0); opacity: 1; }
-  100% { transform: translateY(90px) rotate(240deg); opacity: 0; }
+  0% {
+    transform: translateY(0) rotate(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(90px) rotate(240deg);
+    opacity: 0;
+  }
 }
 
 /* 시스템에서 "동작 줄이기"를 켠 사람에게는 움직임을 끈다 */
 @media (prefers-reduced-motion: reduce) {
-  .banner.sold { animation: none; }
-  .confetti { display: none; }
-  .timebar-fill { transition: none; }
-  .crowd-npc, .stage-bidder.me img { animation: none; }
+  .banner.sold {
+    animation: none;
+  }
+  .confetti {
+    display: none;
+  }
+  .timebar-fill {
+    transition: none;
+  }
+  .crowd-npc,
+  .stage-bidder.me img {
+    animation: none;
+  }
 }
 
 /* 내 거래: 탭(링크)과 제한 안내 */

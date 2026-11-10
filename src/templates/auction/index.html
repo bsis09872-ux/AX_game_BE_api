@@ -33,9 +33,6 @@
         <div class="card-info">
           <div class="card-name">{{ c.item.name }}</div>
           <div class="card-meta"><span class="muted">경매 #{{ c.id }} · {{ c.item.category }}</span></div>
-          <div class="card-meta">
-            <span class="tag {{ 'bid-yes' if c.has_bid else 'bid-none' }}">{{ '입찰자 있음' if c.has_bid else '입찰자 없음' }}</span>
-          </div>
         </div>
       </div>
       <div class="card-price">
@@ -45,6 +42,10 @@
       <div class="card-foot">
         <span class="muted">판매자 : {{ c.seller_name }}</span>
         {{ clock(c.remaining_text, c.urgent) }}
+      </div>
+      {# 카드 맨 아래 상태 띠: 입찰자가 있으면 노랑, 없으면 흐리게 #}
+      <div class="card-status {{ 'yes' if c.has_bid else 'none' }}">
+        <span aria-hidden="true">{{ '●' if c.has_bid else '○' }}</span> {{ '입찰자 있음' if c.has_bid else '입찰자 없음' }}
       </div>
     </a>
     {% endfor %}
