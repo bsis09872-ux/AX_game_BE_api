@@ -22,6 +22,18 @@ class BidRequest(BaseModel):
     amount: int = Field(gt=0)
 
 
+# [관리자] 강제 취소 요청: 관리자 ID는 토큰에서 받으므로 본문에 넣지 않는다.
+# 사유는 내부 기록용이며 1~200자. 공백만 있는 사유는 엔티티가 400으로 거절한다.
+class AdminCancelRequest(BaseModel):
+    reason: str = Field(min_length=1, max_length=200)
+
+
+# [관리자] 강제 취소 응답: 안내 메시지만 반환한다.
+# 사유·관리자 ID 등 내부 기록은 응답에 싣지 않는다.
+class AdminCancelResponse(BaseModel):
+    message: str = "관리자에 의해 경매가 취소되었습니다."
+
+
 # 매물 응답: 여기에 적은 필드만 밖으로 나간다. 최고 입찰자 ID는 공개 여부가 정해지기 전까지 싣지 않는다.
 class ListingResponse(BaseModel):
     id: int

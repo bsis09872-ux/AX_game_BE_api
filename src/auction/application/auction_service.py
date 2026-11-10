@@ -5,11 +5,11 @@
 # 확정 정책: 최근 30분 내 3회 낙찰 시 15분간 새 입찰 제한.
 # 제한 중에도 기존 입찰의 정산은 허용하고, 제한 종료 시각은 연장하지 않는다.
 #
-# 다른 도메인에 요청하는 기능(users·wallet·inventory)과 트랜잭션·잠금 순서 합의는 contract.py 상단 TODO를 따른다.
+# 잠금 순서: 매물 → 아이템 종류 → 다음 대기 매물 → 아이템 → 사용자 → 지갑.
+# 매물 1건의 종료·정산·다음 매물 공개는 한 트랜잭션이며, 실패하면 함께 rollback한다.
 #
-# [TO DO][제공 → 스케줄러 담당] 정산·다음 매물 공개 구현과 통합 검증 후 연결한다.
-# 현재 close_expired는 미완성이므로 주기 실행에 등록하지 않는다.
-
+# [TO DO][제공 → 스케줄러 담당] open_auction_service()로 close_expired(now)를 주기 실행에 등록한다. (진행 전)
+# [TO DO] 낙찰자 탈퇴·아이템 누락 등 재시도해도 실패할 오류를 유찰·수동 확인으로 구분한다. (진행 전)
 
 import logging
 from datetime import datetime
@@ -20,12 +20,18 @@ from auction.application.contract import (
     TransactionManager,
     WalletGateway,
 )
+from auction.application.listings.queue import lock_next_queued
 from auction.domain.listings.entities import Listing, ListingStatus
 from auction.domain.listings.repositories import ListingRepository
-
+from auction.domain.trades.entities import Trade
+from auction.domain.trades.policies import WIN_LIMIT_WINDOW, calculate_limit_after_win
 from auction.domain.trades.repositories import TradeRepository
+from shared.core.exceptions import NotFoundError
 
 logger = logging.getLogger(__name__)
+
+# 거래 기록에 남길 이름을 찾지 못했을 때 쓰는 표시값이다.
+UNKNOWN_NAME = "알 수 없음"
 
 
 class AuctionService:
@@ -46,8 +52,8 @@ class AuctionService:
         self.tx = tx
 
     # [제공 → 스케줄러] 마감 시각이 지난 BIDDING 매물을 찾아 하나씩 종료한다.
+    # 입력: 처리 기준 시각(UTC). 반환: 이번 호출에서 실제로 종료한 매물 수.
     # 매물 1건 = 트랜잭션 1개. 한 건이 실패해도 이미 끝난 다른 매물의 정산은 유지된다.
-    # 반환값: 이번 호출에서 실제로 종료한 매물 수.
     async def close_expired(self, now: datetime) -> int:
         # 후보 조회: 잠금 없이 가볍게 조회한다. 실제 처리는 _close_one에서 잠금 재조회 후 한다.
         candidates = await self.listings.list_expired_bidding(now)
@@ -61,17 +67,9 @@ class AuctionService:
                 else:
                     # 건너뛴 매물: 바뀐 내용이 없으므로 rollback으로 잠금만 해제한다.
                     await self.tx.rollback()
-            except NotImplementedError:
-                # 미완성 기능이 호출되면 현재 매물의 변경을 되돌린다.
-                # 오류를 호출자에게 전달하고 이번 마감 작업을 중단한다.
-                await self.tx.rollback()
-                raise
-
             except Exception:
-                # 현재 매물의 변경을 되돌리고 실패 원인을 기록한다.
-                # [TO DO] 낙찰자 탈퇴·비활성 등 업무 오류의 유찰 조건을 구분한다.
-                # [TO DO] 아이템 누락·상태 불일치는 유찰로 덮지 않고 별도로 처리한다.
-                # [TO DO] 재시도할 오류와 수동 확인이 필요한 오류를 구분한다.
+                # 현재 매물의 변경을 모두 되돌리고 실패 원인을 기록한다.
+                # 매물은 BIDDING으로 남아 다음 주기에 다시 시도한다.
                 await self.tx.rollback()
                 logger.exception(
                     "매물 마감 처리 실패: listing_id=%s",
@@ -80,8 +78,9 @@ class AuctionService:
 
         return closed
 
-    # 매물 1건 종료: 잠금 재조회 → 입찰자 유무에 따라 낙찰/유찰 → 같은 종류의 다음 매물 공개.
-    # 반환값: 종료했으면 True, 건너뛰었으면 False.
+    # 매물 1건 종료: 잠금 재조회 → 종류 잠금 → 다음 대기 매물 잠금 → 낙찰/유찰 → 다음 매물 공개.
+    # 입력: 매물 ID·처리 시각. 반환: 종료했으면 True, 건너뛰었으면 False.
+    # commit은 호출자(close_expired)가 한다.
     async def _close_one(self, listing_id: int, now: datetime) -> bool:
         listing = await self.listings.get_for_update(listing_id)
 
@@ -91,19 +90,26 @@ class AuctionService:
         if listing.status != ListingStatus.BIDDING or not listing.is_expired(now):
             return False
 
-        # 입찰자 있음 → 낙찰 정산(_settle), 없음 → 유찰(_fail)
-        # [TO DO] _settle·_open_next의 실제 처리는 다음 PR에서 구현한다.
+        # 같은 종류의 등록과 공개 판단이 겹치지 않게 종류를 잠근다.
+        await self.listings.lock_definition(listing.item_definition_id)
+
+        # 잠금 순서(매물 → 아이템 → 사용자 → 지갑)를 지키려고 다음 매물을 정산 전에 잠근다.
+        next_listing = await lock_next_queued(self.listings, listing.item_definition_id)
+
         if listing.has_bidder():
             await self._settle(listing, now)
         else:
             await self._fail(listing, now)
 
-        await self._open_next(listing.item_definition_id, now)
+        # 현재 매물이 종료된 뒤 다음 매물을 공개한다. 실패하면 위 처리와 함께 rollback된다.
+        if next_listing is not None:
+            next_listing.start(now)
+            await self.listings.save(next_listing)
+
         return True
 
-    # 매물과 처리 시각을 받아 유찰 상태로 바꾸고 아이템 예약을 해제한다.
-    # 현재 호출 조건은 입찰자 없음이다. 업무 오류별 유찰 조건은 추후 구현한다.
-    # 반환값 없음. 저장만 요청하고 commit은 호출자가 담당한다.
+    # 입찰자가 없는 매물을 유찰 처리하고 아이템 예약을 해제한다.
+    # 입력: 잠금된 매물·처리 시각. 반환값 없음. commit은 호출자가 한다.
     async def _fail(self, listing: Listing, now: datetime) -> None:
         listing.mark_failed(now)
         await self.inventory.release(
@@ -114,22 +120,62 @@ class AuctionService:
         )
         await self.listings.save(listing)
 
-    # 마감된 매물과 처리 시각을 받아 낙찰 정산을 수행할 자리다.
-    # [TO DO] 재화·아이템 이전, 거래 기록 생성, 낙찰 제한 갱신을 연결한다.
-    # 반환값 없음. 현재는 미구현 예외를 발생시킨다.
+    # [AUC-05] 낙찰 정산: 아이템 이전 → 사용자 잠금 → 재화 이전 → SOLD → 거래 기록 → 낙찰 제한 갱신.
+    # 입력: 잠금된 매물·처리 시각. 반환값 없음.
+    # 어느 단계든 실패하면 예외를 전달하고, 호출자가 전체 rollback한다.
     async def _settle(self, listing: Listing, now: datetime) -> None:
-        raise NotImplementedError(
-            "낙찰 정산은 외부 도메인 연동 후 구현합니다."
+        seller_id = listing.seller_id
+        buyer_id = listing.current_bidder_id
+        price = listing.current_bid_amount
+
+        # 거래 기록에 남길 아이템 이름을 조회한다. (잠금 없음)
+        item = await self.inventory.get_summary(listing.inventory_item_id)
+
+        # [아이템 잠금] 판매자 소유 확인 후 구매자에게 이전한다.
+        await self.inventory.transfer_reserved(
+            inventory_item_id=listing.inventory_item_id,
+            from_user_id=seller_id,
+            to_user_id=buyer_id,
+            listing_id=listing.id,
+            now=now,
         )
 
-    # 아이템 종류 ID와 처리 시각을 받아 다음 대기 매물을 공개할 자리다.
-    # [TO DO] 같은 종류의 공개 경쟁을 제어하고 대기 매물 조회·시작·저장을 연결한다.
-    # 반환값 없음. 현재는 미구현 예외를 발생시킨다.
-    async def _open_next(
-        self,
-        item_definition_id: int,
-        now: datetime,
-    ) -> None:
-        raise NotImplementedError(
-            "다음 매물 공개는 동시성 제어와 저장 흐름을 연결한 뒤 구현합니다."
+        # [사용자 잠금] 같은 사용자의 낙찰 제한 갱신이 겹치지 않게 ID 오름차순으로 잠근다.
+        users = await self.users.get_for_update_many([seller_id, buyer_id])
+        buyer = users.get(buyer_id)
+        if buyer is None:
+            raise NotFoundError("낙찰자를 찾을 수 없습니다.")
+
+        # [지갑 잠금] 구매자 차감·판매자 지급. 잔액 부족 등은 예외로 전달된다.
+        await self.wallets.settle_sale(
+            buyer_id=buyer_id,
+            seller_id=seller_id,
+            price=price,
+        )
+
+        listing.mark_sold(now)
+        sold = await self.listings.save(listing)
+
+        # 체결 당시 이름을 스냅샷으로 남긴다. 찾지 못한 이름은 표시값으로 대신한다.
+        names = await self.users.get_display_names([seller_id, buyer_id])
+        trade = Trade.from_sold_listing(
+            sold,
+            item_name=item.name,
+            seller_name=names.get(seller_id, UNKNOWN_NAME),
+            buyer_name=names.get(buyer_id, UNKNOWN_NAME),
+            now=now,
+        )
+        await self.trades.save(trade)
+
+        # 이번 거래를 저장한 뒤 조회해야 이번 낙찰이 정확히 한 번 포함된다.
+        win_times = await self.trades.find_win_times_between(
+            buyer_id,
+            since=now - WIN_LIMIT_WINDOW,
+            until=now,
+        )
+        state = calculate_limit_after_win(win_times, buyer.blocked_until, now)
+        await self.users.update_limit(
+            buyer_id,
+            state.purchase_count,
+            state.blocked_until,
         )

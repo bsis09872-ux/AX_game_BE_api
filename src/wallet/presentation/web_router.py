@@ -14,13 +14,21 @@ from fastapi.responses import HTMLResponse
 
 from wallet.application.service import WalletService
 
-from .dependencies import SessionDep, get_wallet_service
+from .dependencies import HeldReaderBuilder, SessionDep, wallet_service_dependency
 from .schemas import WalletResponse
 
 
-def create_wallet_web_router(current_user_id: Callable[..., Awaitable[int]]) -> APIRouter:
-    """current_user_id: 로그인 쿠키를 확인해 회원 ID를 돌려주는 의존성 (auth의 get_current_web_user_id)"""
+def create_wallet_web_router(
+    current_user_id: Callable[..., Awaitable[int]],
+    build_held_reader: HeldReaderBuilder,
+) -> APIRouter:
+    """지갑 화면 라우터를 만든다.
+
+    current_user_id: 로그인 쿠키를 확인해 회원 ID를 돌려주는 의존성 (auth의 get_current_web_user_id)
+    build_held_reader: 요청 세션으로 예약 금액 조회기를 만드는 함수 (경매 제공, API 라우터와 같은 것)
+    """
     router = APIRouter(tags=["wallet-web"])
+    get_wallet_service = wallet_service_dependency(build_held_reader)
 
     @router.get("/wallet", response_class=HTMLResponse)
     async def get_wallet_page(

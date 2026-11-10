@@ -18,13 +18,17 @@
 
 from datetime import datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auction.domain.listings.entities import Listing, ListingStatus
 from auction.domain.listings.repositories import ListingRepository
 from auction.infrastructure.listings.models import ListingModel
 from shared.core.exceptions import NotFoundError
+
+# 아이템 종류 잠금의 이름공간이다. 다른 도메인의 advisory lock 키와 겹치지 않게 한다.
+# users는 731401을 사용한다. (lock_administration)
+_DEFINITION_LOCK_NAMESPACE = 731402
 
 
 class SqlAlchemyListingRepository(ListingRepository):
@@ -103,6 +107,15 @@ class SqlAlchemyListingRepository(ListingRepository):
 
         models = (await self.session.scalars(statement)).all()
         return [self._to_entity(model) for model in models]
+
+    # [AUC-01, AUC-06] 같은 아이템 종류의 공개 판단을 트랜잭션 단위로 직렬화한다.
+    # 입력: 아이템 종류 ID. 처리: PostgreSQL 트랜잭션 advisory lock을 획득한다.
+    # 반환값 없음. 다른 트랜잭션이 잡고 있으면 끝날 때까지 기다리고, commit·rollback 시 풀린다.
+    async def lock_definition(self, item_definition_id: int) -> None:
+        await self.session.execute(
+            text("SELECT pg_advisory_xact_lock(:namespace, :key)"),
+            {"namespace": _DEFINITION_LOCK_NAMESPACE, "key": item_definition_id},
+        )
 
     # [AUC-01, AUC-06] 같은 종류의 매물이 이미 공개 중인지 확인한다.
     async def exists_bidding(self, item_definition_id: int) -> bool:
@@ -184,6 +197,8 @@ class SqlAlchemyListingRepository(ListingRepository):
             started_at=model.started_at,
             ends_at=model.ends_at,
             closed_at=model.closed_at,
+            admin_cancelled_by=model.admin_cancelled_by,
+            admin_cancel_reason=model.admin_cancel_reason,
             updated_at=model.updated_at,
         )
 
@@ -202,5 +217,7 @@ class SqlAlchemyListingRepository(ListingRepository):
             "started_at": listing.started_at,
             "ends_at": listing.ends_at,
             "closed_at": listing.closed_at,
+            "admin_cancelled_by": listing.admin_cancelled_by,
+            "admin_cancel_reason": listing.admin_cancel_reason,
             "updated_at": listing.updated_at,
         }

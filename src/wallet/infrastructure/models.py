@@ -1,8 +1,7 @@
 """지갑 ORM 모델 (ERD Ver_4.0 wallets)
 
 지갑 도메인이 소유하는 테이블은 wallets 하나다.
-다른 도메인 테이블은 external_tables.py에서 (지금은 예약금 계산용 listings만)
-조회용으로만 가볍게 참조한다.
+다른 도메인 테이블은 읽지 않는다. 예약 금액은 경매가 제공하는 HeldAmountReader로 받는다.
 예약금 테이블(wallet_holds)과 잔액 원장(wallet_entries)은 Ver_4.0에서 삭제됐다.
 """
 from datetime import datetime
