@@ -91,7 +91,7 @@
             </div>
           </div>
           {% else %}
-          <p class="empty">{{ '아직 입찰자가 없어요' if d.status == 'BIDDING' and not d.closing else '입찰자가 없었어요' }}</p>
+          <p class="empty">{{ '아직 입찰자가 없어요' if d.status == 'BIDDING' and not d.closing else ('낙찰자를 확인할 수 없었어요' if d.has_bid else '입찰자가 없었어요') }}</p>
           {% endif %}
         </div>
       </div>

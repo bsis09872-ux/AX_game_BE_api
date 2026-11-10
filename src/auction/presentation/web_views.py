@@ -295,6 +295,8 @@ def banner_view(listing: Listing, viewer_id: int, winner_name: str) -> Banner | 
             return Banner('sold', '팔렸어요!', f'{price}G에 {winner_name}님이 낙찰받았어요')
         return Banner('sold', f'낙찰! {winner_name}', f'{price}G에 낙찰됐어요')
     if listing.status == ListingStatus.FAILED:
+        if listing.has_bidder():  # 낙찰자를 정산할 수 없어서 자동으로 유찰된 경우
+            return Banner('fail', '유찰…', '낙찰자를 확인할 수 없어서 아이템이 판매자에게 돌아갔어요')
         return Banner('fail', '유찰…', '입찰자가 없어서 아이템이 판매자에게 돌아갔어요')
     if listing.status == ListingStatus.CANCELLED:
         # 관리자가 강제로 취소한 매물은 사유(내부 기록용)를 보여 주지 않고 누가 취소했는지만 알린다
