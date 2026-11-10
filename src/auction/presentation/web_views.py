@@ -227,9 +227,13 @@ class LiveState:
     price: int  # 입찰이 없으면 시작가
     leader: str  # 'none'(입찰 없음), 'me'(내가 최고액), 'other'(다른 사람이 최고액). 누구인지는 알려 주지 않는다
     remaining: int  # 남은 초 (브라우저가 이 값에서 시작해 직접 센다)
+    blocked: bool = False  # 내가 입찰 제한 중인가 (TradeService.get_bid_limit_status의 결과)
+    blocked_until: str = ''  # 제한이 풀리는 시각(UTC, ISO). 관리자가 연장·해제하면 이 값이 바뀐다
+    blocked_remaining: int = 0  # 제한이 풀리기까지 남은 초 (브라우저가 이 값에서 직접 센다)
 
 
-def live_state(listing: Listing, viewer_id: int, now: datetime) -> LiveState:
+# limit: 입찰이 막혀 있을 때만 넘기는 AuctionLimitState (막혀 있지 않으면 None)
+def live_state(listing: Listing, viewer_id: int, now: datetime, limit=None) -> LiveState:
     remaining = listing.remaining(now)
     seconds = int(remaining.total_seconds()) if remaining is not None else 0
     if not listing.has_bidder():
@@ -241,6 +245,9 @@ def live_state(listing: Listing, viewer_id: int, now: datetime) -> LiveState:
         price=listing.current_bid_amount or listing.start_price,
         leader=leader,
         remaining=max(seconds, 0),
+        blocked=limit is not None,
+        blocked_until=limit.blocked_until.isoformat() if limit is not None and limit.blocked_until else '',
+        blocked_remaining=max(int(limit.remaining.total_seconds()), 0) if limit is not None else 0,
     )
 
 
@@ -360,6 +367,7 @@ class DetailView:
     message: str  # 입찰 패널의 내 상태 안내
     message_warn: bool  # 입찰이 막힌 경고 안내(제한 중)면 붉게, 나머지는 파랗게 보여 준다
     closing: bool  # 마감 시각이 지났지만 아직 정산(낙찰·유찰) 전
+    blocked_clock: str  # 입찰 제한 안내에 보여 줄 남은 시간(m:ss). 제한 안내가 아니면 빈 글자
     live: LiveState | None  # 경매 중·대기 중일 때만 실시간 확인 대상
     live_url: str
     can_bid: bool
@@ -377,9 +385,10 @@ def detail_view(
     item: ItemView,
     seller_name: str,
     winner_name: str,
-    blocked_seconds: int | None,
+    limit,  # 입찰이 막혀 있으면 AuctionLimitState, 아니면 None
     embed: bool = False,
 ) -> DetailView:
+    blocked_seconds = int(limit.remaining.total_seconds()) if limit is not None else None
     bidding = listing.status == ListingStatus.BIDDING
     is_seller = listing.seller_id == viewer_id
     is_leader = listing.current_bidder_id == viewer_id
@@ -431,7 +440,8 @@ def detail_view(
         message=message,
         message_warn=warn,
         closing=closing,
-        live=live_state(listing, viewer_id, now) if listing.status in (ListingStatus.BIDDING, ListingStatus.QUEUED) else None,
+        blocked_clock=format_clock(blocked_seconds) if warn else '',
+        live=live_state(listing, viewer_id, now, limit) if listing.status in (ListingStatus.BIDDING, ListingStatus.QUEUED) else None,
         live_url=state_url(listing.id, embed),
         can_bid=bidding and seconds > 0 and not is_seller and not is_leader and not blocked,
         can_cancel=listing.status == ListingStatus.QUEUED and is_seller,
@@ -448,11 +458,22 @@ def detail_view(
 MAX_INPUT_NUMBER = 10**12
 
 
+MAX_INPUT_TEXT = 40  # 쉼표와 공백을 넣어도 이보다 긴 입력은 숫자로 보지 않는다 (최대값 13자리에 여유를 둔다)
+MAX_INPUT_DIGITS = len(str(MAX_INPUT_NUMBER))
+
+
 def parse_number(text: str) -> int | None:
-    cleaned = (text or '').strip().replace(',', '')
-    if not cleaned.isdigit():
+    raw = (text or '').strip()
+    if len(raw) > MAX_INPUT_TEXT:
         return None
-    value = int(cleaned)
+    cleaned = raw.replace(',', '')
+    # isdigit()은 위첨자 같은 숫자 모양 글자도 통과시켜 int()가 실패한다. ASCII 숫자만 받고 길이를 먼저 제한한다
+    if not cleaned or len(cleaned) > MAX_INPUT_DIGITS or not (cleaned.isascii() and cleaned.isdecimal()):
+        return None
+    try:
+        value = int(cleaned)
+    except ValueError:
+        return None
     return value if 1 <= value <= MAX_INPUT_NUMBER else None
 
 

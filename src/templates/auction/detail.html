@@ -15,7 +15,8 @@
 {%- endmacro %}
 <section aria-labelledby="listing-title"{% if d.live %} data-auction-live data-listing-id="{{ d.id }}" data-state-url="{{ d.live_url }}"
   data-status="{{ d.live.status }}" data-price="{{ d.live.price }}" data-leader="{{ d.live.leader }}" data-remaining="{{ d.live.remaining }}"
-  data-total="{{ d.timebar.total if d.timebar else 0 }}"{% endif %}>
+  data-total="{{ d.timebar.total if d.timebar else 0 }}"
+  data-blocked="{{ 1 if d.live.blocked else 0 }}" data-blocked-until="{{ d.live.blocked_until }}" data-blocked-remaining="{{ d.live.blocked_remaining }}"{% endif %}>
   <div class="auction-head">
     <a href="{{ d.list_href }}">← 경매장 목록</a>
     {% if embed %}<button type="button" class="btn red" data-auction-close>닫기 (Esc)</button>{% endif %}
@@ -103,7 +104,7 @@
         <p class="bid-meta">상태 <span class="tag {{ d.status }}">{{ d.status_label }}</span> · 판매자 : <strong>{{
             d.seller_name }}</strong></p>
         {% if d.ends_at %}<p class="muted bid-meta">마감 {{ moment(d.ends_at) }}</p>{% endif %}
-        {% if d.message %}<p class="bid-message{% if d.message_warn %} warn{% endif %}">{{ d.message }}</p>{% endif %}
+        {% if d.message %}<p class="bid-message{% if d.message_warn %} warn{% endif %}">{% if d.message_warn %}연속 낙찰 제한 중이라 입찰할 수 없어요. (남은 시간 <span data-live-block-clock>{{ d.blocked_clock }}</span>){% else %}{{ d.message }}{% endif %}</p>{% endif %}
 
         {% if d.can_bid %}
         <form method="post" action="{{ d.bid_action }}" class="bid-form" data-page-form>

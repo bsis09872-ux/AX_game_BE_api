@@ -28,6 +28,8 @@ function initDetailLive({ root, signal, navigate }) {
         status: live.dataset.status,
         price: Number(live.dataset.price),
         leader: live.dataset.leader,
+        blocked: live.dataset.blocked === "1", // 내가 입찰 제한 중인가
+        blockedUntil: live.dataset.blockedUntil || "", // 제한이 풀리는 시각 (관리자가 연장·해제하면 바뀐다)
     };
     const total = Number(live.dataset.total) || 0;
     const clock = root.querySelector("[data-live-clock]");
@@ -37,6 +39,7 @@ function initDetailLive({ root, signal, navigate }) {
     const form = root.querySelector(".bid-form");
     const input = root.querySelector("#bid-amount");
     const bubble = root.querySelector(".bid-message");
+    const blockClock = root.querySelector("[data-live-block-clock]"); // 입찰 제한 안내의 남은 시간 글자
 
     // 화면을 다시 불러오기 전에 입력하던 금액이 있으면, 새 최소 금액 이상일 때만 되살린다
     if (carried && carried.listingId === listingId && input) {
@@ -48,7 +51,9 @@ function initDetailLive({ root, signal, navigate }) {
     carried = null;
 
     let remaining = Number(live.dataset.remaining);
+    let blockedRemaining = Number(live.dataset.blockedRemaining) || 0;
     let baseline = performance.now();
+    let blockNudged = false;
     let pollTimer = null;
     let tickTimer = null;
     let busy = false;
@@ -83,6 +88,15 @@ function initDetailLive({ root, signal, navigate }) {
     function render() {
         if (initial.status !== "BIDDING") {
             return;
+        }
+        // 입찰 제한 안내: 남은 시간만 직접 센다. 0이 되면 제한이 풀렸는지 바로 확인한다(풀렸으면 화면을 다시 불러온다)
+        if (blockClock && initial.blocked) {
+            const blockedLeft = Math.max(0, blockedRemaining - Math.floor((performance.now() - baseline) / 1000));
+            blockClock.textContent = formatClock(blockedLeft);
+            if (blockedLeft === 0 && !blockNudged) {
+                blockNudged = true;
+                void poll();
+            }
         }
         const left = secondsLeft();
         if (left <= 0) {
@@ -123,9 +137,10 @@ function initDetailLive({ root, signal, navigate }) {
         if (input && input.value !== input.defaultValue) {
             carried = { listingId, value: input.value };
         }
-        await navigate(location.href, { replace: true });
+        // background: 자동 갱신이다. 사용자가 누른 이동이 진행 중이면 건너뛰고, 그 이동을 끊지 않는다
+        await navigate(location.href, { replace: true, background: true });
 
-        // 화면이 바뀌었으면 이 함수는 signal로 정리됐다. 못 바꿨으면 잠시 뒤 다시 확인한다
+        // 화면이 바뀌었으면 이 함수는 signal로 정리됐다. 건너뛰었거나 못 바꿨으면 잠시 뒤 다시 확인한다
         if (!signal.aborted) {
             stopped = false;
             tickTimer = setInterval(render, 1000);
@@ -153,10 +168,13 @@ function initDetailLive({ root, signal, navigate }) {
                 changed =
                     state.status !== initial.status ||
                     state.price !== initial.price ||
-                    state.leader !== initial.leader;
+                    state.leader !== initial.leader ||
+                    Boolean(state.is_blocked) !== initial.blocked ||
+                    (state.blocked_until ?? "") !== initial.blockedUntil;
                 if (!changed) {
                     // 남은 시간을 서버 기준으로 다시 맞춘다 (오래 켜 두면 생기는 오차를 없앤다)
                     remaining = state.remaining;
+                    blockedRemaining = state.blocked_remaining ?? 0;
                     baseline = performance.now();
                 }
             }

@@ -104,6 +104,18 @@ async def new_response(
     return render(request, 'auction/new.html', {**ctx.base(), 'n': view, 'error': error}, status_code)
 
 
+# 입찰이 막혀 있으면 그 제한 상태(AuctionLimitState)를, 아니면 None을 돌려준다.
+# 경매 중인 남의 매물에서만 확인한다(판매자는 입찰하지 않는다). 상세 화면과 상태 확인 주소가 같은 값을 쓴다
+async def load_bid_limit(trades, listing, user_id: int, now: datetime):
+    if listing.status != ListingStatus.BIDDING or listing.seller_id == user_id:
+        return None
+    try:
+        state = await trades.get_bid_limit_status(user_id, now)
+    except AppError:
+        return None
+    return state if state.is_blocked else None
+
+
 # 매물 상세 화면을 그린다. 입찰·취소가 실패했을 때 같은 화면에 오류를 얹어 다시 그리는 데도 쓴다
 async def detail_response(
     request: Request, ctx: PageContext, listing_id: int,
@@ -123,20 +135,14 @@ async def detail_response(
     names = await users.get_display_names([listing.seller_id] + ([winner_id] if winner_id else []))
 
     # 입찰 제한 상태는 입찰할 수 있는 사람에게만 보여 준다 (제한 중에도 조회는 허용)
-    blocked_seconds = None
-    if listing.status == ListingStatus.BIDDING and listing.seller_id != ctx.user_id:
-        try:
-            state = await trades.get_bid_limit_status(ctx.user_id, now)
-            blocked_seconds = int(state.remaining.total_seconds()) if state.is_blocked else None
-        except AppError:
-            blocked_seconds = None
+    limit = await load_bid_limit(trades, listing, ctx.user_id, now)
 
     view = detail_view(
         listing, ctx.user_id, now,
         await load_item(inventory, listing.item_definition_id),
         names.get(listing.seller_id, '알 수 없음'),
         names.get(winner_id, '알 수 없음') if winner_id else '',
-        blocked_seconds,
+        limit,
         ctx.embed,
     )
     return render(request, 'auction/detail.html', {**ctx.base(), 'd': view, 'notice': notice, 'error': error}, status_code)
@@ -205,6 +211,7 @@ def create_auction_web_router(
     @router.get('/auctions/{listing_id:int}/state', include_in_schema=False)
     async def get_auction_state(
         service: ListingServiceDep,
+        trades: TradeServiceDep,
         listing_id: int = Path(ge=1),
         user_id: int = Depends(current_user_id),
     ):
@@ -216,9 +223,14 @@ def create_auction_web_router(
         # 대기 매물은 판매자에게만 보인다 (상세 화면과 같은 규칙)
         if listing.status == ListingStatus.QUEUED and listing.seller_id != user_id:
             return JSONResponse({'gone': True}, status_code=404, headers=headers)
-        state = live_state(listing, user_id, datetime.now(timezone.utc))
+        now = datetime.now(timezone.utc)
+        state = live_state(listing, user_id, now, await load_bid_limit(trades, listing, user_id, now))
         return JSONResponse(
-            {'status': state.status, 'price': state.price, 'leader': state.leader, 'remaining': state.remaining},
+            {
+                'status': state.status, 'price': state.price, 'leader': state.leader, 'remaining': state.remaining,
+                'is_blocked': state.blocked, 'blocked_until': state.blocked_until or None,
+                'blocked_remaining': state.blocked_remaining,
+            },
             headers=headers,
         )
     # endregion
