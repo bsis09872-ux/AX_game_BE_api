@@ -51,14 +51,20 @@
         {% if not slots %}
         <p>{{ '조건에 맞는 아이템이 없습니다.' if filtered else '아직 보유한 아이템이 없습니다.' }}</p>
         {% endif %}
-        <p class="muted">회색 칸은 경매에 올라가 있는 아이템이에요. 경매가 끝나면 주인이 바뀌거나 가방으로 돌아와요.</p>
 
-        {% if has_previous or has_next %}
-        <nav aria-label="페이지 이동">
-          {% if has_previous %}<a href="{{ prev_url }}">이전</a>{% endif %}
-          {% if has_next %}<a href="{{ next_url }}">다음</a>{% endif %}
-        </nav>
-        {% endif %}
+        {# 격자 아래 한 줄: 왼쪽에 도감 전체 보기, 오른쪽에 쪽 이동(쪽이 둘 이상일 때). 없는 방향은 흐리게 두어 자리를 고정한다 #}
+        <div class="bag-foot">
+          <a class="catalog-all" href="/item-catalogs">아이템 도감 전체 보기</a>
+          {% if total_pages > 1 %}
+          <nav class="bag-pager" aria-label="페이지 이동">
+            {% if has_previous %}<a href="{{ prev_url }}">‹ 이전</a>{% else %}<span class="off" aria-disabled="true">‹ 이전</span>{% endif %}
+            <span class="page-now">{{ page }} / {{ total_pages }} 쪽</span>
+            {% if has_next %}<a href="{{ next_url }}">다음 ›</a>{% else %}<span class="off" aria-disabled="true">다음 ›</span>{% endif %}
+          </nav>
+          {% endif %}
+        </div>
+
+        <p class="muted">회색 칸은 경매에 올라가 있는 아이템이에요. 경매가 끝나면 주인이 바뀌거나 가방으로 돌아와요.</p>
       </div>
     </div>
 

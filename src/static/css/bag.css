@@ -221,3 +221,37 @@ a.slot {
 .bag-slots .slot {
   padding-top: 18px;
 }
+
+/* 격자 아래 한 줄: 왼쪽 도감 전체 보기, 오른쪽 쪽 이동 */
+.bag-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 12px;
+}
+
+.bag-pager {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+}
+
+/* 이전·다음·현재 쪽 자리를 고정해서 첫 쪽·마지막 쪽에서도 위치가 안 흔들린다 */
+.bag-pager a,
+.bag-pager .off {
+  min-width: 56px;
+  text-align: center;
+}
+
+.bag-pager .off {
+  opacity: 0.4;
+}
+
+.bag-pager .page-now {
+  min-width: 64px;
+  text-align: center;
+  color: var(--muted);
+}

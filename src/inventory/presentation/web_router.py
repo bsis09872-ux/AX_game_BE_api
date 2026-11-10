@@ -137,6 +137,7 @@ def create_inventory_web_router(
                 'gold_balance': gold_balance,
                 'auction_new_url': AUCTION_NEW_URL,
                 'page': page,
+                'total_pages': total_pages,  # [Claude] 쪽 이동에 "2 / 4 쪽"을 보여 준다
                 'has_previous': page > 1,
                 'has_next': page < total_pages,
                 # 이전·다음 링크는 지금의 필터와 정렬 유지
