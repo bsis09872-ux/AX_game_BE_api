@@ -61,6 +61,13 @@ from wallet.presentation.router import create_wallet_router
 from auction.wiring import build_held_amount_reader  # 지갑 예약금 조회 (경매 제공 AuctionHeldAmountReader)
 # endregion
 
+# region 도메인 import: 경매
+from auction.presentation.listings.admin_web_router import create_listing_admin_web_router
+from auction.presentation.listings.router import router as listing_router
+from auction.presentation.trades.router import router as trade_router
+from auction.wiring import wire_auction_dependencies
+# endregion
+
 
 # region 도메인 모델 등록
 # create_all이 테이블을 만들도록 ORM 모델을 Base.metadata에 등록한다.
@@ -70,11 +77,6 @@ import inventory.infrastructure.models  # noqa: F401
 import wallet.infrastructure.models  # noqa: F401
 import auction.infrastructure.listings.models  # noqa: F401 (임시)
 # endregion
-
-
-from auction.presentation.listings.router import router as listing_router
-from auction.presentation.trades.router import router as trade_router
-from auction.wiring import wire_auction_dependencies
 
 
 API_PREFIX = "/v1"
@@ -149,7 +151,9 @@ app.include_router(create_wallet_router(get_current_user_id, build_held_amount_r
 app.include_router(create_admin_router(get_inventory_service))
 app.include_router(create_admin_auction_router(get_admin_auction_reader))
 app.include_router(create_member_admin_router(get_current_web_admin_id, get_member_admin_service))
+app.include_router(create_listing_admin_web_router(get_current_web_admin_id))
 # endregion
+
 
 wire_auction_dependencies(app, get_current_user_id)
 app.include_router(listing_router, prefix=API_PREFIX)
