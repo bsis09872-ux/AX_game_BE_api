@@ -21,7 +21,7 @@ from auction.domain.listings.entities import ListingStatus
 from auction.presentation.dependencies import ListingServiceDep, TradeServiceDep
 from auction.presentation.web_dependencies import get_inventory_reader, get_user_gateway
 from auction.presentation.web_views import (
-    CATEGORY_LABELS, TRADE_TABS, UNKNOWN_ITEM, card_view, definition_view, detail_url, detail_view, item_view, limit_view, list_url, new_view,
+    CATEGORY_LABELS, TRADE_TABS, UNKNOWN_ITEM, card_view, definition_view, detail_url, detail_view, limit_view, list_url, new_view,
     live_state, notice_text, parse_number, parse_search, trade_rows, trades_url,
 )
 from auction.wiring import PAGE_SIZE
