@@ -1,19 +1,12 @@
-# [경매 주요 처리 기능] 마감된 매물의 정산·거래 생성·낙찰 제한 갱신·다음 매물 공개를 조율한다.
-# 스케줄러는 이 서비스를 호출하며 이 파일에서 타이머나 SQL을 실행하지 않는다.
-# [도메인 계층 역할] 매물 규칙은 Listing, 거래 기록은 Trade, 제한 계산은 policies에 맡긴다.
-#
-# 확정 정책: 최근 30분 내 3회 낙찰 시 15분간 새 입찰 제한.
-# 제한 중에도 기존 입찰의 정산은 허용하고, 제한 종료 시각은 연장하지 않는다.
+# 마감된 매물의 정산·유찰·다음 매물 공개를 조율한다. 스케줄러가 호출한다.
+# 매물 규칙은 Listing, 거래 기록은 Trade, 낙찰 제한 계산은 policies에 맡긴다.
 #
 # 잠금 순서: 매물 → 아이템 종류 → 다음 대기 매물 → 아이템 → 사용자 → 지갑.
-# 매물 1건의 종료·정산·다음 매물 공개는 한 트랜잭션이며, 실패하면 함께 rollback한다.
+# 매물 1건 = 트랜잭션 1개. 낙찰자 탈퇴·행 없음은 rollback 후 새 트랜잭션에서 자동 유찰하고,
+# 그 밖의 실패는 rollback 후 다음 주기에 재시도한다.
 #
-# 낙찰자 탈퇴·행 없음(SettlementNotPossibleError)은 rollback 후 새 트랜잭션에서 자동 유찰한다.
-# 그 밖의 정산 실패(인벤토리·지갑 불일치, DB 오류)는 rollback 후 다음 주기에 다시 시도한다.
-# [TO DO][V2] 운영자 확인 대상(인벤토리·지갑 불일치)을 식별하고 복구하는 방안을 정한다. (진행 전)
-#         현재는 BIDDING으로 남아 주기마다 재시도·오류 로그가 반복되고, 같은 종류의 대기열도 멈춘다.
-#         V1 수동 대응: 지갑 불일치는 관리자 강제 취소로 정리한다.
-#         인벤토리 불일치는 로그(inventory_mismatch)의 ID로 DB를 확인해 인벤토리 담당과 복구한다.
+# [TO DO][V2] 운영자 확인 대상(인벤토리·지갑 불일치)의 식별·복구 방안을 정한다. (진행 전)
+#         V1 수동 대응: 지갑 불일치는 관리자 강제 취소, 인벤토리 불일치는 로그 ID로 DB 확인 후 복구.
 
 import logging
 from datetime import datetime
@@ -108,7 +101,7 @@ class AuctionService:
         # 같은 종류의 등록과 공개 판단이 겹치지 않게 종류를 잠근다.
         await self.listings.lock_definition(listing.item_definition_id)
 
-        # 잠금 순서(매물 → 아이템 → 사용자 → 지갑)를 지키려고 다음 매물을 정산 전에 잠근다.
+        # 아이템·사용자·지갑보다 먼저 잠가야 하므로 다음 매물을 정산 전에 잠근다.
         next_listing = await lock_next_queued(self.listings, listing.item_definition_id)
 
         if listing.has_bidder() and not force_fail:

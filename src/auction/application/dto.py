@@ -3,13 +3,7 @@
 # 제한 계산과 DB 조회·저장은 DTO에서 수행하지 않는다.
 # blocked_until은 만료돼도 이전 집계 주기의 기준이므로 그대로 전달한다.
 # 시각은 timezone-aware UTC로 전달한다.
-#
-# User Adapter가 외부 데이터를 아래 필드로 변환한다.
-# # UserSummary → AuctionUserState 변환:
-# id → user_id, auction_purchase_count → purchase_count
-# auction_blocked_until → blocked_until
-# effective_auction_blocked_until → effective_blocked_until
-# is_active → is_active
+# 다른 도메인 데이터의 변환은 infrastructure Adapter가 한다.
 
 from dataclasses import dataclass
 from datetime import datetime
