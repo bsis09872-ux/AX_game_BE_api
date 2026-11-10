@@ -1,7 +1,8 @@
 {# [Claude] 이 파일은 Claude가 작성함 (검토 전) #}
 {# 내 거래: 낙찰받은 것과 판매한 것의 기록. 이름은 거래가 끝난 당시의 이름이다 #}
 {% extends "auction/_layout.html" %}
-{% from "inventory/_macros.html" import gold, moment %}
+{% from "inventory/_macros.html" import moment %}
+{% from "auction/_macros.html" import gold %}
 {% block title %}내 거래 | Catch &amp; Bid{% endblock %}
 
 {% block content %}
