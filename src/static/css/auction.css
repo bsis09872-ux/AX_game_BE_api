@@ -61,21 +61,23 @@ body.embed .main-content {
 .search-panel {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 10px 12px;
+  align-items: center;
+  gap: 10px 16px;
   margin-bottom: 14px;
   padding: 10px 14px;
 }
 
+/* 글자와 입력 칸을 한 줄에 나란히: "분류 [칸] 아이템 이름 [칸] ..." */
 .search-field {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 6px;
 }
 
 .search-field label {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--muted);
+  white-space: nowrap;
 }
 
 .search-field input,
@@ -85,11 +87,11 @@ body.embed .main-content {
 }
 
 .search-field input[type="search"] {
-  width: 180px;
+  width: 160px;
 }
 
 .search-field input[inputmode="numeric"] {
-  width: 100px;
+  width: 90px;
 }
 
 .search-actions {
