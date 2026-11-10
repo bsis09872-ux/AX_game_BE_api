@@ -9,9 +9,22 @@
   flex: 1 1 280px;
 }
 
+/* 한 행에 5칸이 기본 (20칸이면 4행). 화면이 아주 좁을 때만 칸 수를 줄인다 */
 .bag-slots {
-  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   margin-bottom: 12px;
+}
+
+@media (max-width: 520px) {
+  .bag-slots {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 400px) {
+  .bag-slots {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 /* 칸은 링크라서 글자색과 밑줄을 맞춘다 */
@@ -229,7 +242,7 @@ a.slot {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 8px 16px;
-  margin-top: 12px;
+  margin-top: 22px;
 }
 
 .bag-pager {
