@@ -168,6 +168,7 @@ class WalletService:
 
         await self.ensure_wallet(user_id)  # 없는 회원이면 여기서 WalletNotFoundError(404)
         wallet = await self._lock_one(user_id)
+        rules.check_charge(wallet.balance.value, amount)  # 잔액 상한(게임 값)을 넘으면 400
         wallet.add_balance(amount, self.logger)
         await self.wallet_repo.save(user_id, wallet.balance.value)
 

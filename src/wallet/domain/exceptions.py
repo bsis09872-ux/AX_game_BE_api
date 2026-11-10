@@ -24,9 +24,9 @@ class InsufficientBalanceError(BusinessRuleError):
 
 
 class BalanceLimitExceededError(BusinessRuleError):
-    # 충전·정산 지급 후 잔액이 상한(BIGINT 최대값)을 넘음 → 400
+    # 관리자 충전 후 잔액이 게임 상한(rules.MAX_BALANCE)을 넘음 → 400. 정산에서는 쓰지 않는다
     code = "BALANCE_LIMIT_EXCEEDED"
-    message = "잔액 한도를 넘어 지급할 수 없습니다."
+    message = "잔액 한도를 넘어 충전할 수 없습니다."
 
 
 class BuyerBalanceShortError(AppError):

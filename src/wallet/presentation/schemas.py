@@ -9,8 +9,11 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, PlainSerializer
 
-# 입력 상한: ID·금액 컬럼이 BIGINT라 넘는 값이 DB까지 가면 500이 난다. 입력 단계에서 422로 거절한다.
-# (경매 auction/presentation/params.py와 같은 기준. 도메인끼리 import하지 않으려고 따로 둔다)
+from wallet.domain.rules import MAX_BALANCE
+
+# ID 상한: ID 컬럼이 BIGINT라 넘는 값이 DB까지 가면 500이 난다. 입력 단계에서 422로 거절한다.
+# (경매 auction/presentation/params.py와 같은 값. 공용 상수 위치가 정해지면 그쪽을 쓴다)
+# 금액은 DB 타입이 아니라 게임 상한(rules.MAX_BALANCE)으로 막는다.
 BIGINT_MAX = 9223372036854775807
 
 # 내부 int, JSON 응답에서만 "123" (JS Number는 2^53 이상 정수를 정확히 표현하지 못함)
@@ -38,5 +41,5 @@ class WalletBalanceResponse(_FromAttrs):
 
 class ChargeRequest(BaseModel):
     """WALL-01 관리자 지갑 충전"""
-    amount: int = Field(..., gt=0, le=BIGINT_MAX, description="충전 금액 (1 이상, BIGINT 이하)")
+    amount: int = Field(..., gt=0, le=MAX_BALANCE, description="충전 금액 (1 이상, 잔액 상한 이하)")
 

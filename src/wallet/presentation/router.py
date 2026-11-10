@@ -54,7 +54,7 @@ def create_wallet_router(
         response_model=WalletResponse,
         summary="[WALL-01] 관리자 지갑 충전",
         responses={
-            400: {"description": "BALANCE_LIMIT_EXCEEDED (충전 후 잔액이 BIGINT 최대값을 넘음)"},
+            400: {"description": "BALANCE_LIMIT_EXCEEDED (충전 후 잔액이 상한을 넘음)"},
             401: {"description": "인증 필요"},
             403: {"description": "INSUFFICIENT_AUTHORITY (관리자가 아님)"},
             404: {"description": "WALLET_NOT_FOUND (없는 회원)"},

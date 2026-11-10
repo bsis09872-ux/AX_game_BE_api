@@ -8,13 +8,27 @@ service가 DB에서 읽은 값(잔액, 예약 합계, 매물의 현재 입찰 �
 """
 from dataclasses import dataclass
 
-from wallet.domain.exceptions import BuyerBalanceShortError, InsufficientBalanceError
+from wallet.domain.exceptions import (
+    BalanceLimitExceededError,
+    BuyerBalanceShortError,
+    InsufficientBalanceError,
+)
 
 # 가입 시 지급하는 초기 골드 (WALL-06). 초안 값, 회의에서 확정한다.
 INITIAL_BALANCE = 3_000
 
-# 잔액 상한: wallets.balance가 BIGINT라 넘으면 DB 오류(500)가 난다. 더하기 전에 막는다.
-MAX_BALANCE = 9_223_372_036_854_775_807
+# 지갑 잔액 상한 (게임 재화 상한). 초안 값, 회의에서 확정한다.
+# - DB 타입(BIGINT) 한계가 아니라 게임에서 정한 값이다.
+# - 잔액은 JSON 숫자로 나가므로 브라우저 Number가 정확한 2^53(약 9천조)보다 충분히 작게 둔다.
+# - 관리자 충전에서만 확인한다(check_charge). 정산은 이미 있는 골드를 옮기기만 하므로 확인하지 않는다.
+#   정산에서 막으면 그 매물은 마감 때마다 같은 이유로 실패해 영영 정산되지 않는다.
+MAX_BALANCE = 1_000_000_000_000
+
+
+def check_charge(balance: int, amount: int) -> None:
+    """관리자 충전 후 잔액이 상한을 넘으면 BalanceLimitExceededError (WALL-01)"""
+    if balance + amount > MAX_BALANCE:
+        raise BalanceLimitExceededError()
 
 
 def available_balance(balance: int, held_amount: int) -> int:

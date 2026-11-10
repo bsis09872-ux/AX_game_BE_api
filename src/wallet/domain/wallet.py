@@ -8,8 +8,7 @@
 """지갑 도메인 객체 (프레임워크 의존 없음)"""
 from dataclasses import dataclass
 from datetime import datetime
-from wallet.domain.exceptions import BalanceLimitExceededError, InsufficientBalanceError
-from wallet.domain.rules import MAX_BALANCE
+from wallet.domain.exceptions import InsufficientBalanceError
 from wallet.domain.service import BalanceEventType, BalanceRecord
 
 @dataclass
@@ -22,10 +21,8 @@ class Balance:
             raise InsufficientBalanceError()
         self.value -= amount
 
-    # 추가 (충전 금액은 입력에서 막아도, 기존 잔액과 더한 값은 넘칠 수 있어 여기서 확인한다)
+    # 추가
     def plus(self, amount: int):
-        if self.value + amount > MAX_BALANCE:
-            raise BalanceLimitExceededError()
         self.value += amount
 
 @dataclass
