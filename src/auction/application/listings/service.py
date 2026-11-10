@@ -75,9 +75,10 @@ class ListingService:
         )
 
     # 아이템의 카탈로그 시작가로 매물을 생성한다.
-    # 매물 저장으로 ID 확보 → 아이템 예약 이력에 ID 전달 → 전체 확정.
+    # 입력: 판매자 ID·아이템 ID·처리 시각. 반환: 저장된 매물.
+    # 처리: 아이템 조회 → 같은 종류 잠금 → 진행 매물이 없으면 바로 공개 → 저장 → 아이템 예약 → 확정.
+    # 같은 종류의 마감 처리·다른 등록과는 종류 잠금으로 한 번에 하나씩 판단한다.
     # 예약 실패 시 예외를 전달하고 호출 측에서 전체 rollback한다.
-    # [TO DO] 같은 아이템 종류의 동시 등록·공개를 직렬화한다.
     async def register(
         self,
         seller_id: int,
@@ -94,6 +95,8 @@ class ListingService:
             now=now,
         )
 
+        # 잠근 뒤에 확인해야 동시에 끝난 마감 처리의 결과까지 반영된다.
+        await self.listings.lock_definition(item.item_definition_id)
         if not await self.listings.exists_bidding(item.item_definition_id):
             listing.start(now)
 
