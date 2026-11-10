@@ -12,13 +12,13 @@ from fastapi import APIRouter, Query, status
 from auction.domain.listings.entities import ListingStatus
 from auction.presentation.dependencies import CurrentUserId, ListingServiceDep
 from auction.presentation.listings.schemas import (
-    AdminCancelRequest,
     AdminCancelResponse,
     BidRequest,
     ListingCreateRequest,
     ListingPageResponse,
     ListingResponse,
 )
+from auction.presentation.params import ListingIdPath, OptionalIdQuery, PageQuery
 
 
 router = APIRouter(prefix="/listings", tags=["listings"])
@@ -28,7 +28,7 @@ router = APIRouter(prefix="/listings", tags=["listings"])
 @router.get("", response_model=ListingPageResponse, summary="매물 목록 조회")
 async def get_listings(
     service: ListingServiceDep,
-    page: Annotated[int, Query(ge=1)] = 1,
+    page: PageQuery = 1,
 ) -> ListingPageResponse:
     listings = await service.get_listing_list(page)
     return ListingPageResponse(
@@ -47,10 +47,10 @@ async def get_listings(
 async def get_admin_listings(
     user_id: CurrentUserId,
     service: ListingServiceDep,
-    page: Annotated[int, Query(ge=1)] = 1,
-    listing_id: Annotated[int | None, Query(gt=0)] = None,
-    item_definition_id: Annotated[int | None, Query(gt=0)] = None,
-    inventory_item_id: Annotated[int | None, Query(gt=0)] = None,
+    page: PageQuery = 1,
+    listing_id: OptionalIdQuery = None,
+    item_definition_id: OptionalIdQuery = None,
+    inventory_item_id: OptionalIdQuery = None,
     listing_status: Annotated[
         ListingStatus | None, Query(alias="status")
     ] = None,
@@ -70,7 +70,7 @@ async def get_admin_listings(
 
 # [관리자] 매물 강제 취소: QUEUED·BIDDING을 CANCELLED로 바꾼다. 삭제하지 않는다.
 # 관리자 ID는 토큰에서 받고, 권한·상태 검사는 서비스와 엔티티가 한다.
-# 성공 시 안내 메시지만 반환하며 사유·관리자 ID는 응답에 싣지 않는다.
+# 요청 본문은 없다. 성공 시 안내 메시지만 반환하며 처리한 관리자 ID는 내부에만 기록한다.
 @router.post(
     "/management/{listing_id}/cancel",
     response_model=AdminCancelResponse,
@@ -78,15 +78,13 @@ async def get_admin_listings(
     tags=["auction-management"],
 )
 async def admin_cancel_listing(
-    listing_id: int,
-    body: AdminCancelRequest,
+    listing_id: ListingIdPath,
     user_id: CurrentUserId,
     service: ListingServiceDep,
 ) -> AdminCancelResponse:
     await service.admin_cancel(
         admin_id=user_id,
         listing_id=listing_id,
-        reason=body.reason,
         now=datetime.now(timezone.utc),
     )
     return AdminCancelResponse()
@@ -94,7 +92,7 @@ async def admin_cancel_listing(
 # [AUC-03] 매물 상세 조회
 @router.get("/{listing_id}", response_model=ListingResponse, summary="매물 상세 조회")
 async def get_listing(
-    listing_id: int,
+    listing_id: ListingIdPath,
     service: ListingServiceDep,
 ) -> ListingResponse:
     listing = await service.get_listing_detail(listing_id)
@@ -123,7 +121,7 @@ async def register_listing(
 # [AUC-04] 입찰
 @router.post("/{listing_id}/bids", response_model=ListingResponse, summary="입찰")
 async def place_bid(
-    listing_id: int,
+    listing_id: ListingIdPath,
     body: BidRequest,
     user_id: CurrentUserId,
     service: ListingServiceDep,
@@ -144,7 +142,7 @@ async def place_bid(
     summary="매물 등록 취소",
 )
 async def cancel_listing(
-    listing_id: int,
+    listing_id: ListingIdPath,
     user_id: CurrentUserId,
     service: ListingServiceDep,
 ) -> None:

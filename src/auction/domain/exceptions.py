@@ -18,7 +18,6 @@ class BidNotHigherError(ConflictError):
 
 
 # 403: 연속 낙찰 제한 중 새 입찰. 화면은 제한 상태(bid-limit)를 조회해 남은 시간을 보여 준다.
-# [TO DO] 입찰 서비스 구현 시 제한 판단 후 발생시킨다. (진행 전)
 class BidBannedError(ForbiddenError):
     code: str = "BID_BANNED"
     message: str = "연속 낙찰 제한으로 잠시 입찰할 수 없습니다."

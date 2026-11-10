@@ -4,7 +4,7 @@
 # blocked_until은 만료돼도 이전 집계 주기의 기준이므로 그대로 전달한다.
 # 시각은 timezone-aware UTC로 전달한다.
 #
-# [TO DO] 다음 PR의 Adapter에서 외부 데이터를 아래 필드로 변환한다.
+# User Adapter가 외부 데이터를 아래 필드로 변환한다.
 # # UserSummary → AuctionUserState 변환:
 # id → user_id, auction_purchase_count → purchase_count
 # auction_blocked_until → blocked_until

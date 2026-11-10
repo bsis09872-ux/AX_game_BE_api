@@ -76,7 +76,6 @@ class Listing:
     ends_at: datetime | None = None
     closed_at: datetime | None = None
     admin_cancelled_by: int | None = None   # 강제 취소한 관리자 ID (내부 기록용)
-    admin_cancel_reason: str | None = None  # 강제 취소 사유 (내부 기록용)
     updated_at: datetime | None = None
     id: int | None = None
 
@@ -124,19 +123,14 @@ class Listing:
         self._close_as_cancelled(now)
 
     # [관리자] 대기·진행 중인 매물을 관리자가 강제 취소한다.
-    # 입력: 관리자 ID·사유·처리 시각. 처리: 상태 확인 → 사유 검증 → 취소 → 관리자·사유 기록.
+    # 입력: 관리자 ID·처리 시각. 처리: 상태 확인 → 취소 → 처리한 관리자 기록(내부용).
     # SOLD·FAILED·CANCELLED는 409. 관리자 권한 확인은 application이 한다.
-    def cancel_by_admin(self, admin_id: int, reason: str, now: datetime) -> None:
+    def cancel_by_admin(self, admin_id: int, now: datetime) -> None:
         if self.status not in (ListingStatus.QUEUED, ListingStatus.BIDDING):
             raise ConflictError("대기 또는 진행 중인 매물만 취소할 수 있습니다.")
 
-        reason = reason.strip()
-        if not reason or len(reason) > 200:
-            raise BusinessRuleError("취소 사유는 1~200자로 입력해야 합니다.")
-
         self._close_as_cancelled(now)
         self.admin_cancelled_by = admin_id
-        self.admin_cancel_reason = reason
 
     # 판매자·관리자 취소가 함께 쓰는 상태 변경이다.
     # 입력: 처리 시각. 처리: CANCELLED로 바꾸고 종료 시각(closed_at)을 기록한다.

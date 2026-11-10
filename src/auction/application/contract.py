@@ -7,11 +7,9 @@
 # InventoryGateway: 판매 예약·해제·소유권 이전과 아이템 정보 조회.
 # TransactionManager: 관련 변경의 확정과 되돌리기.
 #
-# 합의한 잠금 순서: 매물 → 아이템 → 사용자 → 지갑.
+# 합의한 잠금 순서: 매물 → 아이템 종류 → 다음 대기 매물 → 아이템 → 사용자 → 지갑.
 # 여러 사용자를 잠글 때는 사용자 ID 오름차순으로 처리한다.
-# [TO DO] 필요한 잠금을 위 순서로 획득하도록 실제 호출 흐름을 연결한다.
-# [TO DO] Gateway와 Repository가 같은 트랜잭션을 공유하도록 조립한다.
-# [TO DO] 다음 PR에서 Adapter를 구현하고 서비스에 주입한다.
+# 구현체는 wiring.py에서 같은 세션으로 조립하므로 Gateway와 Repository가 한 트랜잭션을 공유한다.
 # 사용자 조회 결과의 낙찰 횟수는 저장값이며, 유효 횟수는 경매 정책으로 계산한다.
 
 from datetime import datetime
@@ -31,7 +29,7 @@ class AuctionUserGateway(Protocol):
 
     # 여러 사용자 ID를 받아 사용자 ID 오름차순으로 잠금 조회한다.
     # 반환: 사용자 ID를 키로 하고 상태 DTO를 값으로 하는 딕셔너리.
-    # [TO DO] 요청한 사용자가 없을 때의 처리 방식을 Adapter 구현 전에 확정한다.
+    # 없는 사용자는 결과에 포함하지 않으며, 없을 때의 처리는 호출하는 서비스가 정한다.
     async def get_for_update_many(
         self,
         user_ids: list[int],
@@ -142,7 +140,6 @@ class InventoryGateway(Protocol):
 
 
 # 관련 저장 작업을 함께 확정하거나 되돌리는 기능의 계약이다.
-# [TO DO] Adapter와 Repository가 같은 트랜잭션을 공유하도록 연결한다.
 class TransactionManager(Protocol):
     # 현재 트랜잭션의 변경을 확정한다. 추가 입력과 반환값 없음.
     async def commit(self) -> None:

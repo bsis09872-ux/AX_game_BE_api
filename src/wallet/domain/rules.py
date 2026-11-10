@@ -15,7 +15,7 @@ INITIAL_BALANCE = 3_000
 
 
 def available_balance(balance: int, held_amount: int) -> int:
-    """사용 가능 금액 = 총잔액 - 예약 합계 (WALL-01)"""
+    """사용 가능 금액 = 총잔액 - 예약 합계 (WALL-02)"""
     return balance - held_amount
 
 

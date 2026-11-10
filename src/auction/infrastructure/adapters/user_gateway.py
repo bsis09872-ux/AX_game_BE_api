@@ -3,12 +3,11 @@
 # 낙찰 횟수 계산과 제한 판단은 경매 정책이 한다. 이 Adapter는 조회·저장만 전달한다.
 # commit·rollback은 트랜잭션 담당자가 한다.
 #
-# [TO DO][요청 → users] get_user_summary(user_id) -> UserSummary에 auction_purchase_count 추가
-# 용도: 입찰·정산 전 사용자의 저장된 낙찰 횟수를 조회한다.
-# [TO DO][요청 → users] get_for_update_many(user_ids: list[int]) -> 사용자별 경매 상태 (ID 오름차순 잠금)
-# 용도: 정산 시 판매자·구매자를 합의한 잠금 순서로 잠근다.
-# [TO DO][요청 → users] update_auction_limit(user_id, purchase_count, blocked_until) -> None (flush까지만)
-# 용도: 낙찰 후 계산한 횟수·제한 종료 시각을 저장한다.
+# 사용하는 users 메서드
+# get_user_summary(user_id): 사용자의 저장된 낙찰 횟수·제한 상태·이름 조회
+# get_for_update_many(user_ids): 입찰·정산 시 사용자를 ID 오름차순으로 잠금 조회
+# update_auction_limit(user_id, purchase_count, blocked_until): 낙찰 후 제한 상태 저장 (flush까지만)
+# is_admin(user_id): 관리자 기능 사용 가능 여부 조회
 
 from datetime import datetime
 
