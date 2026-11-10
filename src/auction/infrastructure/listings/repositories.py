@@ -197,6 +197,8 @@ class SqlAlchemyListingRepository(ListingRepository):
             started_at=model.started_at,
             ends_at=model.ends_at,
             closed_at=model.closed_at,
+            admin_cancelled_by=model.admin_cancelled_by,
+            admin_cancel_reason=model.admin_cancel_reason,
             updated_at=model.updated_at,
         )
 
@@ -215,5 +217,7 @@ class SqlAlchemyListingRepository(ListingRepository):
             "started_at": listing.started_at,
             "ends_at": listing.ends_at,
             "closed_at": listing.closed_at,
+            "admin_cancelled_by": listing.admin_cancelled_by,
+            "admin_cancel_reason": listing.admin_cancel_reason,
             "updated_at": listing.updated_at,
         }
