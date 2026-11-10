@@ -1,4 +1,3 @@
-/* [Claude] 이 파일은 Claude가 작성함 (검토 전) */
 /* 내 가방 화면: 아이템 칸 격자와 오른쪽 패널. 칸(.slot)·버튼(.btn)은 global.css, 그림 틀은 inventory.css를 쓴다 */
 
 .bag-layout .bag-main {

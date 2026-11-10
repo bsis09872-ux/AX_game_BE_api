@@ -1,4 +1,3 @@
-# [Claude] 이 파일은 Claude가 작성함 (검토 전)
 """경매 화면이 서비스 밖에서 읽는 값의 의존성 (사용자 이름, 아이템 정보, 보유 골드)
 
 - 다른 도메인은 그 도메인의 wiring으로만 가져온다 (auction/wiring.py가 이미 쓰는 조립 함수를 재사용)
@@ -23,7 +22,7 @@ def get_inventory_reader(session: AsyncSession = Depends(get_db)):
     return build_inventory_service(session)
 
 
-# [Claude] 지갑 조립에는 예약금 조회기(경매가 제공)가 꼭 필요하다 (main 합치기에서 바뀐 계약)
+# 지갑 조립에는 예약금 조회기(경매가 제공)가 꼭 필요하다 (main 합치기에서 바뀐 계약)
 def wallet_service(session: AsyncSession):
     return build_wallet_service(session, held_reader=build_held_amount_reader(session))
 

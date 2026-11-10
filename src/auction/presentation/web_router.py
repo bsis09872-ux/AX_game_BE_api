@@ -1,4 +1,3 @@
-# [Claude] 이 파일은 Claude가 작성함 (검토 전)
 """경매장 화면 라우터 (Jinja2)
 
 - 로그인 확인과 출처 확인은 main에서 넘겨 받는다 (auth의 쿠키 구조를 모른다)
@@ -156,7 +155,7 @@ def create_auction_web_router(
     ) -> PageContext:
         return PageContext(user_id=user_id, embed=embed)
 
-    # region [Claude] 경매장 목록
+    # region 경매장 목록
     @router.get('/auctions', response_class=HTMLResponse)
     async def get_auction_list_page(
         request: Request,
@@ -202,7 +201,7 @@ def create_auction_web_router(
         })
     # endregion
 
-    # region [Claude] 경매 상세 실시간 확인용 상태 (화면이 몇 초마다 부른다. 가볍게 매물 하나만 읽는다)
+    # region 경매 상세 실시간 확인용 상태 (화면이 몇 초마다 부른다. 가볍게 매물 하나만 읽는다)
     @router.get('/auctions/{listing_id:int}/state', include_in_schema=False)
     async def get_auction_state(
         service: ListingServiceDep,
@@ -224,7 +223,7 @@ def create_auction_web_router(
         )
     # endregion
 
-    # region [Claude] 경매 상세 (진행, 낙찰, 유찰, 취소, 대기 모두 이 화면)
+    # region 경매 상세 (진행, 낙찰, 유찰, 취소, 대기 모두 이 화면)
     # {listing_id:int}는 숫자만 받아서 /auctions/new 같은 고정 주소와 겹치지 않는다
     @router.get('/auctions/{listing_id:int}', response_class=HTMLResponse)
     async def get_auction_detail_page(
@@ -242,7 +241,7 @@ def create_auction_web_router(
         )
     # endregion
 
-    # region [Claude] 경매 등록 (낚시 팝업의 "경매장에 올리기", 가방의 "경매 시작")
+    # region 경매 등록 (낚시 팝업의 "경매장에 올리기", 가방의 "경매 시작")
     @router.get('/auctions/new', response_class=HTMLResponse)
     async def get_auction_new_page(
         request: Request,
@@ -276,7 +275,7 @@ def create_auction_web_router(
         return RedirectResponse(detail_url(listing.id, ctx.embed, ok=code), status_code=303)
     # endregion
 
-    # region [Claude] 입찰·취소 (실패하면 되돌리고 같은 상세 화면에 이유를 보여 준다)
+    # region 입찰·취소 (실패하면 되돌리고 같은 상세 화면에 이유를 보여 준다)
     @router.get('/auctions/{listing_id:int}/bid', include_in_schema=False)
     @router.get('/auctions/{listing_id:int}/cancel', include_in_schema=False)
     async def redirect_post_only_url(
@@ -338,7 +337,7 @@ def create_auction_web_router(
         return RedirectResponse(detail_url(listing_id, ctx.embed, ok='cancelled'), status_code=303)
     # endregion
 
-    # region [Claude] 내 거래 (낙찰받은 것, 판매한 것)
+    # region 내 거래 (낙찰받은 것, 판매한 것)
     @router.get('/auctions/trades', response_class=HTMLResponse)
     async def get_auction_trades_page(
         request: Request,

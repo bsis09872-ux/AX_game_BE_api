@@ -1,4 +1,3 @@
-{# [Claude] 헤더를 경매장 화면과 같은 주 메뉴·골드 조각으로 맞춤 #}
 {% extends "base.html" %}
 {% block page_key %}inventory{% endblock %}
 {% block body_attributes %}data-session-protected="true"{% endblock %}
@@ -65,7 +64,7 @@
         </div>
 
         <div class="page-links">
-            <a href="/inventory?item={{ item.id }}">← 내 가방</a>{# [Claude] 방금 본 아이템이 가방의 선택 패널에 다시 뜨게 한다 #}
+            <a href="/inventory?item={{ item.id }}">← 내 가방</a>{# 방금 본 아이템이 가방의 선택 패널에 다시 뜨게 한다 #}
             <a class="to-right" href="/item-catalogs#item-{{ item.definition.id }}">아이템 도감 보기</a>
         </div>
     </div>

@@ -37,7 +37,7 @@
         height="{{ size }}" onerror="this.onerror=null;this.src='{{ ICON_DIR }}/{{ ICON_FALLBACK }}'"></span>
 {%- endmacro %}
 
-{# [Claude] 분류 이름: 코드(FISH 등)를 한글로 보여 준다 #}
+{# 분류 이름: 코드(FISH 등)를 한글로 보여 준다 #}
 {% macro category_name(code) -%}
 {{ {'FISH': '물고기', 'GEM': '보석', 'MISC': '잡화'}.get(code, code) }}
 {%- endmacro %}

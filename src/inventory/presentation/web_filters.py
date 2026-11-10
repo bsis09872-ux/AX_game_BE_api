@@ -33,7 +33,7 @@ def inventory_href(*, status=None, category=None, rarity=None, sort=DEFAULT_SORT
         params['sort'] = sort
     if page is not None:
         params['page'] = page
-    # [Claude] 선택한 아이템: 가방 칸을 누르면 오른쪽 패널에 보여 준다
+    # 선택한 아이템: 가방 칸을 누르면 오른쪽 패널에 보여 준다
     if item is not None:
         params['item'] = item
     return '/inventory' + ('?' + urlencode(params) if params else '')

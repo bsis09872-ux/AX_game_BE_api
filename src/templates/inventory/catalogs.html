@@ -1,4 +1,3 @@
-{# [Claude] 헤더를 경매장 화면과 같은 주 메뉴·골드 조각으로 맞춤 #}
 {% extends "base.html" %}
 {% block page_key %}inventory{% endblock %}
 {% block body_attributes %}data-session-protected="true"{% endblock %}
@@ -82,7 +81,7 @@ parts.append('rarity=' ~ r) %}{% endif %}{% if back_item %}{% set _ = parts.appe
         {% endif %}
 
         <div class="page-links">
-            <a href="/inventory{% if back_item %}?item={{ back_item }}{% endif %}">← 내 가방</a>{# [Claude] 가방에서 보던 아이템이 다시
+            <a href="/inventory{% if back_item %}?item={{ back_item }}{% endif %}">← 내 가방</a>{# 가방에서 보던 아이템이 다시
             선택되게 한다 #}
         </div>
     </div>

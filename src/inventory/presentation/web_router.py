@@ -39,11 +39,11 @@ PAGE_SIZE = 20
 # 도감은 한 화면으로 보여준다 (지금 수준에서 페이지 만들면 꼬일 수 있음)
 CATALOG_PAGE_SIZE = 100
 
-# [Claude] 경매 등록 화면 주소: 인벤토리는 경매 코드를 import하지 않고 주소만 안다 (경매 화면 URL이 바뀌면 여기도 바꾼다)
+# 경매 등록 화면 주소: 인벤토리는 경매 코드를 import하지 않고 주소만 안다 (경매 화면 URL이 바뀌면 여기도 바꾼다)
 AUCTION_NEW_URL = '/auctions/new'
 
 
-# [Claude] 선택한 아이템을 경매에 올릴 수 없는 이유 (올릴 수 있으면 빈 글자)
+# 선택한 아이템을 경매에 올릴 수 없는 이유 (올릴 수 있으면 빈 글자)
 def listing_block_reason(info, now: datetime) -> str:
     if info.status != 'OWNED':
         return '이미 경매에 올라가 있는 아이템이에요.'
@@ -60,7 +60,7 @@ def create_inventory_web_router(
     current_user_id: Callable[..., Awaitable[int]],
     wallet_reader: Callable[..., Awaitable[dict | None]] | None = None,
 ) -> APIRouter:
-    # [Claude] wallet_reader(session, user_id): 가방의 지갑 박스(잔액, 묶인 골드, 사용 가능 골드) 또는 None. main이 넘긴다(wallet을 import하지 않는다)
+    # wallet_reader(session, user_id): 가방의 지갑 박스(잔액, 묶인 골드, 사용 가능 골드) 또는 None. main이 넘긴다(wallet을 import하지 않는다)
     # 헤더의 사용 가능 금액은 공통 헤더(static/wallet-balance.js, 지갑 담당)가 채운다
 
     # 실제 로그인 화면은 main에서 전달
@@ -84,7 +84,7 @@ def create_inventory_web_router(
         # 전체 쪽 수 / 아이템이 없어도 1쪽 존재
         total_pages = max(1, -(-total // PAGE_SIZE))
 
-        # region [Claude] 가방: 선택한 아이템, 지갑 박스, 헤더 골드
+        # region 가방: 선택한 아이템, 지갑 박스, 헤더 골드
         # 선택한 아이템은 내 아이템만 보여 준다 (남의 것·없는 번호는 선택 없음으로 본다)
         selected = None
         if item is not None:
@@ -127,7 +127,7 @@ def create_inventory_web_router(
                 'wallet': wallet,
                 'auction_new_url': AUCTION_NEW_URL,
                 'page': page,
-                'total_pages': total_pages,  # [Claude] 쪽 이동에 "2 / 4 쪽"을 보여 준다
+                'total_pages': total_pages,  # 쪽 이동에 "2 / 4 쪽"을 보여 준다
                 'has_previous': page > 1,
                 'has_next': page < total_pages,
                 # 이전·다음 링크는 지금의 필터와 정렬 유지
@@ -179,7 +179,7 @@ def create_inventory_web_router(
         request: Request,
         category: Category | None=None,
         rarity: Rarity | None=None,
-        item: int | None = Query(None, ge=1),  # [Claude] 가방에서 넘어온 선택 아이템 번호 (돌아갈 때 다시 선택하려고 링크에 실어 나른다)
+        item: int | None = Query(None, ge=1),  # 가방에서 넘어온 선택 아이템 번호 (돌아갈 때 다시 선택하려고 링크에 실어 나른다)
         service: InventoryService = Depends(get_inventory_service),
     ) -> HTMLResponse:
         definitions, _ = await service.list_definitions(
@@ -198,7 +198,7 @@ def create_inventory_web_router(
                 'definitions': [ItemDefinitionResponse.from_info(d) for d in definitions],
                 'category': category,
                 'rarity': rarity,
-                'back_item': item,  # [Claude]
+                'back_item': item,
                 # 필터 링크에 쓸 허용값
                 'categories': get_args(Category),
                 'rarities': get_args(Rarity),

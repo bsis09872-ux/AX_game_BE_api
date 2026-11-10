@@ -1,4 +1,3 @@
-# [Claude] 이 파일은 Claude가 작성함 (검토 전)
 """경매 화면이 쓰는 주소 만들기와 화면용 값 계산
 
 - 서비스·DB를 모르고, 받은 값으로 글자(주소, 문구)와 숫자만 만든다
@@ -13,7 +12,7 @@ from urllib.parse import urlencode
 from auction.domain.listings.entities import AUCTION_DURATION, Listing, ListingStatus
 
 
-# region [Claude] 주소 만들기
+# region 주소 만들기
 # 값이 None인 것은 주소에 넣지 않는다
 def _url(path: str, embed: bool = False, **params) -> str:
     query = {key: value for key, value in params.items() if value is not None}
@@ -53,7 +52,7 @@ def cancel_action(listing_id: int, embed: bool = False) -> str:
 # endregion
 
 
-# region [Claude] 알림 문구
+# region 알림 문구
 # 성공 후 이동한 화면의 ?ok= 값을 고정 문구로만 바꾼다 (주소에 적힌 글자를 그대로 보여 주지 않는다)
 NOTICES = {
     'started': '경매가 시작됐어요!',
@@ -68,7 +67,7 @@ def notice_text(code: str | None) -> str | None:
 # endregion
 
 
-# region [Claude] 익명 입찰자
+# region 익명 입찰자
 # 입찰자 ID는 공개하지 않는다. 문구는 매물 번호와 현재 입찰가로 고르므로 같은 사람이 여러 매물에서 같은 별명으로 보이지 않는다
 # 그림 번호는 문구 번호와 짝이다 (static/sprites/npc_bidder_{번호}.png)
 ALIASES = (
@@ -96,7 +95,7 @@ def format_clock(seconds: int) -> str:
     return f'{minutes}:{rest:02d}'
 
 
-# region [Claude] 아이템 표시
+# region 아이템 표시
 CATEGORY_LABELS = {'FISH': '물고기', 'GEM': '보석', 'MISC': '잡화'}
 
 
@@ -131,7 +130,7 @@ def item_view(info) -> ItemView:
 # endregion
 
 
-# region [Claude] 경매장 목록 카드
+# region 경매장 목록 카드
 # 남은 시간이 이 값(초) 이하면 급하다는 표시를 한다
 URGENT_SECONDS = 60
 
@@ -166,7 +165,7 @@ def card_view(listing: Listing, item: ItemView, seller_name: str, now: datetime,
 # endregion
 
 
-# region [Claude] 경매장 목록 검색
+# region 경매장 목록 검색
 # 이름·분류·최소가·최대가 검색. 진행 중인 매물은 아이템 종류당 1개라 한 쪽 안에서 걸러도 정확하다
 # shortcut: 가져온 쪽 안에서만 거른다. 아이템 종류가 한 쪽(PAGE_SIZE)을 넘으면 저장소 검색이 필요하다
 @dataclass(frozen=True)
@@ -220,7 +219,7 @@ def parse_search(q: str | None, category: str | None, min_price: str | None, max
 # endregion
 
 
-# region [Claude] 경매 상세 실시간 확인
+# region 경매 상세 실시간 확인
 # 열려 있는 상세 화면이 몇 초마다 확인하는 작은 상태. 값이 달라지면 화면을 다시 불러온다
 @dataclass(frozen=True)
 class LiveState:
@@ -250,7 +249,7 @@ def state_url(listing_id: int, embed: bool = False) -> str:
 # endregion
 
 
-# region [Claude] 경매 상세
+# region 경매 상세
 STATUS_LABELS = {
     ListingStatus.BIDDING: '경매 중',
     ListingStatus.QUEUED: '대기 중',
@@ -442,7 +441,7 @@ def detail_view(
 # endregion
 
 
-# region [Claude] 경매 등록
+# region 경매 등록
 # 금액·번호 입력을 숫자로 바꾼다. 숫자가 아니거나 0 이하이거나 너무 크면 None
 MAX_INPUT_NUMBER = 10**12
 
@@ -489,7 +488,7 @@ def new_view(info, now: datetime, embed: bool = False) -> NewView:
 # endregion
 
 
-# region [Claude] 내 거래 (낙찰받은 것, 판매한 것)
+# region 내 거래 (낙찰받은 것, 판매한 것)
 TRADE_TABS = {'won': '낙찰 기록', 'sold': '판매 기록'}
 
 

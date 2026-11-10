@@ -1,4 +1,3 @@
-/* [Claude] 이 파일은 Claude가 작성함 (검토 전) */
 /* 경매장·가방 화면 공통: 굵은 글씨를 쓰지 않는다 (global.css의 굵게 지정과 브라우저 기본 굵기를 되돌림) */
 h1, h2, h3, strong, b, th,
 .brand, .hud .gold, .title-tab, .slot .count, .btn {
