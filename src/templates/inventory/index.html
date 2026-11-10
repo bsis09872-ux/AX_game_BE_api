@@ -1,9 +1,11 @@
 {% extends "base.html" %}
+{% block page_key %}inventory{% endblock %}
+{% block body_attributes %}data-session-protected="true"{% endblock %}
 {% from "inventory/_macros.html" import gold, moment, filter_group, item_icon %}
 {% block title %}내 인벤토리 | Catch &amp; Bid{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', path='/css/inventory.css') }}">
+<link data-page-style rel="stylesheet" href="{{ url_for('static', path='/css/inventory.css') }}">
 {% endblock %}
 
 {% block navigation %}
