@@ -391,7 +391,16 @@ export function highlightHashTarget() {
     } catch {
         return;
     }
-    document.getElementById(id)?.classList.add("hash-target");
+    const row = document.getElementById(id);
+    if (!row) {
+        // 도감에 그 번호의 줄이 없다는 뜻이다 (링크의 번호와 도감 줄 번호가 다를 때)
+        console.warn(`[도감] 강조할 줄을 찾지 못했어요: #${id}`);
+        return;
+    }
+    row.classList.add("hash-target");
+    // CSS 파일이 브라우저에 옛 버전으로 남아 있어도 보이도록 색을 직접 넣는다
+    row.style.background = "rgba(255, 220, 120, 0.45)";
+    row.style.boxShadow = "inset 4px 0 0 #f7c94a";
 }
 
 // 가방·도감 화면(page_key "inventory")에서 호출된다

@@ -1,7 +1,8 @@
 
 tr:target,
 tr.hash-target {
-  background: rgba(255, 220, 120, 0.25);
+  background: rgba(255, 220, 120, 0.45);
+  box-shadow: inset 4px 0 0 var(--gold);
 }
 
 .table-fixed {
