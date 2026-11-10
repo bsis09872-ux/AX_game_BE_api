@@ -84,16 +84,18 @@
           <span>{{ selected.definition.name }}</span>
           <span class="muted">{{ category_name(selected.definition.category) }} · #{{ selected.id }}</span>
         </div>
-        <p class="start-price"><span>경매 시작가</span> <span class="gold-text">{{ gold(selected.definition.start_price) }}</span></p>
+        <div class="start-row">
+          <span>경매 시작가</span>
+          <span class="gold-text start-amount">{{ gold(selected.definition.start_price) }}</span>
+          {% if selected.can_list %}
+          <form method="post" action="{{ auction_new_url }}">
+            <input type="hidden" name="item_id" value="{{ selected.id }}">
+            <button type="submit" class="btn gold">경매 시작</button>
+          </form>
+          {% endif %}
+        </div>
         <p class="muted">경매 시작가는 경매사가 고정한 값이라 바꿀 수 없어요. 경매 진행 시간은 6분이에요.</p>
-        {% if selected.can_list %}
-        <form method="post" action="{{ auction_new_url }}" class="start-form">
-          <input type="hidden" name="item_id" value="{{ selected.id }}">
-          <button type="submit" class="btn gold">경매 시작</button>
-        </form>
-        {% else %}
-        <p>{{ selected.reason }}</p>
-        {% endif %}
+        {% if not selected.can_list %}<p>{{ selected.reason }}</p>{% endif %}
         <div class="action-row">
           <a class="btn wood" href="/inventory/{{ selected.id }}">상세 보기</a>
           <a class="btn blue" href="/item-catalogs#item-{{ selected.definition.id }}">도감 보기</a>

@@ -139,16 +139,22 @@ a.slot {
   font-size: 12px;
 }
 
-.start-price {
+.start-row {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
+  margin-bottom: 8px;
 }
 
-.start-form {
-  display: flex;
-  justify-content: center;
-  margin: 12px 0;
+.start-amount {
+  flex: 1 1 auto;
+  text-align: right;
+}
+
+.start-row .btn {
+  padding: 3px 10px;
+  font-size: 14px;
 }
 
 .action-row {
@@ -182,8 +188,8 @@ a.slot {
   overflow: hidden;
 }
 
-/* 상태·희귀도·정렬 버튼도 너비를 같게 (가장 긴 "희귀도 높은 순"이 한 줄에 들어가는 폭) */
+/* 상태·희귀도·정렬 버튼도 너비를 같게 (줄임말(UNCOM, LEGEND, 희귀도순)이 한 줄에 들어가는 폭) */
 .bag-filters .filter-group a {
-  width: 92px;
+  width: 64px;
   padding: 2px 0;
 }
