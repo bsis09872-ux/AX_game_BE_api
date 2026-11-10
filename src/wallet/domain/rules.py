@@ -13,6 +13,9 @@ from wallet.domain.exceptions import BuyerBalanceShortError, InsufficientBalance
 # 가입 시 지급하는 초기 골드 (WALL-06). 초안 값, 회의에서 확정한다.
 INITIAL_BALANCE = 3_000
 
+# 잔액 상한: wallets.balance가 BIGINT라 넘으면 DB 오류(500)가 난다. 더하기 전에 막는다.
+MAX_BALANCE = 9_223_372_036_854_775_807
+
 
 def available_balance(balance: int, held_amount: int) -> int:
     """사용 가능 금액 = 총잔액 - 예약 합계 (WALL-02)"""

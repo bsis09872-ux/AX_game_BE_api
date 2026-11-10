@@ -20,7 +20,7 @@ from fastapi import APIRouter, Depends, Path
 from wallet.application.service import WalletService
 
 from .dependencies import HeldReaderBuilder, SessionDep, wallet_service_dependency
-from .schemas import ChargeRequest, WalletResponse
+from .schemas import BIGINT_MAX, ChargeRequest, WalletResponse
 
 
 def create_wallet_router(
@@ -54,6 +54,7 @@ def create_wallet_router(
         response_model=WalletResponse,
         summary="[WALL-01] 관리자 지갑 충전",
         responses={
+            400: {"description": "BALANCE_LIMIT_EXCEEDED (충전 후 잔액이 BIGINT 최대값을 넘음)"},
             401: {"description": "인증 필요"},
             403: {"description": "INSUFFICIENT_AUTHORITY (관리자가 아님)"},
             404: {"description": "WALLET_NOT_FOUND (없는 회원)"},
@@ -63,7 +64,7 @@ def create_wallet_router(
         service: ServiceDep,
         session: SessionDep,
         actor_id: UserIdDep,
-        user_id: Annotated[int, Path(ge=1, description="충전할 회원 ID")],
+        user_id: Annotated[int, Path(ge=1, le=BIGINT_MAX, description="충전할 회원 ID")],
         body: ChargeRequest,
     ) -> WalletResponse:
         # 관리자 여부는 서비스(RoleCheck)가 판단한다. 라우터는 요청자 ID만 넘긴다.

@@ -9,6 +9,10 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, PlainSerializer
 
+# 입력 상한: ID·금액 컬럼이 BIGINT라 넘는 값이 DB까지 가면 500이 난다. 입력 단계에서 422로 거절한다.
+# (경매 auction/presentation/params.py와 같은 기준. 도메인끼리 import하지 않으려고 따로 둔다)
+BIGINT_MAX = 9223372036854775807
+
 # 내부 int, JSON 응답에서만 "123" (JS Number는 2^53 이상 정수를 정확히 표현하지 못함)
 IdStr = Annotated[int, PlainSerializer(lambda v: str(v), return_type=str, when_used="json")]
 
@@ -34,5 +38,5 @@ class WalletBalanceResponse(_FromAttrs):
 
 class ChargeRequest(BaseModel):
     """WALL-01 관리자 지갑 충전"""
-    amount: int = Field(..., gt=0, description="충전 금액 (1 이상)")
+    amount: int = Field(..., gt=0, le=BIGINT_MAX, description="충전 금액 (1 이상, BIGINT 이하)")
 
