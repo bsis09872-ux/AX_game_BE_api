@@ -772,6 +772,8 @@ body.embed .main-content {
 .search-field select,
 .bid-row input {
   background: var(--skin);
+  /* 살짝 음각: 왼쪽 위는 어둡게, 오른쪽 아래는 밝게 눌린 느낌 */
+  box-shadow: inset 2px 2px 0 rgba(63, 38, 49, 0.35), inset -2px -2px 0 rgba(255, 255, 255, 0.45);
 }
 
 .search-field input::placeholder {
