@@ -1,8 +1,6 @@
 # Service: 사용자의 거래 내역과 현재 입찰 제한 상태를 조회한다.
 # Trade는 확정 기록이므로 수정·삭제하는 기능을 제공하지 않는다.
-# [TO DO] 다음 PR에서 AuctionUserGateway 구현체를 연결한다.
-# [TO DO] 조립부에서 같은 요청의 Repository와 사용자 조회 구현체를 주입한다.
-# 현재 조회 로직은 작성되어 있지만 실제 User 연동은 완료되지 않았다.
+# Repository와 사용자 조회 구현체는 wiring.py에서 같은 요청의 세션으로 주입한다.
 
 from datetime import datetime, timedelta
 

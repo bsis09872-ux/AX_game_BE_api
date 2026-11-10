@@ -1,6 +1,5 @@
 # 거래 기록을 저장하고 조회하는 계약을 정의한다. SQL은 infrastructure에서 구현한다.
 # 신규 거래 저장은 ID가 반영된 새 Trade를 반환하며, 기존 거래는 수정하지 않는다.
-# [TO DO] find_win_times_between을 인프라 Repository에 구현한다.
 # [TO DO] 페이지 번호·페이지 크기 계약을 application과 맞춘다.
 # [TO DO] 새 정책 연결 후 recent_win_times의 사용 여부를 확인하고 정리한다.
 
