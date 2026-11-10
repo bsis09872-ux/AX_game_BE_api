@@ -399,8 +399,7 @@ export function highlightHashTarget() {
     }
     row.classList.add("hash-target");
     // CSS 파일이 브라우저에 옛 버전으로 남아 있어도 보이도록 색을 직접 넣는다
-    row.style.background = "rgba(255, 220, 120, 0.45)";
-    row.style.boxShadow = "inset 4px 0 0 #f7c94a";
+    row.style.background = "rgba(255, 220, 120, 0.25)";
 }
 
 // 가방·도감 화면(page_key "inventory")에서 호출된다
