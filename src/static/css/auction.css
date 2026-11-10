@@ -57,10 +57,10 @@ body.embed .main-content {
   font-size: 14px;
 }
 
-/* 검색 폼: [글자+칸] 4개와 검색 버튼이 너비를 똑같이 나눠 가진다. 테두리는 얇게 */
+/* 검색 폼: [글자+칸] 4개가 너비를 똑같이 나눠 갖고, 검색 버튼은 원래 크기로 오른쪽 끝에 둔다. 테두리는 얇게 */
 .search-panel {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
   align-items: center;
   gap: 8px 20px;
   margin-bottom: 14px;
@@ -98,7 +98,6 @@ body.embed .main-content {
 }
 
 .search-actions .btn {
-  flex: 1;
   padding: 2px 14px;
 }
 
