@@ -431,12 +431,15 @@ body.embed .main-content {
 /* 입찰 패널 안내 문구: 위 정보와 구분되는 말풍선(꼬리는 오른쪽 아래). 안내는 하늘색, 입찰이 막힌 경고는 붉은색 */
 .bid-message {
   --bubble-line: rgba(255, 244, 224, 0.85);
+  /* 패널 바탕(나무색)에 어두운 색을 10%만 섞어 거의 투명하게 */
+  --bubble-bg: color-mix(in srgb, var(--wood) 90%, var(--night));
   position: relative;
-  margin: 10px 0 18px;
+  margin: 10px 0 16px;
   padding: 8px 12px;
   color: var(--water);
-  background: var(--night);
-  border: var(--px) solid var(--bubble-line);
+  background: var(--bubble-bg);
+  border: 1px solid var(--bubble-line);
+  border-radius: 8px;
 }
 
 .bid-message.warn {
@@ -456,17 +459,23 @@ body.embed .main-content {
 
 .bid-message::before {
   right: 16px;
-  border-width: 11px 8px 0;
+  border-width: 9px 7px 0;
   border-top-color: var(--bubble-line);
 }
 
 .bid-message::after {
-  right: 19px;
-  border-width: 8px 5px 0;
-  border-top-color: var(--night);
+  right: 17px;
+  border-width: 8px 6px 0;
+  border-top-color: var(--bubble-bg);
 }
 
 /* 입찰 폼: 입력 칸과 버튼을 한 줄에 같은 높이로 */
+.bid-form {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 244, 224, 0.22); /* 입찰 규칙 제목 아래 실선과 같은 연한 선 */
+}
+
 .bid-form label {
   display: block;
   margin-bottom: 4px;
@@ -674,4 +683,10 @@ body.embed .main-content {
   display: inline-block;
   line-height: 1;
   transform: translateY(-2px);
+}
+
+/* 최소 입찰 금액 안내: ※ 표시를 달고 오른쪽 정렬 */
+.bid-hint {
+  margin: 8px 0 0;
+  text-align: right;
 }

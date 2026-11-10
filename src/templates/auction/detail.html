@@ -111,7 +111,7 @@
             <button type="submit" class="btn gold">입찰하기</button>
           </div>
         </form>
-        <p class="muted">{{ gold(d.min_bid) }} 이상으로 입찰할 수 있어요.</p>
+        <p class="muted bid-hint">※ {{ gold(d.min_bid) }} 이상으로 입찰할 수 있어요.</p>
         {% endif %}
 
         {% if d.can_cancel %}
