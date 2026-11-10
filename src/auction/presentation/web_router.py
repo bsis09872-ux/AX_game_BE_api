@@ -22,7 +22,7 @@ from auction.domain.listings.entities import ListingStatus
 from auction.presentation.dependencies import ListingServiceDep, TradeServiceDep
 from auction.presentation.web_dependencies import get_inventory_reader, get_user_gateway, read_balance
 from auction.presentation.web_views import (
-    TRADE_TABS, UNKNOWN_ITEM, card_view, detail_url, detail_view, item_view, limit_view, list_url, new_view,
+    TRADE_TABS, UNKNOWN_ITEM, card_view, definition_view, detail_url, detail_view, item_view, limit_view, list_url, new_view,
     notice_text, parse_number, trade_rows, trades_url,
 )
 from auction.wiring import PAGE_SIZE
@@ -53,12 +53,13 @@ def render(request: Request, name: str, context: dict, status_code: int = 200):
     return response
 
 
-# 아이템 정보를 읽어 화면용 값으로 만든다. 못 읽으면 "알 수 없는 아이템"으로 대신한다
-async def load_item(inventory, inventory_item_id: int):
+# 매물의 아이템 종류(카탈로그)를 읽어 화면용 값으로 만든다. 못 읽으면 "알 수 없는 아이템"으로 대신한다
+# 매물은 아이템 종류 번호를 이미 갖고 있고, 인벤토리의 종류 조회는 캐시를 쓰므로 목록에서 여러 번 불러도 DB를 매번 읽지 않는다
+async def load_item(inventory, item_definition_id: int):
     try:
-        return item_view(await inventory.get_item(inventory_item_id))
-    except AppError as exc:  # [Claude] 원인 추적용 로그 (고등어가 알 수 없는 아이템으로 뜨는 문제)
-        logger.warning('아이템 조회 실패 item_id=%s: %r', inventory_item_id, exc)
+        return definition_view(await inventory.get_definition(item_definition_id))
+    except AppError as exc:  # 원인 추적용 로그
+        logger.warning('아이템 종류 조회 실패 definition_id=%s: %r', item_definition_id, exc)
         return UNKNOWN_ITEM
 
 
@@ -120,7 +121,7 @@ async def detail_response(
 
     view = detail_view(
         listing, ctx.user_id, now,
-        await load_item(inventory, listing.inventory_item_id),
+        await load_item(inventory, listing.item_definition_id),
         names.get(listing.seller_id, '알 수 없음'),
         names.get(winner_id, '알 수 없음') if winner_id else '',
         blocked_seconds,
@@ -158,19 +159,16 @@ def create_auction_web_router(
         now = datetime.now(timezone.utc)
         names = await users.get_display_names([listing.seller_id for listing in listings])
 
-        # shortcut: 매물마다 아이템을 한 번씩 읽는다(N번 조회). 아이템 일괄 조회가 열리면 한 번으로 줄인다
         cards = [
             card_view(
                 listing,
-                await load_item(inventory, listing.inventory_item_id),
+                await load_item(inventory, listing.item_definition_id),
                 names.get(listing.seller_id, '알 수 없음'),
                 now,
                 ctx.embed,
             )
             for listing in listings
         ]
-        # shortcut: 남은 시간 순 정렬은 이 쪽 안에서만 맞다(저장소는 공개 시각 최신순). 진행 매물은 아이템 종류당 1개라 대부분 한 쪽에 다 들어간다
-        cards.sort(key=lambda card: card.remaining_seconds)
 
         return render(request, 'auction/index.html', {
             **ctx.base(),

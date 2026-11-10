@@ -112,15 +112,19 @@ class ItemView:
 UNKNOWN_ITEM = ItemView(name='알 수 없는 아이템', category='', rarity='COMMON', icon='unknown')
 
 
-# 인벤토리의 아이템 정보(ItemInfo)에서 화면에 필요한 값만 골라낸다
-def item_view(info) -> ItemView:
-    definition = info.definition
+# 인벤토리의 아이템 종류 정보(DefinitionInfo)에서 화면에 필요한 값만 골라낸다
+def definition_view(definition) -> ItemView:
     return ItemView(
         name=definition.name,
         category=CATEGORY_LABELS.get(definition.category, definition.category),
         rarity=definition.rarity,
         icon=definition.icon,
     )
+
+
+# 개별 아이템 정보(ItemInfo)에서도 같은 값을 골라낸다 (경매 등록 화면용)
+def item_view(info) -> ItemView:
+    return definition_view(info.definition)
 # endregion
 
 
