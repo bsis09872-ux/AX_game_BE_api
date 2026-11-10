@@ -4,7 +4,7 @@
 {% block page %}login{% endblock %}
 
 {% block styles %}
-    <link rel="stylesheet" href="{{ url_for('static', path='/css/auth.css') }}">
+    <link data-page-style rel="stylesheet" href="{{ url_for('static', path='/css/auth.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -28,7 +28,7 @@
             {% endif %}
 
             {# 입력값은 웹 로그인 라우터로 제출한다. 성공 시 서버가 쿠키를 설정하고 /me로 이동시킨다. #}
-            <form class="auth-form" method="post" action="/login">
+            <form class="auth-form" method="post" action="/login" data-page-form>
                 <div class="field">
                     <label for="login-id">로그인 ID</label>
                     <input

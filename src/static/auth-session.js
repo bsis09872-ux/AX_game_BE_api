@@ -1,10 +1,9 @@
 // 로그인 복구와 내 정보 화면의 자동 갱신을 담당한다.
 // 토큰 원문은 JavaScript에서 읽지 않고 브라우저가 HttpOnly 쿠키로 전달한다.
-(() => {
-    "use strict";
-
+export function initAuthSession({ signal, navigate }) {
     const page = document.body.dataset.authPage;
-    const protectedPage = page === "me" || page === "admin";
+    const protectedPage =
+        page === "me" || page === "admin" || document.body.dataset.sessionProtected === "true";
 
     // 일반 로그인 화면에서는 실행하지 않는다. 복구할 쿠키가 있거나 /me일 때만 확인한다.
     if (!protectedPage && document.body.dataset.resume !== "true") {
@@ -23,9 +22,12 @@
         clearTimeout(expiryTimer);
 
         if (protectedPage) {
-            location.replace("/login?expired=1");
+            void navigate("/login?expired=1", { replace: true });
         } else {
-            document.getElementById("session-message").textContent = "다시 로그인해 주세요.";
+            const message = document.getElementById("session-message");
+            if (message) {
+                message.textContent = "다시 로그인해 주세요.";
+            }
         }
     }
 
@@ -71,6 +73,11 @@
     async function renewIfNeeded() {
         // 탭 간 잠금을 얻은 뒤 다시 조회해야 다른 탭이 갱신한 쿠키도 반영된다.
         const current = await status();
+
+        // 다른 페이지로 이동한 사이에는 이전 화면이 토큰 갱신을 시작하지 않는다.
+        if (ended) {
+            return null;
+        }
 
         if (current && current.expires_in > 30) {
             return current;
@@ -137,7 +144,7 @@
 
                 // 로그인 화면에서 기존 쿠키로 인증을 복구했다면 내 정보 화면으로 이동한다.
                 if (page === "login") {
-                    location.replace("/me");
+                    void navigate("/me", { replace: true });
                     return;
                 }
 
@@ -171,14 +178,29 @@
         return pending;
     }
 
+    // 화면을 떠나면 이전 화면의 타이머와 이벤트를 함께 해제한다.
+    signal.addEventListener(
+        "abort",
+        () => {
+            ended = true;
+            clearTimeout(timer);
+            clearTimeout(expiryTimer);
+        },
+        { once: true },
+    );
+
     // 다른 탭에서 돌아오면 백그라운드에서 지연됐을 수 있는 인증 상태를 확인한다.
-    document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible") {
-            update();
-        }
-    });
+    document.addEventListener(
+        "visibilitychange",
+        () => {
+            if (document.visibilityState === "visible") {
+                update();
+            }
+        },
+        { signal },
+    );
 
     // 뒤로 가기 등으로 페이지가 복원될 때도 확인하고, 최초 로드 시에도 한 번 실행한다.
-    window.addEventListener("pageshow", update);
+    window.addEventListener("pageshow", update, { signal });
     update();
-})();
+}

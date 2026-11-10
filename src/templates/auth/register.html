@@ -4,7 +4,7 @@
 {% block page %}register{% endblock %}
 
 {% block styles %}
-    <link rel="stylesheet" href="{{ url_for('static', path='/css/auth.css') }}">
+    <link data-page-style rel="stylesheet" href="{{ url_for('static', path='/css/auth.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -17,7 +17,7 @@
             {% endif %}
 
             {# HTML은 입력을 돕고 실제 가입 규칙은 서버의 공통 요청 스키마가 검증한다. #}
-            <form class="auth-form" method="post" action="/register">
+            <form class="auth-form" method="post" action="/register" data-page-form>
                 <div class="field">
                     <label for="login-id">로그인 ID</label>
                     <input
