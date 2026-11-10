@@ -30,3 +30,13 @@ class BidBannedError(ForbiddenError):
 class InventoryMismatchError(AppError):
     code: str = "AUCTION_INVENTORY_MISMATCH"
     message: str = "서버 내부 오류가 발생했습니다."
+
+
+# 500: 낙찰자가 탈퇴·비활성이거나 없어 정산을 진행할 수 없는 내부 상태.
+# 재시도해도 성공하지 않으며, 아이템·지갑 이전 전에 확인되므로 자동 유찰해도 데이터가 안전하다.
+# 마감 스케줄러가 받아 rollback한 뒤, 새 트랜잭션에서 매물 상태를 다시 확인하고 유찰한다.
+# [V1] 낙찰자 이용 불가에만 쓴다. 인벤토리·지갑 불일치는 이 예외로 바꾸지 않는다.
+# 사용자 오류가 아니므로 400·403·404·409 분류(자식 클래스)를 쓰지 않는다.
+class SettlementNotPossibleError(AppError):
+    code: str = "AUCTION_SETTLEMENT_NOT_POSSIBLE"
+    message: str = "서버 내부 오류가 발생했습니다."
