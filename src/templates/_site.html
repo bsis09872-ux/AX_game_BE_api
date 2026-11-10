@@ -6,7 +6,7 @@
 {% macro site_nav(active) -%}
 <nav class="nav" aria-label="주 메뉴">
   <a {% if active == 'auction' %}class="on" aria-current="page" {% endif %}href="/auctions">경매장</a>
-  <a {% if active == 'inventory' %}class="on" aria-current="page" {% endif %}href="/inventory">내 인벤토리</a>
+  <a {% if active == 'inventory' %}class="on" aria-current="page" {% endif %}href="/inventory">내 가방</a>
   <a {% if active == 'trades' %}class="on" aria-current="page" {% endif %}href="/auctions/trades">내 거래</a>
   <a {% if active == 'me' %}class="on" aria-current="page" {% endif %}href="/me">내 정보</a>
 </nav>
@@ -16,6 +16,6 @@
 {# 보유 골드: 값이 없으면(지갑 없음, 팝업 안) 아무것도 보여 주지 않는다 #}
 {% macro gold_status(amount) -%}
 {% if amount is not none %}
-<div class="hud"><span class="gold" aria-label="보유 골드">{{ '{:,}'.format(amount) }} GOLD</span></div>
+<div class="hud"><span class="gold" aria-label="보유 골드">{{ '{:,}'.format(amount) }} G</span></div>
 {% endif %}
 {%- endmacro %}

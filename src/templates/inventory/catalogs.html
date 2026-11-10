@@ -1,12 +1,13 @@
 {# [Claude] 헤더를 경매장 화면과 같은 주 메뉴·골드 조각으로 맞춤 #}
 {% extends "base.html" %}
 {% from "_site.html" import site_nav, gold_status %}
-{% from "inventory/_macros.html" import gold, item_icon %}
+{% from "inventory/_macros.html" import gold, item_icon, category_name %}
 
 {% block title %}아이템 도감 | Catch &amp; Bid{% endblock %}
 
 {% block styles %}
 <link rel="stylesheet" href="{{ url_for('static', path='/css/inventory.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='/css/common.css') }}">
 {% endblock %}
 
 {% block navigation %}{{ site_nav('inventory') }}{% endblock %}
@@ -30,7 +31,7 @@
                 <span class="filter-label">분류</span>
                 <a href="{{ href(None, rarity) }}" {% if not category %} aria-current="true" {% endif %}>전체</a>
                 {% for c in categories %}
-                <a href="{{ href(c, rarity) }}" {% if category==c %} aria-current="true" {% endif %}>{{ c }}</a>
+                <a href="{{ href(c, rarity) }}" {% if category==c %} aria-current="true" {% endif %}>{{ category_name(c) }}</a>
                 {% endfor %}
             </nav>
             <nav class="filter-group" aria-label="희귀도 필터">
@@ -66,7 +67,7 @@
                 {% for d in definitions %}
                 <tr id="item-{{ d.id }}">
                     <td>{{ item_icon(d) }}{{ d.name }}</td>
-                    <td>{{ d.category }}</td>
+                    <td>{{ category_name(d.category) }}</td>
                     <td>{{ d.rarity }}</td>
                     <td>{{ d.description }}</td>
                     <td class="num">{{ gold(d.start_price) }}</td>
@@ -79,7 +80,7 @@
         {% endif %}
 
         <div class="page-links">
-            <a href="/inventory">← 내 인벤토리</a>
+            <a href="/inventory">← 내 가방</a>
         </div>
     </div>
 </section>

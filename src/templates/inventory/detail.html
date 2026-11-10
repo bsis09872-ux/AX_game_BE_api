@@ -1,12 +1,13 @@
 {# [Claude] 헤더를 경매장 화면과 같은 주 메뉴·골드 조각으로 맞춤 #}
 {% extends "base.html" %}
 {% from "_site.html" import site_nav, gold_status %}
-{% from "inventory/_macros.html" import gold, moment, item_icon %}
+{% from "inventory/_macros.html" import gold, moment, item_icon, category_name %}
 
 {% block title %}{{ item.definition.name }} | Catch &amp; Bid{% endblock %}
 
 {% block styles %}
 <link rel="stylesheet" href="{{ url_for('static', path='/css/inventory.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='/css/common.css') }}">
 {% endblock %}
 
 {% block navigation %}{{ site_nav('inventory') }}{% endblock %}
@@ -26,7 +27,7 @@
                     <tbody>
                         <tr>
                             <th>분류</th>
-                            <td>{{ item.definition.category }}</td>
+                            <td>{{ category_name(item.definition.category) }}</td>
                         </tr>
                         <tr>
                             <th>희귀도</th>
@@ -64,7 +65,7 @@
         </div>
 
         <div class="page-links">
-            <a href="/inventory">← 내 인벤토리</a>
+            <a href="/inventory">← 내 가방</a>
             <a class="to-right" href="/item-catalogs#item-{{ item.definition.id }}">아이템 도감 보기</a>
         </div>
     </div>

@@ -8,6 +8,7 @@
 - ?embed=1이면 팝업(iframe) 안의 화면이다. 헤더를 숨기고 보유 골드도 읽지 않는다
 """
 
+import logging
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Literal
@@ -27,6 +28,8 @@ from auction.presentation.web_views import (
 from auction.wiring import PAGE_SIZE
 from database import get_db
 from shared.core.exceptions import AppError, ConflictError, ForbiddenError, NotFoundError
+
+logger = logging.getLogger(__name__)
 
 
 # 모든 화면이 공통으로 쓰는 요청 정보
@@ -54,7 +57,8 @@ def render(request: Request, name: str, context: dict, status_code: int = 200):
 async def load_item(inventory, inventory_item_id: int):
     try:
         return item_view(await inventory.get_item(inventory_item_id))
-    except AppError:
+    except AppError as exc:  # [Claude] 원인 추적용 로그 (고등어가 알 수 없는 아이템으로 뜨는 문제)
+        logger.warning('아이템 조회 실패 item_id=%s: %r', inventory_item_id, exc)
         return UNKNOWN_ITEM
 
 

@@ -1,12 +1,13 @@
 {# [Claude] 이 파일은 Claude가 작성함 (검토 전) #}
 {# 내 가방: 아이템 칸을 누르면 오른쪽 패널에 선택해서 경매에 올릴 수 있다 (표에서 칸 격자로 바꿈) #}
 {% extends "base.html" %}
-{% from "inventory/_macros.html" import gold, filter_group, item_icon %}
+{% from "inventory/_macros.html" import gold, filter_group, item_icon, category_name %}
 {% from "_site.html" import site_nav, gold_status %}
-{% block title %}내 인벤토리 | Catch &amp; Bid{% endblock %}
+{% block title %}내 가방 | Catch &amp; Bid{% endblock %}
 
 {% block styles %}
 <link rel="stylesheet" href="{{ url_for('static', path='/css/inventory.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='/css/common.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', path='/css/bag.css') }}">
 {% endblock %}
 
@@ -15,7 +16,7 @@
 
 {% block content %}
 <section aria-labelledby="inventory-title">
-  <h1 id="inventory-title" class="title-tab">내 인벤토리</h1>
+  <h1 id="inventory-title" class="title-tab">내 가방</h1>
 
   <div class="row bag-layout">
     <div class="col bag-main">
@@ -74,7 +75,7 @@
         <div class="select-item">
           {{ item_icon(selected.definition, 64) }}
           <strong>{{ selected.definition.name }}</strong>
-          <span class="muted">{{ selected.definition.category }} · #{{ selected.id }}</span>
+          <span class="muted">{{ category_name(selected.definition.category) }} · #{{ selected.id }}</span>
         </div>
         <p>시작가 <strong class="gold-text">{{ gold(selected.definition.start_price) }}</strong></p>
         <p class="muted">시작가는 아이템 카탈로그 값이라 바꿀 수 없어요. 경매 시간은 6분이에요.</p>

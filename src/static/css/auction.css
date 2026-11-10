@@ -58,7 +58,6 @@ body.embed .main-content {
 
 .card-price {
   color: var(--gold);
-  font-weight: 700;
 }
 
 .card-foot {
@@ -70,7 +69,6 @@ body.embed .main-content {
 
 .clock {
   color: var(--water);
-  font-weight: 700;
 }
 
 .clock.urgent {
@@ -189,7 +187,6 @@ body.embed .main-content {
 .stage-price {
   color: var(--gold);
   font-size: 22px;
-  font-weight: 700;
 }
 
 .tag.lead {

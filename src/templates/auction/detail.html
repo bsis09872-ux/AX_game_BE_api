@@ -75,7 +75,7 @@
         {% if d.can_bid %}
         <form method="post" action="{{ d.bid_action }}" class="inline">
           <div class="field">
-            <label for="bid-amount">입찰 금액 (GOLD)</label>
+            <label for="bid-amount">입찰 금액 (G)</label>
             <input id="bid-amount" name="amount" type="number" inputmode="numeric" min="{{ d.min_bid }}" value="{{ d.min_bid }}" required>
           </div>
           <button type="submit" class="btn gold">입찰하기</button>

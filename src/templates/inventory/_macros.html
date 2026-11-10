@@ -1,9 +1,9 @@
 {# 인벤토리 화면들이 같이 쓰는 조각 #}
 
 
-{# 금액 표시: 천 단위 콤마 + 화폐 단위(GOLD). 단위를 바꾸려면 여기만 고친다 #}
+{# 금액 표시: 천 단위 콤마 + 화폐 단위(G). 단위를 바꾸려면 여기만 고친다 #}
 {% macro gold(amount) -%}
-{{ '{:,}'.format(amount) }} GOLD
+{{ '{:,}'.format(amount) }} G
 {%- endmacro %}
 
 
@@ -35,4 +35,9 @@
 <span class="item-icon rarity-{{ definition.rarity }}"><img class="px" alt=""
         src="{{ ICON_DIR }}/item_{{ definition.icon | replace('/', '_') | urlencode }}.png" width="{{ size }}"
         height="{{ size }}" onerror="this.onerror=null;this.src='{{ ICON_DIR }}/{{ ICON_FALLBACK }}'"></span>
+{%- endmacro %}
+
+{# [Claude] 분류 이름: 코드(FISH 등)를 한글로 보여 준다 #}
+{% macro category_name(code) -%}
+{{ {'FISH': '물고기', 'GEM': '보석', 'MISC': '잡화'}.get(code, code) }}
 {%- endmacro %}

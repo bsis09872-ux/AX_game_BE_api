@@ -217,10 +217,10 @@ def banner_view(listing: Listing, viewer_id: int, winner_name: str) -> Banner | 
     if listing.status == ListingStatus.SOLD:
         price = f'{listing.current_bid_amount:,}'
         if listing.current_bidder_id == viewer_id:
-            return Banner('sold', '축하해요, 낙찰!', f'{price} GOLD · 아이템이 가방으로 들어갔어요')
+            return Banner('sold', '축하해요, 낙찰!', f'{price} G · 아이템이 가방으로 들어갔어요')
         if listing.seller_id == viewer_id:
-            return Banner('sold', '팔렸어요!', f'{price} GOLD에 {winner_name}님이 낙찰받았어요')
-        return Banner('sold', f'낙찰! {winner_name}', f'{price} GOLD에 낙찰됐어요')
+            return Banner('sold', '팔렸어요!', f'{price} G에 {winner_name}님이 낙찰받았어요')
+        return Banner('sold', f'낙찰! {winner_name}', f'{price} G에 낙찰됐어요')
     if listing.status == ListingStatus.FAILED:
         return Banner('fail', '유찰…', '입찰자가 없어서 아이템이 판매자에게 돌아갔어요')
     if listing.status == ListingStatus.CANCELLED:
