@@ -57,7 +57,7 @@ body.embed .main-content {
   font-size: 14px;
 }
 
-/* 검색 폼: [글자+칸] 4개가 너비를 똑같이 나눠 갖고, 검색 버튼은 원래 크기로 오른쪽 끝에 둔다. 테두리는 얇게 */
+/* 검색 폼: [글자+칸] 4개가 너비를 똑같이 나눠 갖고, 검색 버튼은 원래 크기로 오른쪽 끝에 둔다. 입력 칸 테두리는 얇게 */
 .search-panel {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
@@ -65,10 +65,6 @@ body.embed .main-content {
   gap: 8px 20px;
   margin-bottom: 14px;
   padding: 10px 14px;
-  /* 회색 계열: 주변 갈색 카드와 구분되는 도구 영역 */
-  background: #4a4650;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: none;
 }
 
 /* 글자와 입력 칸을 한 줄에 나란히: "분류 [칸]" */
@@ -81,7 +77,7 @@ body.embed .main-content {
 
 .search-field label {
   font-size: 14px;
-  color: var(--steel);
+  color: var(--muted);
   white-space: nowrap;
 }
 
@@ -91,6 +87,7 @@ body.embed .main-content {
   width: 0; /* 남는 폭을 칸이 나눠 갖게 한다 */
   min-width: 0;
   padding: 2px 8px;
+  border-width: 1px;
 }
 
 .search-actions {
