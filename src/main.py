@@ -65,7 +65,7 @@ from auction.wiring import build_held_amount_reader  # 지갑 예약금 조회 (
 from auction.presentation.listings.admin_web_router import create_listing_admin_web_router
 from auction.presentation.listings.router import router as listing_router
 from auction.presentation.trades.router import router as trade_router
-from auction.wiring import wire_auction_dependencies
+from auction.wiring import build_auction_scheduler, wire_auction_dependencies
 # endregion
 
 
@@ -85,6 +85,8 @@ API_PREFIX = "/v1"
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     setup_logging()
+    # 경매 마감 스케줄러: 5초마다 마감된 매물을 정산·유찰하고 다음 매물을 공개한다.
+    auction_scheduler = build_auction_scheduler()
     try:
         # 잘못된 인증 설정으로 요청을 받지 않도록 시작할 때 검증한다.
         initialize_auth()
@@ -93,8 +95,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         async with engine.begin() as connection:
             await connection.run_sync(Base.metadata.create_all)
             await upgrade_member_controls(connection)
+        # 테이블 준비가 끝난 뒤 시작해야 없는 테이블을 조회하지 않는다.
+        auction_scheduler.start()
         yield
     finally:
+        # DB 연결을 닫기 전에 스케줄러를 먼저 멈춘다. 시작 전에 실패했어도 안전하다.
+        await auction_scheduler.stop()
         await engine.dispose()
 
 app = FastAPI(title="Catch&Bid", lifespan=lifespan)
