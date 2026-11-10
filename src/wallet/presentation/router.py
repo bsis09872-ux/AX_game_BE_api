@@ -8,9 +8,9 @@ subtract_balance·check_bid_funds·settle_sale은 경매 쪽 내부 호출이라
 라우터는 얇게 유지한다: 인증된 사용자 ID를 서비스에 넘기고 결과를 응답 스키마로 바꾼다.
 서비스가 던진 도메인 예외는 공통 핸들러가 detail.code/message로 바꾼다.
 
-인증 함수는 auth를 import하지 않고 바깥(main.py)에서 주입받는다 (users 라우터와 같은 방식):
+다른 도메인 기능은 import하지 않고 바깥(main.py)에서 주입받는다 (users 라우터와 같은 방식):
     from wallet.presentation.router import create_wallet_router
-    app.include_router(create_wallet_router(get_current_user_id), prefix=API_PREFIX)
+    app.include_router(create_wallet_router(get_current_user_id, build_held_reader), prefix=API_PREFIX)
 """
 from collections.abc import Awaitable, Callable
 from typing import Annotated
@@ -19,16 +19,22 @@ from fastapi import APIRouter, Depends, Path
 
 from wallet.application.service import WalletService
 
-from .dependencies import SessionDep, get_wallet_service
+from .dependencies import HeldReaderBuilder, SessionDep, wallet_service_dependency
 from .schemas import ChargeRequest, WalletResponse
 
-ServiceDep = Annotated[WalletService, Depends(get_wallet_service)]
 
+def create_wallet_router(
+    current_user_id: Callable[..., Awaitable[int]],
+    build_held_reader: HeldReaderBuilder,
+) -> APIRouter:
+    """지갑 API 라우터를 만든다.
 
-def create_wallet_router(current_user_id: Callable[..., Awaitable[int]]) -> APIRouter:
-    """current_user_id: 토큰을 검증해 인증된 회원 ID를 돌려주는 의존성 (auth의 get_current_user_id)"""
+    current_user_id: 토큰을 검증해 인증된 회원 ID를 돌려주는 의존성 (auth의 get_current_user_id)
+    build_held_reader: 요청 세션으로 예약 금액 조회기(HeldAmountReader)를 만드는 함수 (경매 제공)
+    """
     router = APIRouter(tags=["wallet"])
     UserIdDep = Annotated[int, Depends(current_user_id)]
+    ServiceDep = Annotated[WalletService, Depends(wallet_service_dependency(build_held_reader))]
 
     @router.get(
         "/wallets/me",

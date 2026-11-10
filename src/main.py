@@ -58,6 +58,7 @@ from inventory.wiring import is_fishing_enabled
 
 # region 도메인 import: 지갑
 from wallet.presentation.router import create_wallet_router
+from auction.wiring import build_held_amount_reader  # 지갑 예약금 조회 (경매 제공 AuctionHeldAmountReader)
 # endregion
 
 
@@ -140,7 +141,7 @@ app.include_router(create_inventory_web_router(get_current_web_user_id))
 
 
 # region 도메인 라우터: 지갑
-app.include_router(create_wallet_router(get_current_user_id), prefix=API_PREFIX)
+app.include_router(create_wallet_router(get_current_user_id, build_held_amount_reader), prefix=API_PREFIX)
 # endregion
 
 

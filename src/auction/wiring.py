@@ -63,7 +63,7 @@ def build_listing_service(session: AsyncSession) -> ListingService:
         listings=SqlAlchemyListingRepository(session, page_size=PAGE_SIZE),
         inventory=build_inventory_gateway(session),
         users=build_user_gateway(session),
-        wallets=WalletGatewayAdapter(build_wallet_service(session)),
+        wallets=WalletGatewayAdapter(build_wallet_service(session, held_reader=build_held_amount_reader(session))),
         tx=SqlAlchemyTransactionManager(session),
     )
 
@@ -82,7 +82,7 @@ def build_auction_service(session: AsyncSession) -> AuctionService:
         listings=SqlAlchemyListingRepository(session, page_size=PAGE_SIZE),
         trades=SqlAlchemyTradeRepository(session, page_size=PAGE_SIZE),
         users=build_user_gateway(session),
-        wallets=WalletGatewayAdapter(build_wallet_service(session)),
+        wallets=WalletGatewayAdapter(build_wallet_service(session, held_reader=build_held_amount_reader(session))),
         inventory=build_inventory_gateway(session),
         tx=SqlAlchemyTransactionManager(session),
     )

@@ -28,5 +28,7 @@ class HeldAmountReader(Protocol):
     # 내가 현재 최고 입찰자(current_bidder_id)인 BIDDING 매물들의 입찰액 합계. 없으면 0.
     # 마감이 지나도 정산 전이면 BIDDING이라 포함된다.
     # 입찰 확인(WALL-07)에서는 지갑 잠금 뒤에 불러야 같은 회원의 동시 입찰이 반영된다.
+    # 구현: 경매의 AuctionHeldAmountReader (ListingRepository.sum_leading_bids 호출).
+    #   지갑과 같은 요청 세션을 쓰고, 조회 중 commit하거나 매물 행을 추가로 잠그지 않는다.
     async def held_amount(self, user_id: int) -> int:
         ...
