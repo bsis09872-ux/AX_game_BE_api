@@ -4,14 +4,17 @@
 {% extends "base.html" %}
 {% from "_site.html" import site_nav, gold_status %}
 
+{% block page_key %}auction{% endblock %}
+
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', path='/css/inventory.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', path='/css/common.css') }}">
-<link rel="stylesheet" href="{{ url_for('static', path='/css/auction.css') }}">
+<link data-page-style rel="stylesheet" href="{{ url_for('static', path='/css/inventory.css') }}">
+<link data-page-style rel="stylesheet" href="{{ url_for('static', path='/css/common.css') }}">
+<link data-page-style rel="stylesheet" href="{{ url_for('static', path='/css/auction.css') }}">
 {% endblock %}
 
 {# 팝업(iframe) 안이면 body에 embed 클래스를 달아 헤더·푸터·배경을 숨긴다 (global.css, auction.css) #}
-{% block body_attributes %}{% if embed %}class="embed"{% endif %}{% endblock %}
+{# data-session-protected: 공통 세션 확인·자동 갱신에 참여한다 (docs/project-structure.md) #}
+{% block body_attributes %}data-session-protected="true"{% if embed %} class="embed"{% endif %}{% endblock %}
 
 {% block navigation %}{{ site_nav(nav_active) }}{% endblock %}
 {% block header_status %}{{ gold_status(gold_balance) }}{% endblock %}
