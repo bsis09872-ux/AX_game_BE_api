@@ -5,7 +5,7 @@ from datetime import datetime
 
 @dataclass(frozen=True)
 class WalletView:
-    """WALL-01"""
+    """WALL-02 내 지갑 조회 결과"""
     user_id: int
     balance: int
     held_amount: int

@@ -1,4 +1,4 @@
-"""지갑 유스케이스 (WALL-01, 06, 07, 08, 관리자 충전)
+"""지갑 유스케이스 (WALL-01 관리자 충전, 02 내 지갑 조회, 06, 07, 08)
 
 - 거래 내역·상세(WALL-04, 05)는 거래(trades)를 경매가 맡기로 해서 지갑에 두지 않는다.
 
@@ -56,7 +56,7 @@ class WalletService:
             await self.ensure_wallet(user_id)
 
     async def get_my_wallet(self, user_id: int) -> WalletView:
-        """WALL-01 내 지갑 조회: 총잔액 + 예약 합계 + 사용 가능 금액
+        """WALL-02 내 지갑 조회: 총잔액 + 예약 합계 + 사용 가능 금액
         처음 조회면 지갑을 만들므로 호출자(라우터)가 commit한다.
 
         잔액과 예약금은 같은 시점 값이어야 한다. 지갑을 먼저 잠그고(FOR UPDATE) 예약금을 읽는다.
@@ -147,7 +147,7 @@ class WalletService:
 
 
     async def add_balance(self, actor_id: int, user_id: int, amount: int):
-        """관리자 충전. actor_id(요청자)가 관리자가 아니면 403, user_id(대상)가 없는 회원이면 404."""
+        """WALL-01 관리자 충전. actor_id(요청자)가 관리자가 아니면 403, user_id(대상)가 없는 회원이면 404."""
         if not await self.roleCheck.is_admin(actor_id):
             raise InsufficientAuthorityError()
 

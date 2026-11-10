@@ -1,4 +1,4 @@
-"""지갑 요청·응답 모델 (WALL-01, 관리자 충전)
+"""지갑 요청·응답 모델 (WALL-01 관리자 충전, WALL-02 내 지갑 조회)
 
 - ID는 IdStr로 선언한다. DB·도메인에서는 int, JSON으로 나갈 때만 10진 문자열.
 - 금액은 int 그대로 내보낸다.
@@ -19,7 +19,7 @@ class _FromAttrs(BaseModel):
 
 
 class WalletResponse(_FromAttrs):
-    """WALL-01 내 지갑 조회. application의 WalletView를 model_validate로 받는다."""
+    """WALL-02 내 지갑 조회 (WALL-01 충전 응답도 같은 모양). application의 WalletView를 model_validate로 받는다."""
     user_id: IdStr
     balance: int            # 총잔액 (예약금 포함)
     held_amount: int        # 입찰로 묶인 금액 합계
@@ -33,6 +33,6 @@ class WalletBalanceResponse(_FromAttrs):
 
 
 class ChargeRequest(BaseModel):
-    """관리자 지갑 충전"""
+    """WALL-01 관리자 지갑 충전"""
     amount: int = Field(..., gt=0, description="충전 금액 (1 이상)")
 
