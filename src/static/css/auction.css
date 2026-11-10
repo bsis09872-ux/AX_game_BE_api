@@ -57,6 +57,46 @@ body.embed .main-content {
   font-size: 14px;
 }
 
+/* 검색 폼 */
+.search-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.search-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.search-field.grow {
+  flex: 1 1 160px;
+}
+
+.search-field label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.search-field input,
+.search-field select {
+  padding: 6px 10px;
+  min-width: 0;
+}
+
+.search-field input[inputmode="numeric"] {
+  width: 110px;
+}
+
+.search-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 /* 매물 카드: 패널 없이 배경 위에 놓는 양각 카드. 풀 화면에서 한 줄에 4개 */
 .card-grid {
   display: grid;

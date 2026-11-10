@@ -22,8 +22,9 @@ def _url(path: str, embed: bool = False, **params) -> str:
     return path + ('?' + urlencode(query) if query else '')
 
 
-def list_url(page: int = 1, embed: bool = False) -> str:
-    return _url('/auctions', embed, page=page if page > 1 else None)
+def list_url(page: int = 1, embed: bool = False, search: 'SearchFilter | None' = None) -> str:
+    params = search.params() if search else {}
+    return _url('/auctions', embed, page=page if page > 1 else None, **params)
 
 
 def detail_url(listing_id: int, embed: bool = False, ok: str | None = None) -> str:
@@ -106,6 +107,7 @@ class ItemView:
     category: str
     rarity: str
     icon: str
+    category_code: str = ''  # 분류 검색용 (FISH, GEM, MISC)
 
 
 # 아이템을 못 읽을 때(지워진 아이템 등) 대신 보여 준다
@@ -119,6 +121,7 @@ def definition_view(definition) -> ItemView:
         category=CATEGORY_LABELS.get(definition.category, definition.category),
         rarity=definition.rarity,
         icon=definition.icon,
+        category_code=definition.category,
     )
 
 
@@ -160,6 +163,60 @@ def card_view(listing: Listing, item: ItemView, seller_name: str, now: datetime,
         remaining_text=format_clock(seconds),
         urgent=seconds <= URGENT_SECONDS,
     )
+# endregion
+
+
+# region [Claude] 경매장 목록 검색
+# 이름·분류·최소가·최대가 검색. 진행 중인 매물은 아이템 종류당 1개라 한 쪽 안에서 걸러도 정확하다
+# shortcut: 가져온 쪽 안에서만 거른다. 아이템 종류가 한 쪽(PAGE_SIZE)을 넘으면 저장소 검색이 필요하다
+@dataclass(frozen=True)
+class SearchFilter:
+    q: str = ''
+    category: str = ''
+    min_price_text: str = ''
+    max_price_text: str = ''
+    min_price: int | None = None
+    max_price: int | None = None
+    error: str = ''
+
+    @property
+    def active(self) -> bool:
+        return bool(self.q or self.category or self.min_price or self.max_price)
+
+    # 주소에 실을 값: 비어 있는 조건은 넣지 않는다
+    def params(self) -> dict:
+        return {
+            'q': self.q or None,
+            'category': self.category or None,
+            'min_price': self.min_price_text or None,
+            'max_price': self.max_price_text or None,
+        }
+
+    def matches(self, card: 'ListingCard') -> bool:
+        if self.q and self.q.lower() not in card.item.name.lower():
+            return False
+        if self.category and card.item.category_code != self.category:
+            return False
+        if self.min_price is not None and card.price < self.min_price:
+            return False
+        if self.max_price is not None and card.price > self.max_price:
+            return False
+        return True
+
+
+def parse_search(q: str | None, category: str | None, min_price: str | None, max_price: str | None) -> SearchFilter:
+    name = (q or '').strip()[:50]
+    kind = category if category in CATEGORY_LABELS else ''
+    low_text, high_text = (min_price or '').strip(), (max_price or '').strip()
+    low, high = parse_number(low_text) if low_text else None, parse_number(high_text) if high_text else None
+    if (low_text and low is None) or (high_text and high is None):
+        return SearchFilter(q=name, category=kind, min_price_text=low_text, max_price_text=high_text,
+                            error='금액은 숫자로 입력해 주세요.')
+    if low is not None and high is not None and low > high:
+        return SearchFilter(q=name, category=kind, min_price_text=low_text, max_price_text=high_text,
+                            error='최소 금액이 최대 금액보다 커요.')
+    return SearchFilter(q=name, category=kind, min_price_text=low_text, max_price_text=high_text,
+                        min_price=low, max_price=high)
 # endregion
 
 

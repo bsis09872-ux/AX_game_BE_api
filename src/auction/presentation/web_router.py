@@ -22,14 +22,18 @@ from auction.domain.listings.entities import ListingStatus
 from auction.presentation.dependencies import ListingServiceDep, TradeServiceDep
 from auction.presentation.web_dependencies import get_inventory_reader, get_user_gateway, read_balance
 from auction.presentation.web_views import (
-    TRADE_TABS, UNKNOWN_ITEM, card_view, definition_view, detail_url, detail_view, item_view, limit_view, list_url, new_view,
-    notice_text, parse_number, trade_rows, trades_url,
+    CATEGORY_LABELS, TRADE_TABS, UNKNOWN_ITEM, card_view, definition_view, detail_url, detail_view, item_view, limit_view, list_url, new_view,
+    notice_text, parse_number, parse_search, trade_rows, trades_url,
 )
 from auction.wiring import PAGE_SIZE
 from database import get_db
 from shared.core.exceptions import AppError, ConflictError, ForbiddenError, NotFoundError
 
 logger = logging.getLogger(__name__)
+
+
+# 검색 폼의 분류 선택 목록 (빈 값은 전체)
+CATEGORY_OPTIONS = [('', '전체')] + list(CATEGORY_LABELS.items())
 
 
 # 모든 화면이 공통으로 쓰는 요청 정보
@@ -153,8 +157,13 @@ def create_auction_web_router(
         users=Depends(get_user_gateway),
         inventory=Depends(get_inventory_reader),
         page: int = Query(1, ge=1),
+        q: str | None = Query(None, max_length=100),
+        category: str | None = Query(None, max_length=10),
+        min_price: str | None = Query(None, max_length=20),
+        max_price: str | None = Query(None, max_length=20),
         ctx: PageContext = Depends(page_context),
     ):
+        search = parse_search(q, category, min_price, max_price)
         listings = await service.get_listing_list(page)
         now = datetime.now(timezone.utc)
         names = await users.get_display_names([listing.seller_id for listing in listings])
@@ -169,15 +178,20 @@ def create_auction_web_router(
             )
             for listing in listings
         ]
+        # 조건에 안 맞는 카드는 뺀다 (조건이 틀렸으면 거르지 않고 안내만 보여 준다)
+        if not search.error:
+            cards = [card for card in cards if search.matches(card)]
 
         return render(request, 'auction/index.html', {
             **ctx.base(),
             'cards': cards,
+            'search': search,
+            'category_options': CATEGORY_OPTIONS,
             'has_previous': page > 1,
             # 전체 개수를 모르므로 꽉 찬 쪽이면 다음 쪽이 있다고 본다
             'has_next': len(listings) == PAGE_SIZE,
-            'prev_url': list_url(page - 1, ctx.embed),
-            'next_url': list_url(page + 1, ctx.embed),
+            'prev_url': list_url(page - 1, ctx.embed, search),
+            'next_url': list_url(page + 1, ctx.embed, search),
         })
     # endregion
 
