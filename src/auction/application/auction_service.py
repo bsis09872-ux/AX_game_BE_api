@@ -10,8 +10,10 @@
 #
 # 낙찰자 탈퇴·행 없음(SettlementNotPossibleError)은 rollback 후 새 트랜잭션에서 자동 유찰한다.
 # 그 밖의 정산 실패(인벤토리·지갑 불일치, DB 오류)는 rollback 후 다음 주기에 다시 시도한다.
-# [TO DO] 운영자 확인 대상(인벤토리·지갑 불일치)을 식별하고 복구하는 방안을 정한다. (진행 전)
+# [TO DO][V2] 운영자 확인 대상(인벤토리·지갑 불일치)을 식별하고 복구하는 방안을 정한다. (진행 전)
 #         현재는 BIDDING으로 남아 주기마다 재시도·오류 로그가 반복되고, 같은 종류의 대기열도 멈춘다.
+#         V1 수동 대응: 지갑 불일치는 관리자 강제 취소로 정리한다.
+#         인벤토리 불일치는 로그(inventory_mismatch)의 ID로 DB를 확인해 인벤토리 담당과 복구한다.
 
 import logging
 from datetime import datetime
