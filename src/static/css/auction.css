@@ -56,10 +56,6 @@ body.embed .main-content {
   font-size: 14px;
 }
 
-.hero-action .btn {
-  color: #fff;
-}
-
 /* 매물 카드: 패널 없이 배경 위에 놓는 양각 카드. 풀 화면에서 한 줄에 4개 */
 .card-grid {
   display: grid;
