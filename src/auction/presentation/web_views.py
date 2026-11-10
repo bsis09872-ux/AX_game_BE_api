@@ -222,7 +222,7 @@ def parse_search(q: str | None, category: str | None, min_price: str | None, max
 
 # region [Claude] 경매 상세
 STATUS_LABELS = {
-    ListingStatus.BIDDING: '입찰 중',
+    ListingStatus.BIDDING: '경매 중',
     ListingStatus.QUEUED: '대기 중',
     ListingStatus.SOLD: '낙찰',
     ListingStatus.FAILED: '유찰',
@@ -249,7 +249,7 @@ def timebar_view(remaining_seconds: int) -> Timebar:
     )
 
 
-# 결과 배너 (낙찰, 유찰, 취소, 대기). 입찰 중에는 없다
+# 결과 배너 (낙찰, 유찰, 취소, 대기). 경매 중에는 없다
 @dataclass(frozen=True)
 class Banner:
     kind: str  # 'sold', 'fail', 'cancel', 'queued'
@@ -276,7 +276,7 @@ def banner_view(listing: Listing, viewer_id: int, winner_name: str) -> Banner | 
     return None
 
 
-# 무대에 서는 최고액 입찰자(입찰 중) 또는 낙찰자(낙찰). 입찰 중에는 익명 별명, 내가 최고액이면 "나"
+# 무대에 서는 최고액 입찰자(경매 중) 또는 낙찰자(낙찰). 경매 중에는 익명 별명, 내가 최고액이면 "나"
 @dataclass(frozen=True)
 class Leader:
     sprite: int

@@ -39,10 +39,10 @@
           {% for s in slots %}
           <a class="slot rarity-{{ s.item.definition.rarity }}{% if s.listed %} listed{% endif %}{% if s.selected %} sel{% endif %}"
             href="{{ s.href }}" {% if s.selected %}aria-current="true" {% endif %}
-            title="{{ s.item.definition.name }}{% if s.listed %} (경매중){% endif %}">
+            title="{{ s.item.definition.name }}{% if s.listed %} (경매 중){% endif %}">
             {{ item_icon(s.item.definition, 48) }}
             <span class="slot-name">{{ s.item.definition.name }}</span>
-            {% if s.listed %}<span class="badge">경매중</span>{% endif %}
+            {% if s.listed %}<span class="badge">경매 중</span>{% endif %}
           </a>
           {% endfor %}
           {% for _ in range(empty_slots) %}<div class="slot empty" aria-hidden="true"></div>{% endfor %}
