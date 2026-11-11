@@ -112,7 +112,13 @@ _※ 낚시 화면과 서버 연결은 [클라이언트 README](src/client/READM
 
 ## 화면 미리보기
 
-시연 영상 반영 예정
+<p align="center">
+  <a href="docs/readme/demo.mp4"><img src="docs/readme/demo-poster.png" alt="Catch&amp;Bid 시연 영상" width="80%"></a>
+</p>
+
+<p align="center">
+  <sub>이미지를 누르면 시연 영상(17초)이 열립니다. 오프닝 → 낚시터 → 낚시 → 가방 → 경매 낙찰 순서입니다.</sub>
+</p>
 
 ## 실행 방법
 
