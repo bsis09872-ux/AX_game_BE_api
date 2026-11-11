@@ -23,18 +23,18 @@
 
 Catch&Bid는 _"낚시로 얻은 아이템을 경매장에서 골드로 거래하는 게임"_ 컨셉으로 백엔드 4계층 (presentation / application / domain / infrastructure) 구조를 공부하기 위해 만든 학습용 팀 프로젝트입니다. FastAPI와 PostgreSQL로 만들었고, JSON API와 서버가 직접 그리는 웹 화면(Jinja2)을 같은 앱에서 함께 제공합니다. 기능별 도메인을 나누어 팀원이 각각 맡았고, 도메인끼리는 서로의 내부를 직접 부르지 않고 계약(Protocol)과 어댑터로 연결합니다. 다만 낚시터(world)는 외부에서 따로 만든 게임 클라이언트를 이 저장소에 붙인 부분이라, inventory·auth·users를 직접 호출하는 예외입니다.
 
-| 구성   | 내용                                                                                   |
-| ------ | -------------------------------------------------------------------------------------- |
-| 도메인 | auth(인증), users(회원), inventory(아이템), auction(경매), wallet(지갑), world(낚시터) |
-| 구조   | presentation / application / domain / infrastructure 4계층                             |
-| 백엔드 | Python 3.13 · FastAPI · Pydantic · Uvicorn                                             |
-| DB     | PostgreSQL · SQLAlchemy(async) · asyncpg                                               |
-| 인증   | PyJWT · passlib(bcrypt) — 웹은 HttpOnly 쿠키, API는 Bearer 토큰                        |
-| 화면   | Jinja2 서버 렌더링 + JS·CSS, 낚시터와 오프닝은 Phaser 4                                |
-| 실시간 | 경매 화면은 2초 간격 상태 확인, 낚시터는 WebSocket                                     |
-| 배포   | AWS EC2 · Nginx                                                                        |
-| 도구   | uv · Pillow · Docker(로컬 DB)                                                          |
-| 협업   | Git, GitHub, Notion, Slack                                                             |
+| 구성   | 내용                                                                                        |
+| ------ | ------------------------------------------------------------------------------------------- |
+| 도메인 | auth(인증) / users(회원) / inventory(아이템) / auction(경매) / wallet(지갑) / world(낚시터) |
+| 구조   | presentation / application / domain / infrastructure 4계층                                  |
+| 백엔드 | Python 3.13 · FastAPI · Pydantic · Uvicorn                                                  |
+| DB     | PostgreSQL · SQLAlchemy(async) · asyncpg                                                    |
+| 인증   | PyJWT · passlib(bcrypt) — 웹은 HttpOnly 쿠키, API는 Bearer 토큰                             |
+| 화면   | Jinja2 서버 렌더링 + JS·CSS, 낚시터와 오프닝은 Phaser 4                                     |
+| 실시간 | 경매 화면은 2초 간격 상태 확인, 낚시터는 WebSocket                                          |
+| 배포   | AWS EC2 · Nginx                                                                             |
+| 도구   | uv · Pillow · Docker(로컬 DB)                                                               |
+| 협업   | Git, GitHub, Notion, Slack                                                                  |
 
 ## 팀원과 역할 분담
 
