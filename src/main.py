@@ -23,6 +23,9 @@ from shared.core.exception_handlers import register_exception_handlers
 from shared.core.logging_config import setup_logging
 from shared.core.http_application import HttpApplication
 from shared.core.http_settings import read_cors_origins
+from shared.core.openapi import (
+    OPENAPI_DESCRIPTION, OPENAPI_TAGS, SWAGGER_UI_PARAMETERS, install_openapi, read_docs_urls,
+)
 from shared.item_images import image_directory
 from composition import get_admin_auction_queries, get_member_admin_service
 from web_router import create_dashboard_router
@@ -116,7 +119,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await engine.dispose()
 
 app = HttpApplication(
-    title="Catch&Bid", lifespan=lifespan, cors_origins=read_cors_origins()
+    title="Catch&Bid", lifespan=lifespan, cors_origins=read_cors_origins(),
+    description=OPENAPI_DESCRIPTION, openapi_tags=OPENAPI_TAGS,
+    swagger_ui_parameters=SWAGGER_UI_PARAMETERS,
+    **read_docs_urls(),  # DOCS_ENABLED=false 이면 /docs를 끈다
 )
 
 # 실행 폴더와 관계없이 src 아래의 공통 화면과 정적 파일을 찾는다.
@@ -191,6 +197,10 @@ app.include_router(world_router)
 app.include_router(create_opening_router())
 
 
-@app.get("/health")
+@app.get("/health", tags=["system"], summary="서버 상태 확인")
 async def health():
     return {"status": "ok"}
+
+
+# 모든 라우터를 등록한 뒤 호출한다: Swagger에서 화면 경로를 숨기고 공통 오류 응답을 붙인다
+install_openapi(app)
