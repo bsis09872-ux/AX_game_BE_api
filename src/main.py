@@ -139,6 +139,16 @@ async def uploaded_item_image(image_id: str = PathParameter(pattern=r'^[0-9a-f]{
     })
 
 
+# 브라우저는 탭 아이콘을 /favicon.ico로도 요청한다. 같은 파일을 돌려줘서 404를 막는다.
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return FileResponse(
+        SRC_DIR / "static" / "favicon" / "favicon.ico",
+        media_type="image/x-icon",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
 app.mount("/static", StaticFiles(directory=str(SRC_DIR / "static")), name="static")
 
 register_exception_handlers(app)

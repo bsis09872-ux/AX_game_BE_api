@@ -6,6 +6,13 @@
 
     <title>{% block title %}Catch &amp; Bid{% endblock %}</title>
 
+    {# 탭 아이콘: 모든 화면이 이 틀을 쓰므로 여기 한 곳에서만 지정한다. 그림은 static/favicon/ 에 있다. #}
+    <link rel="icon" href="{{ url_for('static', path='/favicon/favicon.ico') }}" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', path='/favicon/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', path='/favicon/favicon-16x16.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', path='/favicon/apple-touch-icon.png') }}">
+    <link rel="manifest" href="{{ url_for('static', path='/favicon/site.webmanifest') }}">
+
     {# 공통 테마와 로컬 폰트를 모든 자식 화면에서 사용한다. #}
     <link rel="stylesheet" href="{{ url_for('static', path='/css/global.css') }}">
     {% block styles %}{% endblock %}
