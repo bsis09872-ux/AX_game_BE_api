@@ -21,20 +21,21 @@
 
 ## 프로젝트 소개
 
-Catch&Bid는 _"낚시로 얻은 아이템을 경매장에서 골드로 거래하는 게임"_ 컨셉으로 백엔드 4계층 (presentation / application / domain / infrastructure) 구조를 공부하기 위해 만든 학습용 팀 프로젝트입니다. FastAPI와 PostgreSQL로 만들었고, JSON API와 서버가 직접 그리는 웹 화면(Jinja2)을 같은 앱에서 함께 제공합니다. 기능별 도메인을 나누어 팀원이 각각 맡았고, 도메인끼리는 서로의 내부를 직접 부르지 않고 계약(Protocol)과 어댑터로 연결합니다. 다만 낚시터(world)는 외부에서 따로 만든 게임 클라이언트를 이 저장소에 붙인 부분이라, inventory·auth·users를 직접 호출하는 예외입니다.
+Catch&Bid는 _"낚시로 얻은 아이템을 경매장에서 골드로 거래하는 게임"_ 컨셉으로 백엔드 4계층 (presentation / application / domain / infrastructure) 구조를 공부하기 위해 만든 학습용 팀 프로젝트입니다. FastAPI와 PostgreSQL로 만들었고, JSON API와 서버가 직접 그리는 웹 화면(Jinja2)을 같은 앱에서 함께 제공합니다. 기능별 도메인을 나누어 팀원이 각각 맡았고, 도메인끼리는 서로의 내부를 직접 부르지 않고 계약(Protocol)과 어댑터로 연결합니다.  
+_※ 다만 낚시터(world)는 외부에서 따로 만든 게임 클라이언트를 이 저장소에 연결했기 때문에 inventory · auth · users를 직접 호출하는 예외 도메인입니다._
 
-| 구성   | 내용                                                                                   |
-| ------ | -------------------------------------------------------------------------------------- |
-| 도메인 | auth(인증), users(회원), inventory(아이템), auction(경매), wallet(지갑), world(낚시터) |
-| 구조   | presentation / application / domain / infrastructure 4계층                             |
-| 백엔드 | Python 3.13 · FastAPI · Pydantic · Uvicorn                                             |
-| DB     | PostgreSQL · SQLAlchemy(async) · asyncpg                                               |
-| 인증   | PyJWT · passlib(bcrypt) — 웹은 HttpOnly 쿠키, API는 Bearer 토큰                        |
-| 화면   | Jinja2 서버 렌더링 + JS·CSS, 낚시터와 오프닝은 Phaser 4                                |
-| 실시간 | 경매 화면은 2초 간격 상태 확인, 낚시터는 WebSocket                                     |
-| 배포   | AWS EC2 · Nginx                                                                        |
-| 도구   | uv · Pillow · Docker(로컬 DB)                                                          |
-| 협업   | Git, GitHub, Notion, Slack                                                             |
+| 구성   | 내용                                                                                      |
+| ------ | ----------------------------------------------------------------------------------------- |
+| 도메인 | 인증(auth) · 회원(users) · 가방(inventory) · 경매(auction) · 지갑(wallet) · 낚시터(world) |
+| 구조   | presentatio · application · domain · infrastructure 4계층                                 |
+| 백엔드 | Python 3.13 · FastAPI · Pydantic · Uvicorn                                                |
+| DB     | PostgreSQL · SQLAlchemy(async) · asyncpg                                                  |
+| 인증   | PyJWT · passlib(bcrypt) — 웹은 HttpOnly 쿠키, API는 Bearer 토큰                           |
+| 화면   | Jinja2 서버 렌더링 + JS·CSS, 낚시터와 오프닝은 Phaser 4                                   |
+| 실시간 | 경매 화면은 2초 간격 상태 확인, 낚시터는 WebSocket                                        |
+| 배포   | AWS EC2 · Nginx                                                                           |
+| 도구   | uv · Pillow · Docker(로컬 DB)                                                             |
+| 협업   | Git, GitHub, Notion, Slack                                                                |
 
 ## 팀원과 역할 분담
 
@@ -48,13 +49,13 @@ Catch&Bid는 _"낚시로 얻은 아이템을 경매장에서 골드로 거래하
   </tr>
 </table>
 
-| 이름   | 닉네임  | GitHub                                          | 주요 담당                                                | 구현                                                                                       |
-| ------ | ------- | ----------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| 배서인 | journey | [bsis09872-ux](https://github.com/bsis09872-ux) | 경매 ( 매물 · 입찰 관리 · 거래 ) · 개발 환경 관리 · 배포 | [auction](src/auction/README.md)                                                           |
-| 양석호 | coco    | [Cocode96](https://github.com/Cocode96)         | 회원 · 인증 · 관리자 · 조립 · 검증 · 클라이언트 통합     | [auth](src/auth/README.md) · [users](src/users/README.md) · [client](src/client/README.md) |
-| 이연지 | surl    | [uogji-lee](https://github.com/uogji-lee)       | 게임 컨셉 (낚시터) · 클라이언트 제작 · 시연 영상         | [client](src/client/README.md)                                                             |
-| 김선규 | ilmae   | [ilmae-322](https://github.com/ilmae-322)       | 지갑 · 정산                                              | [wallet](src/wallet/README.md)                                                             |
-| 이승주 | bongo   | [eeseuju](https://github.com/eeseuju)           | 아이템 · 인벤토리· 가방 및 경매 화면                     | [inventory](src/inventory/README.md)                                                       |
+| 이름   | 닉네임  | GitHub                                          | 주요 담당                                                | 구현                                                                                      |
+| ------ | ------- | ----------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| 배서인 | journey | [bsis09872-ux](https://github.com/bsis09872-ux) | 경매 ( 매물 · 입찰 관리 · 거래 ) · 개발 환경 관리 · 배포 | [auction](src/auction/README.md)                                                          |
+| 양석호 | coco    | [Cocode96](https://github.com/Cocode96)         | 회원 · 인증 · 관리자 · 조립 · 검증 · 클라이언트 통합     | [auth](src/auth/README.md) · [users](src/users/README.md) · [world](src/client/README.md) |
+| 이연지 | surl    | [uogji-lee](https://github.com/uogji-lee)       | 게임 컨셉 (낚시터) · 클라이언트 제작 · 시연 영상         | [world](src/client/README.md)                                                             |
+| 김선규 | ilmae   | [ilmae-322](https://github.com/ilmae-322)       | 지갑 · 정산                                              | [wallet](src/wallet/README.md)                                                            |
+| 이승주 | bongo   | [eeseuju](https://github.com/eeseuju)           | 아이템 · 인벤토리· 가방 및 경매 화면                     | [inventory](src/inventory/README.md)                                                      |
 
 ## 협업 과정
 
@@ -76,7 +77,7 @@ Catch&Bid는 _"낚시로 얻은 아이템을 경매장에서 골드로 거래하
 AX_game_BE_api/
 ├─ src/
 │  ├─ auth/ users/ inventory/ auction/ wallet/   # 도메인 (각각 4계층)
-│  ├─ world/                                      # 공유 낚시터 (외부 작업본 통합, 4계층)
+│  ├─ world/                                      # 낚시터 (외부 작업본 통합, 4계층)
 │  ├─ client/                                     # 낚시터 화면·API 조립 (계층 없음)
 │  ├─ shared/                                     # 공통 예외, 로그, HTTP 미들웨어, 아이템 이미지
 │  ├─ templates/                                  # Jinja2 화면
