@@ -16,6 +16,8 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, Path, Query, BackgroundTasks
 
+from shared.core.openapi import errors
+
 from inventory.application.contracts import CurrentUser
 from inventory.application.service import InventoryService
 from inventory.presentation.dependencies import get_current_user, get_inventory_service, require_admin
@@ -52,7 +54,13 @@ InventorySort = Literal['acquired_desc', 'rarity_desc', 'name_asc']
 
 
 # 내 인벤토리 조회
-@router.get('/inventory', response_model=PageResponse[InventoryItemResponse])
+@router.get(
+    '/inventory',
+    response_model=PageResponse[InventoryItemResponse],
+    summary='내 아이템 목록 조회',
+    description='로그인한 사용자가 가진 아이템을 상태·분류·희귀도로 거르고 정렬해 페이지 단위로 돌려줍니다.',
+    responses=errors(401),
+)
 async def list_my_items(
 
     # 기본값이 없는 매개변수는 기본값이 있는 것보다 앞에 와야 한다
@@ -81,7 +89,13 @@ async def list_my_items(
 
 
 # 내 아이템 상세 조회
-@router.get('/inventory/{item_id}', response_model=InventoryItemDetailResponse)
+@router.get(
+    '/inventory/{item_id}',
+    response_model=InventoryItemDetailResponse,
+    summary='내 아이템 상세 조회',
+    description='남의 아이템이나 없는 아이템은 존재 여부를 숨기려고 똑같이 404로 응답합니다.',
+    responses=errors(401, 404),
+)
 async def get_my_item(
     item_id: int = Path(ge=1),
     user: CurrentUser = Depends(get_current_user),
@@ -95,6 +109,9 @@ async def get_my_item(
     '/item-catalogs',
     response_model=PageResponse[ItemDefinitionResponse],
     dependencies=[Depends(get_current_user)],
+    summary='아이템 카탈로그 목록 조회',
+    description='서버에 등록된 아이템 종류(도감)를 분류·희귀도로 거르고 정렬해 돌려줍니다. 낚시 가중치는 보이지 않습니다.',
+    responses=errors(401),
 )
 async def list_definitions(
     category: Category | None=None,
@@ -118,6 +135,8 @@ async def list_definitions(
     '/item-catalogs/{definition_id}',
     response_model=ItemDefinitionResponse,
     dependencies=[Depends(get_current_user)],
+    summary='아이템 카탈로그 상세 조회',
+    responses=errors(401, 404),
 )
 async def get_definition(
     definition_id: int = Path(ge=1),
@@ -132,7 +151,10 @@ async def get_definition(
     '/item-catalogs',
     status_code=201,
     response_model=AdminDefinitionResponse,
-    dependencies=[Depends(require_admin)]
+    dependencies=[Depends(require_admin)],
+    summary='아이템 카탈로그 생성 (관리자)',
+    description='`code`는 영문 소문자로 시작하는 3~50자이고 겹칠 수 없습니다. 시작가는 1 이상, 가중치는 0 이상입니다.',
+    responses=errors(400, 401, 403),
 )
 async def create_definition(
     body: DefinitionCreateRequest,
@@ -145,7 +167,10 @@ async def create_definition(
 @router.patch(
     '/item-catalogs/{definition_id}',
     response_model=AdminDefinitionResponse, # 응답을 내보낼 형식
-    dependencies=[Depends(require_admin)]   # 관리자 여부 확인
+    dependencies=[Depends(require_admin)],  # 관리자 여부 확인
+    summary='아이템 카탈로그 수정 (관리자)',
+    description='보낸 항목만 바꿉니다. `name`과 `category`는 만든 뒤 바꿀 수 없습니다.',
+    responses=errors(400, 401, 403, 404),
 )
 async def update_definition(
     body: DefinitionUpdateRequest,   # 요청 본문 형식 / 이상하면 422
@@ -167,7 +192,10 @@ async def update_definition(
 @router.delete(
     '/item-catalogs/{definition_id}',
     status_code=204,
-    dependencies=[Depends(require_admin)]
+    dependencies=[Depends(require_admin)],
+    summary='아이템 카탈로그 삭제 (관리자)',
+    description='이미 아이템이 만들어진 카탈로그는 지울 수 없습니다(400).',
+    responses=errors(400, 401, 403, 404),
 )
 async def delete_definition(
     definition_id: int = Path(ge=1),
@@ -182,7 +210,10 @@ async def delete_definition(
 @router.get(
     '/inventory/{item_id}/events',
     response_model=PageResponse[EventResponse],
-    dependencies=[Depends(require_admin)]
+    dependencies=[Depends(require_admin)],
+    summary='아이템 이력 조회 (관리자)',
+    description='아이템의 지급·예약·해제·이전 기록을 오래된 순으로 돌려줍니다.',
+    responses=errors(401, 403, 404),
 )
 async def list_item_events(
     item_id: int = Path(ge=1),

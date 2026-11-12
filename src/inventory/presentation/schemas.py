@@ -115,7 +115,14 @@ class AdminDefinitionResponse(ItemDefinitionResponse):
 # bool값이 숫자로 통과하지 않게 타입 검사를 엄격히 한다
 class DefinitionCreateRequest(BaseModel):
 
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(
+        extra='forbid',
+        json_schema_extra={'examples': [{
+            'code': 'red_snapper', 'name': '참돔', 'category': 'FISH', 'rarity': 'UNCOMMON',
+            'start_price': 450, 'description': '붉은 비늘의 바다 물고기', 'icon': 'fish_bass',
+            'weight': 18, 'fishable': True,
+        }]},
+    )
 
     code: StrictStr
     name: StrictStr
@@ -132,7 +139,10 @@ class DefinitionCreateRequest(BaseModel):
 # name·category도 일단 받고 거절하게 한다
 class DefinitionUpdateRequest(BaseModel):
 
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(
+        extra='forbid',
+        json_schema_extra={'examples': [{'start_price': 600, 'weight': 12}]},
+    )
 
     name: StrictStr | None = None
     category: StrictStr | None = None
