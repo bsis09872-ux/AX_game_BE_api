@@ -27,7 +27,7 @@ _※ 다만 낚시터(world)는 외부에서 따로 만든 게임 클라이언�
 | 구성   | 내용                                                                                      |
 | ------ | ----------------------------------------------------------------------------------------- |
 | 도메인 | 인증(auth) · 회원(users) · 가방(inventory) · 경매(auction) · 지갑(wallet) · 낚시터(world) |
-| 구조   | presentatio · application · domain · infrastructure 4계층                                 |
+| 구조   | presentation · application · domain · infrastructure 4계층                                |
 | 백엔드 | Python 3.13 · FastAPI · Pydantic · Uvicorn                                                |
 | DB     | PostgreSQL · SQLAlchemy(async) · asyncpg                                                  |
 | 인증   | PyJWT · passlib(bcrypt) — 웹은 HttpOnly 쿠키, API는 Bearer 토큰                           |
